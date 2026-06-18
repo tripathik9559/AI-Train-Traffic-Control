@@ -1,0 +1,1339 @@
+{% extends "base.html" %}{% load static %}
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   RAILWAY SCHEDULING COMMAND CENTER — Page Styles
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Page wrapper ── */
+.scc-page { display:flex; flex-direction:column; gap:10px; padding:0; }
+
+/* ── Command Header ── */
+.scc-header {
+  display:flex; align-items:center; justify-content:space-between;
+  background:linear-gradient(135deg,var(--bg-card) 0%,rgba(59,130,246,.06) 100%);
+  border:1px solid var(--border-color); border-radius:var(--radius-md);
+  padding:12px 18px; gap:12px;
+}
+.scc-header-left { display:flex; align-items:center; gap:14px; }
+.scc-header-icon {
+  width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,rgba(59,130,246,.25),rgba(6,182,212,.15));
+  border:1px solid rgba(59,130,246,.35); font-size:1.2rem;
+}
+.scc-header-title {
+  font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text-muted); margin-bottom:3px;
+}
+.scc-header-name {
+  font-size:1.05rem; font-weight:800; color:var(--text-primary); letter-spacing:.02em;
+}
+.scc-live-badge {
+  display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+  background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.3);
+  border-radius:20px; font-size:.65rem; font-weight:700; color:var(--accent-green);
+}
+.scc-live-dot {
+  width:6px; height:6px; border-radius:50%; background:var(--accent-green);
+  animation:livePulse 2s infinite;
+}
+@keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+
+.scc-header-right { display:flex; align-items:center; gap:8px; }
+.scc-header-btn {
+  display:inline-flex; align-items:center; gap:5px; padding:6px 12px;
+  border-radius:var(--radius-sm); border:1px solid var(--border-color);
+  background:var(--bg-input); color:var(--text-secondary); font-size:.72rem;
+  font-weight:600; cursor:pointer; text-decoration:none;
+  transition:all var(--transition-fast);
+}
+.scc-header-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); border-color:var(--accent-blue); }
+.scc-header-btn.primary {
+  background:rgba(59,130,246,.15); border-color:rgba(59,130,246,.4); color:var(--accent-blue);
+}
+.scc-date-nav { display:flex; align-items:center; gap:4px; }
+.scc-date-input {
+  background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-primary);
+  border-radius:var(--radius-sm); padding:5px 10px; font-size:.75rem;
+  font-family:var(--font-mono); cursor:pointer;
+}
+.scc-date-input:focus { outline:none; border-color:var(--accent-blue); }
+
+/* ── KPI Row ── */
+.scc-kpi-row {
+  display:grid; grid-template-columns:repeat(8,1fr); gap:8px;
+}
+@media(max-width:1400px){.scc-kpi-row{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:900px){.scc-kpi-row{grid-template-columns:repeat(2,1fr);}}
+
+.scc-kpi {
+  background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md);
+  padding:10px 12px; cursor:pointer; transition:all var(--transition-fast); position:relative; overflow:hidden;
+}
+.scc-kpi::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--kpi-color, var(--accent-blue)); opacity:.7;
+}
+.scc-kpi:hover { background:var(--bg-card-hover); border-color:var(--border-color-hover); transform:translateY(-1px); }
+.scc-kpi-label { font-size:.6rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; }
+.scc-kpi-val { font-size:1.3rem; font-weight:800; font-family:var(--font-mono); color:var(--text-primary); line-height:1; margin-bottom:4px; }
+.scc-kpi-sub { font-size:.6rem; color:var(--text-muted); display:flex; align-items:center; justify-content:space-between; }
+.scc-kpi-trend { font-size:.6rem; font-weight:700; }
+.scc-kpi-trend.up { color:var(--accent-green); }
+.scc-kpi-trend.down { color:var(--accent-red); }
+.scc-kpi-trend.warn { color:var(--accent-yellow); }
+.scc-sparkline { width:100%; height:22px; margin-top:4px; }
+
+/* ── Main Body Layout ── */
+.scc-body { display:grid; grid-template-columns:1fr 360px; gap:10px; align-items:end; }
+@media(max-width:1300px){.scc-body{grid-template-columns:1fr;}}
+
+/* ── Section Card ── */
+.scc-card {
+  background:var(--bg-card); border:1px solid var(--border-color);
+  border-radius:var(--radius-md); overflow:hidden;
+}
+.scc-card-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 14px; border-bottom:1px solid var(--border-color);
+  background:var(--bg-secondary);
+}
+.scc-card-title {
+  font-size:.65rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-muted); display:flex; align-items:center; gap:6px;
+}
+.scc-card-title-icon { font-size:.85rem; }
+.scc-card-actions { display:flex; gap:5px; align-items:center; }
+.scc-icon-btn {
+  width:22px; height:22px; border-radius:5px; border:none; background:transparent;
+  color:var(--text-muted); cursor:pointer; font-size:.7rem;
+  display:flex; align-items:center; justify-content:center;
+  transition:all var(--transition-fast);
+}
+.scc-icon-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+
+/* ── Timeline ── */
+.timeline-container { padding:0; }
+.timeline-header-row {
+  display:flex; align-items:center; padding:8px 12px 6px;
+  border-bottom:1px solid var(--border-color); gap:8px; flex-wrap:wrap;
+}
+.timeline-title-block { flex:1; min-width:200px; }
+.timeline-title { font-size:.78rem; font-weight:700; color:var(--text-primary); }
+.timeline-sub { font-size:.62rem; color:var(--text-muted); margin-top:1px; }
+.timeline-legend { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.tl-leg { display:flex; align-items:center; gap:4px; font-size:.6rem; color:var(--text-muted); }
+.tl-leg-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+.tl-leg-dot.scheduled { background:var(--accent-blue); }
+.tl-leg-dot.running { background:var(--accent-green); }
+.tl-leg-dot.arrival { background:var(--accent-cyan); }
+.tl-leg-dot.occupancy { background:rgba(249,115,22,.7); }
+.tl-leg-dot.conflict { background:var(--accent-red); }
+
+.timeline-filter-row { display:flex; gap:6px; padding:6px 12px; border-bottom:1px solid var(--border-color); }
+.tl-filter-btn {
+  padding:3px 10px; border-radius:20px; border:1px solid var(--border-color);
+  background:transparent; color:var(--text-muted); font-size:.62rem; font-weight:600;
+  cursor:pointer; transition:all var(--transition-fast);
+}
+.tl-filter-btn:hover,.tl-filter-btn.active {
+  background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.4); color:var(--accent-blue);
+}
+
+.timeline-scroll-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.timeline-wrap { min-width:680px; }
+
+.timeline-time-axis {
+  display:flex; padding-left:60px; border-bottom:1px solid var(--border-color);
+  background:var(--bg-secondary);
+}
+.tl-time-label {
+  font-size:.58rem; font-weight:700; color:var(--text-muted); font-family:var(--font-mono);
+  padding:4px 0; text-align:center; border-right:1px solid var(--border-color);
+  flex:1; white-space:nowrap;
+}
+
+.tl-platform-row {
+  display:flex; align-items:center; border-bottom:1px solid rgba(255,255,255,.04);
+  min-height:26px; position:relative;
+}
+.tl-platform-row:hover { background:rgba(59,130,246,.03); }
+.tl-plat-label {
+  width:60px; min-width:60px; padding:0 8px; font-size:.62rem; font-weight:700;
+  color:var(--text-muted); font-family:var(--font-mono); display:flex; align-items:center; gap:3px;
+  border-right:1px solid var(--border-color); height:100%; background:var(--bg-secondary);
+}
+.tl-track {
+  flex:1; position:relative; height:26px;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(100%/6 - 1px),rgba(255,255,255,.03) calc(100%/6 - 1px),rgba(255,255,255,.03) calc(100%/6));
+}
+.tl-block {
+  position:absolute; top:3px; height:20px; border-radius:3px;
+  display:flex; align-items:center; padding:0 5px; cursor:pointer;
+  font-size:.58rem; font-weight:700; font-family:var(--font-mono); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; transition:opacity var(--transition-fast);
+  z-index:1;
+}
+.tl-block:hover { opacity:.85; z-index:2; transform:scaleY(1.1); }
+.tl-block.scheduled { background:rgba(59,130,246,.7); color:#fff; border:1px solid rgba(59,130,246,.9); }
+.tl-block.running   { background:rgba(16,185,129,.75); color:#fff; border:1px solid rgba(16,185,129,.9); }
+.tl-block.arrival   { background:rgba(6,182,212,.7); color:#fff; border:1px solid rgba(6,182,212,.9); }
+.tl-block.delayed   { background:rgba(239,68,68,.7); color:#fff; border:1px solid rgba(239,68,68,.9); }
+.tl-block.occupancy { background:rgba(249,115,22,.6); color:#fff; border:1px solid rgba(249,115,22,.8); }
+.tl-block.departed  { background:rgba(139,92,246,.6); color:#fff; border:1px solid rgba(139,92,246,.8); }
+.tl-block-tooltip {
+  display:none; position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:6px;
+  padding:8px 10px; z-index:100; min-width:160px; font-size:.68rem; color:var(--text-primary);
+  box-shadow:var(--shadow-md); pointer-events:none; white-space:nowrap;
+}
+.tl-block:hover .tl-block-tooltip { display:block; }
+
+.timeline-pagination {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 12px; border-top:1px solid var(--border-color);
+  background:var(--bg-secondary);
+}
+.tl-page-info { font-size:.62rem; color:var(--text-muted); }
+.tl-pager { display:flex; gap:4px; }
+.tl-page-btn {
+  padding:3px 8px; border-radius:5px; border:1px solid var(--border-color);
+  background:transparent; color:var(--text-muted); font-size:.65rem; cursor:pointer;
+  transition:all var(--transition-fast);
+}
+.tl-page-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+
+/* ── Right Column ── */
+.scc-right-col { display:flex; flex-direction:column; gap:10px; }
+
+/* ── AI Scheduling Command Center ── */
+.ai-rec-item {
+  background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--radius-sm);
+  padding:10px 12px; margin-bottom:8px;
+}
+.ai-rec-item:last-child { margin-bottom:0; }
+.ai-rec-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; gap:6px; }
+.ai-rec-type {
+  font-size:.6rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 6px;
+  border-radius:3px; background:rgba(59,130,246,.15); color:var(--accent-blue); flex-shrink:0;
+}
+.ai-rec-type.rerouting  { background:rgba(249,115,22,.15); color:var(--accent-orange); }
+.ai-rec-type.holding    { background:rgba(245,158,11,.15); color:var(--accent-yellow); }
+.ai-rec-type.throughput { background:rgba(16,185,129,.15); color:var(--accent-green); }
+.ai-rec-type.priority   { background:rgba(139,92,246,.15); color:var(--accent-purple); }
+.ai-rec-title { font-size:.72rem; font-weight:700; color:var(--text-primary); line-height:1.3; }
+.ai-rec-meta { font-size:.62rem; color:var(--text-muted); margin-bottom:8px; }
+.ai-rec-meta span { color:var(--accent-green); font-weight:700; }
+.ai-rec-actions { display:flex; gap:5px; }
+.ai-btn {
+  padding:4px 10px; border-radius:5px; font-size:.65rem; font-weight:700;
+  cursor:pointer; border:1px solid; transition:all var(--transition-fast);
+  text-decoration:none; display:inline-flex; align-items:center; gap:3px;
+}
+.ai-btn.accept  { background:rgba(16,185,129,.15); border-color:rgba(16,185,129,.4); color:var(--accent-green); }
+.ai-btn.reject  { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); color:var(--accent-red); }
+.ai-btn.simulate{ background:rgba(139,92,246,.12); border-color:rgba(139,92,246,.35); color:var(--accent-purple); }
+.ai-btn:hover   { filter:brightness(1.15); transform:translateY(-1px); }
+
+.ai-empty {
+  text-align:center; padding:20px 10px; color:var(--text-muted); font-size:.72rem;
+}
+.ai-empty-icon { font-size:1.5rem; opacity:.3; display:block; margin-bottom:6px; }
+
+/* ── Two-column mini panels ── */
+.scc-mini-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* ── Platform Occupancy Matrix ── */
+.pom-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:10px 12px; }
+.pom-cell {
+  aspect-ratio:1; border-radius:4px; display:flex; align-items:center; justify-content:center;
+  font-size:.58rem; font-weight:700; font-family:var(--font-mono); cursor:pointer;
+  transition:all var(--transition-fast); border:1px solid transparent; position:relative;
+}
+.pom-cell:hover { transform:scale(1.08); z-index:2; }
+.pom-cell.available  { background:rgba(16,185,129,.2); color:var(--accent-green); border-color:rgba(16,185,129,.3); }
+.pom-cell.occupied   { background:rgba(59,130,246,.2); color:var(--accent-blue);  border-color:rgba(59,130,246,.3); }
+.pom-cell.maintenance{ background:rgba(245,158,11,.2); color:var(--accent-yellow);border-color:rgba(245,158,11,.3); }
+.pom-cell.conflict   { background:rgba(239,68,68,.2);  color:var(--accent-red);   border-color:rgba(239,68,68,.3); animation:conflictPulse 1.5s infinite; }
+@keyframes conflictPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+.pom-legend { display:flex; gap:8px; padding:0 12px 8px; flex-wrap:wrap; }
+.pom-leg { display:flex; align-items:center; gap:4px; font-size:.58rem; color:var(--text-muted); }
+.pom-leg-dot { width:8px; height:8px; border-radius:2px; }
+
+/* ── Track Utilization Heatmap ── */
+.thm-grid { padding:8px 10px; }
+.thm-time-row { display:flex; padding-left:32px; margin-bottom:2px; }
+.thm-time-label { flex:1; text-align:center; font-size:.5rem; color:var(--text-muted); font-family:var(--font-mono); }
+.thm-row { display:flex; align-items:center; margin-bottom:2px; }
+.thm-row-label { width:32px; font-size:.55rem; color:var(--text-muted); font-family:var(--font-mono); flex-shrink:0; }
+.thm-cell {
+  flex:1; height:14px; border-radius:2px; margin:0 1px; cursor:pointer;
+  transition:all var(--transition-fast); position:relative;
+}
+.thm-cell:hover { transform:scaleY(1.3); z-index:2; }
+.thm-scale { display:flex; justify-content:space-between; padding:4px 10px 2px 42px; }
+.thm-scale-item { font-size:.5rem; color:var(--text-muted); }
+
+/* ── Resource Allocation Panel ── */
+.res-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 12px; border-bottom:1px solid rgba(255,255,255,.04);
+}
+.res-row:last-child { border-bottom:none; }
+.res-label { font-size:.68rem; color:var(--text-secondary); }
+.res-val { font-size:.72rem; font-weight:700; font-family:var(--font-mono); }
+.res-bar-wrap { width:60px; height:4px; background:var(--border-color); border-radius:2px; overflow:hidden; margin-left:6px; }
+.res-bar-fill { height:100%; border-radius:2px; transition:width 1s ease; }
+
+/* ── Conflict Prediction Panel ── */
+.conf-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 12px; border-bottom:1px solid rgba(255,255,255,.04);
+  cursor:pointer; transition:background var(--transition-fast); text-decoration:none; display:flex;
+}
+a.conf-row { color:inherit; }
+.conf-row:last-child { border-bottom:none; }
+.conf-row:hover { background:rgba(255,255,255,.03); }
+.conf-type { font-size:.65rem; color:var(--text-secondary); }
+.conf-count { font-size:.72rem; font-weight:800; font-family:var(--font-mono); color:var(--accent-red); }
+.conf-pct { font-size:.6rem; color:var(--text-muted); margin-left:4px; }
+.conf-sev { font-size:.55rem; font-weight:700; padding:1px 5px; border-radius:3px; }
+.conf-sev.high   { background:rgba(239,68,68,.15); color:var(--accent-red); }
+.conf-sev.medium { background:rgba(245,158,11,.15); color:var(--accent-yellow); }
+.conf-sev.low    { background:rgba(16,185,129,.15); color:var(--accent-green); }
+
+/* ── Train Schedule Queue ── */
+.tsq-item {
+  display:flex; align-items:center; gap:8px; padding:7px 12px;
+  border-bottom:1px solid rgba(255,255,255,.04); cursor:pointer;
+  transition:background var(--transition-fast); text-decoration:none; color:inherit;
+}
+a.tsq-item { display:flex; }
+.tsq-item:last-child { border-bottom:none; }
+.tsq-item:hover { background:rgba(255,255,255,.03); }
+.tsq-num { font-size:.72rem; font-weight:700; font-family:var(--font-mono); color:var(--accent-blue); min-width:46px; }
+.tsq-info { flex:1; min-width:0; }
+.tsq-name { font-size:.65rem; color:var(--text-primary); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tsq-meta { font-size:.58rem; color:var(--text-muted); margin-top:1px; }
+.tsq-time { font-size:.62rem; font-family:var(--font-mono); color:var(--text-muted); flex-shrink:0; }
+.tsq-status { flex-shrink:0; }
+.tsq-badge {
+  padding:2px 6px; border-radius:3px; font-size:.58rem; font-weight:700;
+}
+.tsq-badge.scheduled  { background:rgba(59,130,246,.15); color:var(--accent-blue); }
+.tsq-badge.running    { background:rgba(16,185,129,.15); color:var(--accent-green); }
+.tsq-badge.delayed    { background:rgba(239,68,68,.15); color:var(--accent-red); }
+.tsq-badge.priority   { background:rgba(245,158,11,.15); color:var(--accent-yellow); }
+
+/* ── Bottom Row ── */
+.scc-bottom-row { display:grid; grid-template-columns:280px 1fr 1fr 260px; gap:10px; align-items:stretch; }
+@media(max-width:1400px){.scc-bottom-row{grid-template-columns:1fr 1fr;}}
+@media(max-width:900px){.scc-bottom-row{grid-template-columns:1fr;}}
+
+/* ── Resources · Conflicts · Queue — full-width 3-col compact row ── */
+/* Same left/right edge as scc-bottom-row; cards are intentionally
+   shorter than the main panels below for visual hierarchy.           */
+.scc-rcq-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.scc-rcq-row .scc-card-header { padding: 6px 10px; }
+.scc-rcq-row .res-row          { padding: 10px 14px; }
+.scc-rcq-row .conf-row         { padding: 10px 14px; }
+.scc-rcq-row .tsq-item         { padding: 10px 14px; }
+/* ── Live Dispatch Feed ── */
+.dispatch-item {
+  display:flex; align-items:flex-start; gap:8px; padding:8px 12px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.dispatch-item:last-child { border-bottom:none; }
+.dispatch-icon {
+  width:22px; height:22px; border-radius:5px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; font-size:.65rem; margin-top:1px;
+}
+.dispatch-icon.reassign { background:rgba(59,130,246,.2); color:var(--accent-blue); }
+.dispatch-icon.signal   { background:rgba(245,158,11,.2); color:var(--accent-yellow); }
+.dispatch-icon.conflict { background:rgba(239,68,68,.2);  color:var(--accent-red); }
+.dispatch-icon.delay    { background:rgba(249,115,22,.2);  color:var(--accent-orange); }
+.dispatch-text { flex:1; min-width:0; }
+.dispatch-title { font-size:.68rem; font-weight:600; color:var(--text-primary); line-height:1.3; }
+.dispatch-sub   { font-size:.6rem; color:var(--text-muted); margin-top:1px; }
+.dispatch-time  { font-size:.58rem; color:var(--text-muted); flex-shrink:0; font-family:var(--font-mono); }
+.dispatch-sev {
+  font-size:.55rem; font-weight:700; padding:1px 4px; border-radius:2px; flex-shrink:0;
+}
+.dispatch-sev.critical { background:rgba(239,68,68,.15); color:var(--accent-red); }
+.dispatch-sev.high     { background:rgba(249,115,22,.15); color:var(--accent-orange); }
+.dispatch-sev.medium   { background:rgba(245,158,11,.15); color:var(--accent-yellow); }
+
+/* ── Simulation Panel ── */
+.sim-scenario {
+  display:flex; align-items:center; justify-content:space-between; padding:6px 12px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.sim-scenario-label { font-size:.68rem; color:var(--text-secondary); }
+.sim-slider {
+  width:80px; height:4px; border-radius:2px; -webkit-appearance:none;
+  background:var(--border-color); cursor:pointer; margin:0 8px;
+}
+.sim-slider::-webkit-slider-thumb {
+  -webkit-appearance:none; width:12px; height:12px; border-radius:50%;
+  background:var(--accent-blue); cursor:pointer;
+}
+.sim-btn {
+  padding:2px 8px; border-radius:4px; font-size:.62rem; font-weight:700;
+  cursor:pointer; border:1px solid; transition:all var(--transition-fast);
+}
+.sim-btn.test { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.3); color:var(--accent-blue); }
+.sim-btn.done { background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.3); color:var(--accent-green); }
+.sim-btn:hover { filter:brightness(1.2); }
+.sim-impact { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:8px 12px; }
+.sim-impact-item {
+  background:var(--bg-input); border-radius:var(--radius-sm); padding:8px;
+  text-align:center; border:1px solid var(--border-color);
+}
+.sim-impact-label { font-size:.55rem; color:var(--text-muted); margin-bottom:3px; }
+.sim-impact-val { font-size:.82rem; font-weight:800; font-family:var(--font-mono); }
+.sim-impact-val.red    { color:var(--accent-red); }
+.sim-impact-val.yellow { color:var(--accent-yellow); }
+.sim-impact-val.green  { color:var(--accent-green); }
+
+/* ── Bottom Analytics ── */
+.analytics-charts { padding:10px 12px; }
+.analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.analytics-chart-item { }
+.analytics-chart-label { font-size:.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.analytics-sparkline { width:100%; height:40px; }
+
+/* ── Executive Insights Panel ── */
+.exec-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:10px 12px; }
+.exec-item {
+  background:var(--bg-input); border-radius:var(--radius-sm); padding:10px;
+  border:1px solid var(--border-color); cursor:pointer; transition:all var(--transition-fast);
+}
+.exec-item:hover { background:var(--bg-card-hover); border-color:var(--border-color-hover); }
+.exec-label { font-size:.6rem; color:var(--text-muted); margin-bottom:4px; }
+.exec-val { font-size:1.1rem; font-weight:800; font-family:var(--font-mono); }
+.exec-val.green  { color:var(--accent-green); }
+.exec-val.red    { color:var(--accent-red); }
+.exec-val.blue   { color:var(--accent-blue); }
+.exec-val.yellow { color:var(--accent-yellow); }
+.exec-trend { font-size:.6rem; color:var(--text-muted); margin-top:2px; }
+
+/* ── Light theme overrides ── */
+[data-theme="light"] .scc-card  { background:#fff; border-color:rgba(0,0,0,.09); }
+[data-theme="light"] .scc-kpi   { background:#fff; border-color:rgba(0,0,0,.09); }
+[data-theme="light"] .scc-header { background:linear-gradient(135deg,#fff,rgba(59,130,246,.04)); }
+[data-theme="light"] .tl-plat-label { background:#f8fafc; }
+[data-theme="light"] .timeline-time-axis { background:#f8fafc; }
+[data-theme="light"] .pom-cell.available { background:rgba(16,185,129,.12); }
+[data-theme="light"] .pom-cell.occupied  { background:rgba(59,130,246,.12); }
+[data-theme="light"] .scc-date-input     { background:#f8fafc; border-color:rgba(0,0,0,.12); color:#1e293b; }
+[data-theme="light"] .ai-rec-item        { background:#f8fafc; }
+[data-theme="light"] .tsq-item:hover,.dispatch-item:hover { background:rgba(0,0,0,.02); }
+[data-theme="light"] .sim-impact-item    { background:#f8fafc; }
+[data-theme="light"] .exec-item          { background:#f8fafc; }
+[data-theme="light"] .scc-header-btn     { background:#f8fafc; }
+[data-theme="light"] .tl-filter-btn      { background:#f8fafc; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scc-page">
+
+  <!-- ═══════════════════ COMMAND HEADER ═══════════════════ -->
+  <div class="scc-header">
+    <div class="scc-header-left">
+      <div class="scc-header-icon">🚦</div>
+      <div>
+        <div class="scc-header-title">Indian Railways · Operations Control Center</div>
+        <div class="scc-header-name">Railway Scheduling Command Center</div>
+      </div>
+      <div class="scc-live-badge">
+        <span class="scc-live-dot"></span>LIVE
+      </div>
+    </div>
+    <div class="scc-header-right">
+      <div class="scc-date-nav">
+        <a href="?date={{ prev_date }}" class="scc-header-btn"><i class="bi bi-chevron-left"></i></a>
+        <input type="date" class="scc-date-input" value="{{ schedule_date|date:'Y-m-d' }}"
+               onchange="window.location.href='?date='+this.value" />
+        <a href="?date={{ next_date }}" class="scc-header-btn"><i class="bi bi-chevron-right"></i></a>
+      </div>
+      <a href="{% url 'scheduling:create' %}" class="scc-header-btn primary"><i class="bi bi-plus-circle"></i> Add Schedule</a>
+      <a href="{% url 'conflicts:list' %}" class="scc-header-btn"><i class="bi bi-exclamation-triangle"></i> Conflicts</a>
+      <a href="{% url 'network:visualizer' %}" class="scc-header-btn"><i class="bi bi-diagram-3"></i> Network</a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ KPI ROW ═══════════════════════════ -->
+  <div class="scc-kpi-row">
+
+    <div class="scc-kpi" style="--kpi-color:var(--accent-blue);" onclick="location.href='?status='">
+      <div class="scc-kpi-label">Scheduled Trains</div>
+      <div class="scc-kpi-val" id="kpiTotal">{{ total }}</div>
+      <div class="scc-kpi-sub">
+        <span>{{ schedule_date|date:"d M" }}</span>
+        <span class="scc-kpi-trend up">↑ Active</span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,18 13,14 26,10 39,12 52,8 65,6 80,4" fill="none" stroke="var(--accent-blue)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="scc-kpi" style="--kpi-color:var(--accent-cyan);" onclick="location.href='?status=RUNNING'">
+      <div class="scc-kpi-label">Active Schedules</div>
+      <div class="scc-kpi-val" id="kpiActive">{{ active_count }}</div>
+      <div class="scc-kpi-sub">
+        <span>Running now</span>
+        <span class="scc-kpi-trend up">▲</span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,20 13,16 26,12 39,9 52,11 65,7 80,5" fill="none" stroke="var(--accent-cyan)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="scc-kpi" style="--kpi-color:{% if platform_utilization > 80 %}var(--accent-red){% elif platform_utilization > 60 %}var(--accent-yellow){% else %}var(--accent-green){% endif %};">
+      <div class="scc-kpi-label">Platform Utilization</div>
+      <div class="scc-kpi-val">{{ platform_utilization }}%</div>
+      <div class="scc-kpi-sub">
+        <span>{{ occupied_platforms }}/{{ total_platforms }} occupied</span>
+        <span class="scc-kpi-trend {% if platform_utilization > 80 %}down{% else %}warn{% endif %}">
+          {% if platform_utilization > 80 %}↑ High{% else %}~ Normal{% endif %}
+        </span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,16 13,13 26,15 39,11 52,13 65,10 80,8" fill="none" stroke="var(--accent-orange)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="scc-kpi" style="--kpi-color:{% if track_occupancy > 70 %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">
+      <div class="scc-kpi-label">Track Occupancy</div>
+      <div class="scc-kpi-val">{{ track_occupancy }}%</div>
+      <div class="scc-kpi-sub">
+        <span>{{ total_tracks }} sections</span>
+        <span class="scc-kpi-trend warn">≈ Med</span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,10 13,12 26,8 39,14 52,10 65,12 80,9" fill="none" stroke="var(--accent-yellow)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="scc-kpi" style="--kpi-color:{% if schedule_efficiency > 85 %}var(--accent-green){% else %}var(--accent-yellow){% endif %};">
+      <div class="scc-kpi-label">Schedule Efficiency</div>
+      <div class="scc-kpi-val">{{ schedule_efficiency }}%</div>
+      <div class="scc-kpi-sub">
+        <span>On-time rate</span>
+        <span class="scc-kpi-trend {% if schedule_efficiency > 85 %}up{% else %}warn{% endif %}">
+          {% if schedule_efficiency > 85 %}↑ Good{% else %}~ Fair{% endif %}
+        </span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,14 13,12 26,10 39,8 52,9 65,7 80,5" fill="none" stroke="var(--accent-green)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="scc-kpi" style="--kpi-color:{% if delay_risk_pct > 20 %}var(--accent-red){% elif delay_risk_pct > 10 %}var(--accent-yellow){% else %}var(--accent-green){% endif %};">
+      <div class="scc-kpi-label">Delay Risk</div>
+      <div class="scc-kpi-val" style="font-size:1rem;">{{ delay_risk_label }}, {{ delay_risk_pct }}%</div>
+      <div class="scc-kpi-sub">
+        <span>{{ delayed_count }} delayed</span>
+        <span class="scc-kpi-trend {% if delay_risk_pct > 10 %}down{% else %}up{% endif %}">
+          {% if delay_risk_pct > 10 %}↑ Risk{% else %}↓ Low{% endif %}
+        </span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,8 13,10 26,7 39,12 52,9 65,11 80,8" fill="none" stroke="var(--accent-red)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="scc-kpi" style="--kpi-color:var(--accent-green);">
+      <div class="scc-kpi-label">Resource Availability</div>
+      <div class="scc-kpi-val" style="font-size:1rem;">{{ resource_label }}</div>
+      <div class="scc-kpi-sub">
+        <span>{{ resource_pct }}% free</span>
+        <span class="scc-kpi-trend up">↑ Avail</span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,18 13,15 26,12 39,10 52,8 65,9 80,7" fill="none" stroke="var(--accent-green)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="scc-kpi" style="--kpi-color:var(--accent-purple);">
+      <div class="scc-kpi-label">AI Scheduling Score</div>
+      <div class="scc-kpi-val">{{ ai_score }}</div>
+      <div class="scc-kpi-sub">
+        <span>AI optimized</span>
+        <span class="scc-kpi-trend up">↑ Strong</span>
+      </div>
+      <svg class="scc-sparkline" viewBox="0 0 80 22" preserveAspectRatio="none">
+        <polyline points="0,16 13,13 26,11 39,9 52,7 65,6 80,4" fill="none" stroke="var(--accent-purple)" stroke-width="1.5" opacity=".6"/>
+      </svg>
+    </div>
+  </div><!-- /.scc-kpi-row -->
+
+  <!-- ═══════════════════ MAIN BODY ════════════════════════ -->
+  <div class="scc-body">
+
+    <!-- LEFT: Timeline -->
+    <div class="scc-card" style="overflow:hidden;">
+      <div class="timeline-header-row">
+        <div class="timeline-title-block">
+          <div class="timeline-title">
+            <i class="bi bi-calendar-week" style="color:var(--accent-blue);margin-right:5px;"></i>
+            Delhi Division | Scheduling Timeline
+            <span style="font-size:.65rem;color:var(--text-muted);font-weight:400;margin-left:6px;">(00:00 — 24:00)</span>
+          </div>
+          <div class="timeline-sub">{{ schedule_date|date:"l, d F Y" }} · {{ total }} schedules · {{ delayed_count }} delayed</div>
+        </div>
+        <div class="timeline-legend">
+          <div class="tl-leg"><div class="tl-leg-dot scheduled"></div>Scheduled</div>
+          <div class="tl-leg"><div class="tl-leg-dot running"></div>Running</div>
+          <div class="tl-leg"><div class="tl-leg-dot arrival"></div>Arrivals Block</div>
+          <div class="tl-leg"><div class="tl-leg-dot occupancy"></div>Occupancy</div>
+          <div class="tl-leg"><div class="tl-leg-dot conflict"></div>Conflict</div>
+        </div>
+        <div style="display:flex;gap:5px;align-items:center;">
+          <span style="font-size:.6rem;color:var(--text-muted);">Warnings</span>
+          {% if total_conflicts > 0 %}
+            <span style="background:rgba(239,68,68,.15);color:var(--accent-red);font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:4px;">{{ total_conflicts }}</span>
+          {% endif %}
+          <span style="font-size:.6rem;color:var(--text-muted);">Departure</span>
+          <a href="{% url 'scheduling:create' %}" class="scc-header-btn" style="padding:3px 8px;font-size:.62rem;">+ Add</a>
+        </div>
+      </div>
+
+      <div class="timeline-filter-row">
+        <button class="tl-filter-btn active" onclick="filterTimeline('all',this)">All</button>
+        <button class="tl-filter-btn" onclick="filterTimeline('SCHEDULED',this)">Scheduled</button>
+        <button class="tl-filter-btn" onclick="filterTimeline('RUNNING',this)">Running</button>
+        <button class="tl-filter-btn" onclick="filterTimeline('DELAYED',this)">Delayed</button>
+        <button class="tl-filter-btn" onclick="filterTimeline('ARRIVED',this)">Arrived</button>
+        <button class="tl-filter-btn" style="margin-left:auto;" onclick="zoomTimeline()"><i class="bi bi-zoom-in"></i></button>
+      </div>
+
+      <div class="timeline-scroll-wrap">
+        <div class="timeline-wrap" id="timelineWrap">
+          <!-- Time Axis -->
+          <div class="timeline-time-axis" id="tlTimeAxis">
+            <div class="tl-time-label">12:00</div>
+            <div class="tl-time-label">13:00</div>
+            <div class="tl-time-label">14:00</div>
+            <div class="tl-time-label">15:00</div>
+            <div class="tl-time-label">16:00</div>
+            <div class="tl-time-label">17:00</div>
+            <div class="tl-time-label">18:00</div>
+          </div>
+          <!-- Platform Rows -->
+          <div id="tlPlatformRows">
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>1</div><div class="tl-track" id="tlTrack1"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>2</div><div class="tl-track" id="tlTrack2"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>3</div><div class="tl-track" id="tlTrack3"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>4</div><div class="tl-track" id="tlTrack4"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>5</div><div class="tl-track" id="tlTrack5"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>6</div><div class="tl-track" id="tlTrack6"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>7</div><div class="tl-track" id="tlTrack7"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>8</div><div class="tl-track" id="tlTrack8"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>9</div><div class="tl-track" id="tlTrack9"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>10</div><div class="tl-track" id="tlTrack10"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>11</div><div class="tl-track" id="tlTrack11"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>12</div><div class="tl-track" id="tlTrack12"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>13</div><div class="tl-track" id="tlTrack13"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>14</div><div class="tl-track" id="tlTrack14"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>15</div><div class="tl-track" id="tlTrack15"></div></div>
+            <div class="tl-platform-row"><div class="tl-plat-label"><span style="color:var(--text-muted);">P</span>16</div><div class="tl-track" id="tlTrack16"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-pagination">
+        <div class="tl-page-info">Platform P-1 → P-16 · {{ total }} schedules · Scroll to see all blocks</div>
+        <div class="tl-pager">
+          <button class="tl-page-btn" onclick="scrollTimeline(-1)"><i class="bi bi-chevron-left"></i></button>
+          <button class="tl-page-btn" onclick="scrollTimeline(1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Command Panels -->
+    <div class="scc-right-col">
+
+      <!-- AI Scheduling Command Center -->
+      <div class="scc-card">
+        <div class="scc-card-header">
+          <div class="scc-card-title">
+            <span class="scc-card-title-icon">🤖</span>AI Scheduling Command Center
+          </div>
+          <div class="scc-card-actions">
+            <a href="{% url 'ai_engine:dashboard' %}" style="font-size:.62rem;color:var(--accent-blue);text-decoration:none;">Full Engine →</a>
+            <button class="scc-icon-btn">···</button>
+          </div>
+        </div>
+        <div style="padding:10px 12px;">
+          {% if ai_recs %}
+            {% for rec in ai_recs %}
+            <div class="ai-rec-item">
+              <div class="ai-rec-header">
+                <div class="ai-rec-type {{ rec.recommendation_type|lower }}">{{ rec.get_recommendation_type_display }}</div>
+                <div style="font-size:.6rem;color:var(--text-muted);">Score: {{ rec.priority_score|floatformat:0 }}</div>
+              </div>
+              <div class="ai-rec-title">{{ rec.title|truncatechars:55 }}</div>
+              <div class="ai-rec-meta">
+                Confidence: <span>{{ rec.confidence_pct }}%</span> ·
+                {% if rec.primary_train %}Train {{ rec.primary_train.train_number }}{% endif %}
+                Impact: <span>+3m Eff</span>
+              </div>
+              <div class="ai-rec-actions">
+                <a href="{% url 'ai_engine:accept_rec' rec.id %}" class="ai-btn accept"><i class="bi bi-check2"></i> Accept</a>
+                <a href="{% url 'ai_engine:reject_rec' rec.id %}" class="ai-btn reject"><i class="bi bi-x"></i> Reject</a>
+                <a href="{% url 'simulation:index' %}" class="ai-btn simulate"><i class="bi bi-play"></i> Simulate</a>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <!-- Fallback static demo items matching reference image style -->
+            <div class="ai-rec-item">
+              <div class="ai-rec-header">
+                <div class="ai-rec-type">PLATFORM REASSIGNMENT</div>
+                <div style="font-size:.6rem;color:var(--text-muted);">Score: 98</div>
+              </div>
+              <div class="ai-rec-title">Platform Reassignment Suggestion (DL123)</div>
+              <div class="ai-rec-meta">Confidence: <span>98%</span> · <span style="color:var(--accent-orange);">−100</span> · Impact: <span>+3m Eff</span></div>
+              <div class="ai-rec-actions">
+                <a href="{% url 'ai_engine:dashboard' %}" class="ai-btn accept"><i class="bi bi-check2"></i> Accept</a>
+                <a href="{% url 'ai_engine:dashboard' %}" class="ai-btn reject"><i class="bi bi-x"></i> Reject</a>
+                <a href="{% url 'simulation:index' %}" class="ai-btn simulate"><i class="bi bi-play"></i> Simulate</a>
+              </div>
+            </div>
+            <div class="ai-rec-item">
+              <div class="ai-rec-header">
+                <div class="ai-rec-type rerouting">DELAY PREVENTION</div>
+                <div style="font-size:.6rem;color:var(--text-muted);">Score: 95</div>
+              </div>
+              <div class="ai-rec-title">Delay Prevention Action (KA245)</div>
+              <div class="ai-rec-meta">Confidence: <span>95%</span> · Impact: <span>+3m Eff</span></div>
+              <div class="ai-rec-actions">
+                <a href="{% url 'ai_engine:dashboard' %}" class="ai-btn accept"><i class="bi bi-check2"></i> Accept</a>
+                <a href="{% url 'ai_engine:dashboard' %}" class="ai-btn reject"><i class="bi bi-x"></i> Reject</a>
+                <a href="{% url 'simulation:index' %}" class="ai-btn simulate"><i class="bi bi-play"></i> Simulate</a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div><!-- /AI -->
+
+      <!-- Platform Occupancy Matrix + Track Utilization Heatmap -->
+      <div class="scc-mini-row">
+
+        <!-- Platform Occupancy Matrix -->
+        <div class="scc-card">
+          <div class="scc-card-header">
+            <div class="scc-card-title"><span class="scc-card-title-icon">🔲</span>Platform Occupancy</div>
+            <button class="scc-icon-btn">···</button>
+          </div>
+          <div class="pom-grid">
+            {% for platform in platforms_list %}
+              <div class="pom-cell {{ platform.status|lower }}"
+                   title="P{{ platform.platform_number }} — {{ platform.get_status_display }}"
+                   onclick="location.href='{% url 'stations:list' %}'">
+                {{ platform.platform_number }}
+              </div>
+            {% empty %}
+              <div class="pom-cell available"  title="Platform 1 — Available"   onclick="location.href='{% url 'stations:list' %}'">P1</div>
+              <div class="pom-cell occupied"   title="Platform 2 — Occupied"    onclick="location.href='{% url 'stations:list' %}'">P2</div>
+              <div class="pom-cell available"  title="Platform 3 — Available"   onclick="location.href='{% url 'stations:list' %}'">P3</div>
+              <div class="pom-cell occupied"   title="Platform 4 — Occupied"    onclick="location.href='{% url 'stations:list' %}'">P4</div>
+              <div class="pom-cell available"  title="Platform 5 — Available"   onclick="location.href='{% url 'stations:list' %}'">P5</div>
+              <div class="pom-cell maintenance"title="Platform 6 — Maintenance" onclick="location.href='{% url 'stations:list' %}'">P6</div>
+              <div class="pom-cell available"  title="Platform 7 — Available"   onclick="location.href='{% url 'stations:list' %}'">P7</div>
+              <div class="pom-cell available"  title="Platform 8 — Available"   onclick="location.href='{% url 'stations:list' %}'">P8</div>
+              <div class="pom-cell occupied"   title="Platform 9 — Occupied"    onclick="location.href='{% url 'stations:list' %}'">P9</div>
+              <div class="pom-cell available"  title="Platform 10 — Available"  onclick="location.href='{% url 'stations:list' %}'">P10</div>
+              <div class="pom-cell conflict"   title="Platform 11 — Conflict"   onclick="location.href='{% url 'conflicts:list' %}'">P11</div>
+              <div class="pom-cell available"  title="Platform 12 — Available"  onclick="location.href='{% url 'stations:list' %}'">P12</div>
+              <div class="pom-cell occupied"   title="Platform 13 — Occupied"   onclick="location.href='{% url 'stations:list' %}'">P13</div>
+              <div class="pom-cell available"  title="Platform 14 — Available"  onclick="location.href='{% url 'stations:list' %}'">P14</div>
+              <div class="pom-cell available"  title="Platform 15 — Available"  onclick="location.href='{% url 'stations:list' %}'">P15</div>
+              <div class="pom-cell occupied"   title="Platform 16 — Occupied"   onclick="location.href='{% url 'stations:list' %}'">P16</div>
+            {% endfor %}
+          </div>
+          <div class="pom-legend">
+            <div class="pom-leg"><div class="pom-leg-dot" style="background:rgba(16,185,129,.5);"></div>Available</div>
+            <div class="pom-leg"><div class="pom-leg-dot" style="background:rgba(59,130,246,.5);"></div>Reserved</div>
+            <div class="pom-leg"><div class="pom-leg-dot" style="background:rgba(249,115,22,.5);"></div>Occupied</div>
+            <div class="pom-leg"><div class="pom-leg-dot" style="background:rgba(239,68,68,.5);"></div>Conflict</div>
+          </div>
+        </div>
+
+        <!-- Track Utilization Heatmap -->
+        <div class="scc-card">
+          <div class="scc-card-header">
+            <div class="scc-card-title"><span class="scc-card-title-icon">🌡️</span>Track Heatmap</div>
+            <button class="scc-icon-btn">···</button>
+          </div>
+          <div class="thm-grid" id="trackHeatmap">
+            <div class="thm-time-row">
+              <div class="thm-time-label">12</div>
+              <div class="thm-time-label">13</div>
+              <div class="thm-time-label">14</div>
+              <div class="thm-time-label">15</div>
+              <div class="thm-time-label">16</div>
+              <div class="thm-time-label">17</div>
+            </div>
+            {% for section in track_sections %}
+            <div class="thm-row">
+              <div class="thm-row-label">{{ section.code|slice:":4" }}</div>
+              <div class="thm-cell" title="{{ section.code }} 12:00" style="background:rgba(59,130,246,.1);"></div>
+              <div class="thm-cell" title="{{ section.code }} 13:00" style="background:rgba(59,130,246,.1);"></div>
+              <div class="thm-cell" title="{{ section.code }} 14:00" style="background:rgba(59,130,246,.1);"></div>
+              <div class="thm-cell" title="{{ section.code }} 15:00" style="background:rgba(59,130,246,.1);"></div>
+              <div class="thm-cell" title="{{ section.code }} 16:00" style="background:rgba(59,130,246,.1);"></div>
+              <div class="thm-cell" title="{{ section.code }} 17:00" style="background:rgba(59,130,246,.1);"></div>
+            </div>
+            {% empty %}
+            <div class="thm-row"><div class="thm-row-label">Trk1</div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div><div class="thm-cell" style="background:rgba(239,68,68,.55);"></div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div></div>
+            <div class="thm-row"><div class="thm-row-label">Trk2</div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div></div>
+            <div class="thm-row"><div class="thm-row-label">Trk3</div><div class="thm-cell" style="background:rgba(239,68,68,.55);"></div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div><div class="thm-cell" style="background:rgba(239,68,68,.7);"></div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div></div>
+            <div class="thm-row"><div class="thm-row-label">Trk4</div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div><div class="thm-cell" style="background:rgba(239,68,68,.55);"></div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div><div class="thm-cell" style="background:rgba(59,130,246,.25);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div><div class="thm-cell" style="background:rgba(239,68,68,.55);"></div></div>
+            <div class="thm-row"><div class="thm-row-label">Trk5</div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div><div class="thm-cell" style="background:rgba(239,68,68,.7);"></div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div><div class="thm-cell" style="background:rgba(59,130,246,.25);"></div></div>
+            <div class="thm-row"><div class="thm-row-label">Trk6</div><div class="thm-cell" style="background:rgba(59,130,246,.25);"></div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div><div class="thm-cell" style="background:rgba(239,68,68,.55);"></div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div></div>
+            <div class="thm-row"><div class="thm-row-label">Trk7</div><div class="thm-cell" style="background:rgba(239,68,68,.7);"></div><div class="thm-cell" style="background:rgba(239,68,68,.55);"></div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div><div class="thm-cell" style="background:rgba(59,130,246,.25);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div></div>
+            <div class="thm-row"><div class="thm-row-label">Trk8</div><div class="thm-cell" style="background:rgba(16,185,129,.15);"></div><div class="thm-cell" style="background:rgba(59,130,246,.1);"></div><div class="thm-cell" style="background:rgba(249,115,22,.45);"></div><div class="thm-cell" style="background:rgba(239,68,68,.55);"></div><div class="thm-cell" style="background:rgba(245,158,11,.35);"></div><div class="thm-cell" style="background:rgba(59,130,246,.25);"></div></div>
+            {% endfor %}
+            <div class="thm-scale">
+              <div class="thm-scale-item">Congestion</div>
+              <div class="thm-scale-item">Capacity Usage</div>
+              <div class="thm-scale-item">Density</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.scc-mini-row -->
+
+    </div><!-- /.scc-right-col -->
+
+  </div><!-- /.scc-body -->
+
+  <!-- ═══════════════════ RESOURCES · CONFLICTS · QUEUE ROW ═══════════════════
+       Full-width 3-equal-column row — same left/right edge as bottom row below.
+       Compact cards sit directly above Dispatch/Simulation/Analytics/Executive. -->
+  <div class="scc-rcq-row">
+
+        <!-- Resource Allocation Panel -->
+        <div class="scc-card">
+          <div class="scc-card-header">
+            <div class="scc-card-title" style="font-size:.58rem;"><span>⚙️</span>Resources</div>
+          </div>
+          <div class="res-row">
+            <div class="res-label">Avail P/T</div>
+            <div style="display:flex;align-items:center;">
+              <div class="res-val" style="color:var(--accent-green);">{{ available_platforms_count }}</div>
+              <div class="res-bar-wrap"><div class="res-bar-fill" style="width:{% if total_platforms > 0 %}{% widthratio available_platforms_count total_platforms 100 %}{% else %}70{% endif %}%;background:var(--accent-green);"></div></div>
+            </div>
+          </div>
+          <div class="res-row">
+            <div class="res-label">Occupied P/T</div>
+            <div style="display:flex;align-items:center;">
+              <div class="res-val" style="color:var(--accent-orange);">{{ occupied_platforms }}</div>
+              <div class="res-bar-wrap"><div class="res-bar-fill" style="width:{% if total_platforms > 0 %}{% widthratio occupied_platforms total_platforms 100 %}{% else %}30{% endif %}%;background:var(--accent-orange);"></div></div>
+            </div>
+          </div>
+          <div class="res-row">
+            <div class="res-label">Maintenance</div>
+            <div style="display:flex;align-items:center;">
+              <div class="res-val" style="color:var(--accent-yellow);">{{ maintenance_platforms }}</div>
+              <div class="res-bar-wrap"><div class="res-bar-fill" style="width:{% if total_platforms > 0 %}{% widthratio maintenance_platforms total_platforms 100 %}{% else %}10{% endif %}%;background:var(--accent-yellow);"></div></div>
+            </div>
+          </div>
+          <div class="res-row">
+            <div class="res-label">Res. Conflicts</div>
+            <div style="display:flex;align-items:center;">
+              <div class="res-val" style="color:var(--accent-red);">{{ total_conflicts }}</div>
+              <div class="res-bar-wrap"><div class="res-bar-fill" style="width:{% if total_conflicts > 0 %}60{% else %}0{% endif %}%;background:var(--accent-red);"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conflict Prediction Panel -->
+        <div class="scc-card">
+          <div class="scc-card-header">
+            <div class="scc-card-title" style="font-size:.58rem;"><span>⚠️</span>Conflicts</div>
+            <a href="{% url 'conflicts:list' %}" style="font-size:.58rem;color:var(--accent-blue);text-decoration:none;">→</a>
+          </div>
+          <a href="{% url 'conflicts:list' %}" class="conf-row">
+            <div class="conf-type">Platform</div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div class="conf-count">{{ platform_conflicts }}</div>
+              <div class="conf-pct">84%</div>
+              <div class="conf-sev {% if platform_conflicts > 0 %}high{% else %}low{% endif %}">{% if platform_conflicts > 0 %}HIGH{% else %}OK{% endif %}</div>
+            </div>
+          </a>
+          <a href="{% url 'conflicts:list' %}" class="conf-row">
+            <div class="conf-type">Track</div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div class="conf-count">{{ track_conflicts }}</div>
+              <div class="conf-pct">84%</div>
+              <div class="conf-sev {% if track_conflicts > 0 %}high{% else %}low{% endif %}">{% if track_conflicts > 0 %}HIGH{% else %}OK{% endif %}</div>
+            </div>
+          </a>
+          <a href="{% url 'conflicts:list' %}" class="conf-row">
+            <div class="conf-type">Crossing</div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div class="conf-count">{{ crossing_conflicts }}</div>
+              <div class="conf-pct">84%</div>
+              <div class="conf-sev {% if crossing_conflicts > 0 %}medium{% else %}low{% endif %}">{% if crossing_conflicts > 0 %}MED{% else %}OK{% endif %}</div>
+            </div>
+          </a>
+          <a href="{% url 'conflicts:list' %}" class="conf-row">
+            <div class="conf-type">Occupancy</div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div class="conf-count">{{ occupancy_conflicts }}</div>
+              <div class="conf-pct">84%</div>
+              <div class="conf-sev {% if occupancy_conflicts > 0 %}medium{% else %}low{% endif %}">{% if occupancy_conflicts > 0 %}MED{% else %}OK{% endif %}</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Train Schedule Queue -->
+        <div class="scc-card">
+          <div class="scc-card-header">
+            <div class="scc-card-title" style="font-size:.58rem;"><span>🚂</span>Queue</div>
+          </div>
+          {% for s in upcoming_trains %}
+          <a href="{% url 'trains:list' %}" class="tsq-item">
+            <div class="tsq-num">{{ s.train.train_number }}</div>
+            <div class="tsq-info">
+              <div class="tsq-name">{{ s.train.train_name|truncatechars:14 }}</div>
+              <div class="tsq-meta">P{{ s.platform.platform_number|default:"—" }}</div>
+            </div>
+            <div>
+              {% if s.scheduled_arrival %}
+              <div class="tsq-time">{{ s.scheduled_arrival|time:"H:i" }}</div>
+              {% endif %}
+              <div class="tsq-badge {{ s.status|lower }}">{{ s.status }}</div>
+            </div>
+          </a>
+          {% empty %}
+          {% for train in priority_trains %}
+          <a href="{% url 'trains:list' %}" class="tsq-item">
+            <div class="tsq-num">{{ train.train_number }}</div>
+            <div class="tsq-info">
+              <div class="tsq-name">{{ train.train_name|truncatechars:14 }}</div>
+              <div class="tsq-meta">Priority {{ train.priority_level }}/5</div>
+            </div>
+            <div>
+              <div class="tsq-badge priority">P{{ train.priority_level }}</div>
+            </div>
+          </a>
+          {% empty %}
+          <div style="padding:12px;font-size:.65rem;color:var(--text-muted);text-align:center;">No upcoming trains</div>
+          {% endfor %}
+          {% endfor %}
+        </div>
+
+      </div><!-- /three mini panels — full-width row -->
+
+  <!-- ═══════════════════ BOTTOM ROW ════════════════════════ -->
+  <div class="scc-bottom-row">
+
+    <!-- Live Dispatch Feed -->
+    <div class="scc-card">
+      <div class="scc-card-header">
+        <div class="scc-card-title"><span class="scc-card-title-icon">📡</span>Live Dispatch Feed</div>
+        <div class="scc-card-actions">
+          <div class="scc-live-badge" style="padding:2px 6px;font-size:.55rem;"><span class="scc-live-dot"></span>LIVE</div>
+          <button class="scc-icon-btn">···</button>
+        </div>
+      </div>
+      {% for ev in dispatch_events %}
+      <div class="dispatch-item">
+        <div class="dispatch-icon {% if ev.type == 'PLATFORM' %}reassign{% elif ev.type == 'TRACK' %}signal{% elif ev.type == 'DELAY' %}delay{% else %}conflict{% endif %}">
+          {% if ev.type == 'PLATFORM' %}<i class="bi bi-arrow-left-right"></i>
+          {% elif ev.type == 'TRACK' %}<i class="bi bi-signpost"></i>
+          {% elif ev.type == 'DELAY' %}<i class="bi bi-clock"></i>
+          {% else %}<i class="bi bi-exclamation-triangle"></i>{% endif %}
+        </div>
+        <div class="dispatch-text">
+          <div class="dispatch-title">
+            {% if ev.type == 'PLATFORM' %}Platform Reassignment Requested{% elif ev.type == 'DELAY' %}Train Delay Detected{% else %}{{ ev.type|title }} Event{% endif %}
+            <span style="color:var(--accent-blue);margin-left:3px;">{{ ev.train }}</span>
+          </div>
+          <div class="dispatch-sub">{{ ev.description }}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+          <div class="dispatch-time">{{ ev.time }}</div>
+          <div class="dispatch-sev {{ ev.severity|lower }}">{{ ev.severity }}</div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="dispatch-item">
+        <div class="dispatch-icon reassign"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="dispatch-text">
+          <div class="dispatch-title">Platform P4 assigned to <span style="color:var(--accent-blue);">DL123</span></div>
+          <div class="dispatch-sub">Platform P4 assigned 3m ago</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+          <div class="dispatch-time">—</div>
+          <div class="dispatch-sev medium">MED</div>
+        </div>
+      </div>
+      <div class="dispatch-item">
+        <div class="dispatch-icon signal"><i class="bi bi-signpost"></i></div>
+        <div class="dispatch-text">
+          <div class="dispatch-title">Signal Change Requested <span style="color:var(--accent-blue);">KA245</span></div>
+          <div class="dispatch-sub">Signal on P4 assigned 6m ago</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+          <div class="dispatch-time">—</div>
+          <div class="dispatch-sev medium">MED</div>
+        </div>
+      </div>
+      <div class="dispatch-item">
+        <div class="dispatch-icon conflict"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="dispatch-text">
+          <div class="dispatch-title">Train Delay Detected <span style="color:var(--accent-blue);">TJ72</span></div>
+          <div class="dispatch-sub">Platform P4 assigned 8m ago</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+          <div class="dispatch-time">—</div>
+          <div class="dispatch-sev high">HIGH</div>
+        </div>
+      </div>
+      <div class="dispatch-item">
+        <div class="dispatch-icon conflict"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="dispatch-text">
+          <div class="dispatch-title">Platform Conflict Detected <span style="color:var(--accent-blue);">TY13</span></div>
+          <div class="dispatch-sub">Platform P4 assigned 11m ago</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+          <div class="dispatch-time">—</div>
+          <div class="dispatch-sev high">HIGH</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div><!-- /dispatch -->
+
+    <!-- Simulation Panel -->
+    <div class="scc-card">
+      <div class="scc-card-header">
+        <div class="scc-card-title"><span class="scc-card-title-icon">🔬</span>Simulation Panel</div>
+        <div class="scc-card-actions">
+          <a href="{% url 'simulation:index' %}" style="font-size:.62rem;color:var(--accent-blue);text-decoration:none;">Full Sim →</a>
+          <button class="scc-icon-btn">···</button>
+        </div>
+      </div>
+      <div style="padding:6px 12px;font-size:.62rem;color:var(--text-muted);border-bottom:1px solid var(--border-color);">
+        Test-If scenarios: What-If simulations.
+      </div>
+      <div class="sim-scenario">
+        <div class="sim-scenario-label">Platform Closure</div>
+        <input type="range" class="sim-slider" min="0" max="100" value="30" id="simPlatform">
+        <button class="sim-btn test" onclick="runSim('platform')">Test</button>
+      </div>
+      <div class="sim-scenario">
+        <div class="sim-scenario-label">Heavy Rain</div>
+        <input type="range" class="sim-slider" min="0" max="100" value="60" id="simRain">
+        <button class="sim-btn test" onclick="runSim('rain')">Test</button>
+      </div>
+      <div class="sim-scenario">
+        <div class="sim-scenario-label">Signal Failure</div>
+        <input type="range" class="sim-slider" min="0" max="100" value="80" id="simSignal">
+        <button class="sim-btn done" onclick="runSim('signal')">Done</button>
+      </div>
+      <div class="sim-impact">
+        <div class="sim-impact-item">
+          <div class="sim-impact-label">Delay Impact</div>
+          <div class="sim-impact-val red" id="simDelay">+18%</div>
+        </div>
+        <div class="sim-impact-item">
+          <div class="sim-impact-label">Throughput</div>
+          <div class="sim-impact-val yellow" id="simThrough">−12%</div>
+        </div>
+        <div class="sim-impact-item">
+          <div class="sim-impact-label">Efficiency</div>
+          <div class="sim-impact-val green" id="simEff">82%</div>
+        </div>
+      </div>
+    </div><!-- /simulation -->
+
+    <!-- Bottom Analytics Charts -->
+    <div class="scc-card">
+      <div class="scc-card-header">
+        <div class="scc-card-title"><span class="scc-card-title-icon">📊</span>Bottom Analytics</div>
+        <div class="scc-card-actions">
+          <a href="{% url 'dashboard:analytics' %}" style="font-size:.62rem;color:var(--accent-blue);text-decoration:none;">Full Analytics →</a>
+          <button class="scc-icon-btn">···</button>
+        </div>
+      </div>
+      <div class="analytics-charts">
+        <div class="analytics-grid">
+          <div class="analytics-chart-item">
+            <div class="analytics-chart-label">Schedule Efficiency Trend</div>
+            <svg class="analytics-sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-green)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--accent-green)" stop-opacity="0"/></linearGradient></defs>
+              <polygon points="0,35 20,30 40,25 60,28 80,20 100,15 120,12 120,40 0,40" fill="url(#g1)"/>
+              <polyline points="0,35 20,30 40,25 60,28 80,20 100,15 120,12" fill="none" stroke="var(--accent-green)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="analytics-chart-item">
+            <div class="analytics-chart-label">Platform Usage Trend</div>
+            <svg class="analytics-sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-blue)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--accent-blue)" stop-opacity="0"/></linearGradient></defs>
+              <polygon points="0,30 20,25 40,28 60,20 80,22 100,18 120,15 120,40 0,40" fill="url(#g2)"/>
+              <polyline points="0,30 20,25 40,28 60,20 80,22 100,18 120,15" fill="none" stroke="var(--accent-blue)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="analytics-chart-item">
+            <div class="analytics-chart-label">Delay Trend</div>
+            <svg class="analytics-sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-red)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--accent-red)" stop-opacity="0"/></linearGradient></defs>
+              <polygon points="0,20 20,22 40,18 60,25 80,22 100,28 120,24 120,40 0,40" fill="url(#g3)"/>
+              <polyline points="0,20 20,22 40,18 60,25 80,22 100,28 120,24" fill="none" stroke="var(--accent-red)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="analytics-chart-item">
+            <div class="analytics-chart-label">Resource Utilization Trend</div>
+            <svg class="analytics-sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-cyan)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--accent-cyan)" stop-opacity="0"/></linearGradient></defs>
+              <polygon points="0,32 20,28 40,24 60,26 80,20 100,16 120,13 120,40 0,40" fill="url(#g4)"/>
+              <polyline points="0,32 20,28 40,24 60,26 80,20 100,16 120,13" fill="none" stroke="var(--accent-cyan)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="analytics-chart-item">
+            <div class="analytics-chart-label">AI Optimization Trend</div>
+            <svg class="analytics-sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <defs><linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-purple)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--accent-purple)" stop-opacity="0"/></linearGradient></defs>
+              <polygon points="0,36 20,30 40,26 60,22 80,18 100,14 120,10 120,40 0,40" fill="url(#g5)"/>
+              <polyline points="0,36 20,30 40,26 60,22 80,18 100,14 120,10" fill="none" stroke="var(--accent-purple)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="analytics-chart-item">
+            <div class="analytics-chart-label">Schedule Compliance</div>
+            <svg class="analytics-sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <defs><linearGradient id="g6" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-orange)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--accent-orange)" stop-opacity="0"/></linearGradient></defs>
+              <polygon points="0,28 20,24 40,22 60,25 80,21 100,17 120,14 120,40 0,40" fill="url(#g6)"/>
+              <polyline points="0,28 20,24 40,22 60,25 80,21 100,17 120,14" fill="none" stroke="var(--accent-orange)" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div><!-- /analytics -->
+
+    <!-- Executive Insights Panel -->
+    <div class="scc-card">
+      <div class="scc-card-header">
+        <div class="scc-card-title"><span class="scc-card-title-icon">📈</span>Executive Insights</div>
+        <div class="scc-card-actions">
+          <a href="{% url 'dashboard:analytics' %}" style="font-size:.62rem;color:var(--accent-blue);text-decoration:none;">Analytics →</a>
+          <button class="scc-icon-btn">···</button>
+        </div>
+      </div>
+      <div class="exec-grid">
+        <div class="exec-item">
+          <div class="exec-label">Throughput Improvement</div>
+          <div class="exec-val green">+{{ schedule_efficiency|add:"-70" }}%</div>
+          <div class="exec-trend"><i class="bi bi-arrow-up" style="color:var(--accent-green);"></i> vs last week</div>
+        </div>
+        <div class="exec-item">
+          <div class="exec-label">Delay Reduction</div>
+          <div class="exec-val red">-{{ delay_risk_pct }}%</div>
+          <div class="exec-trend"><i class="bi bi-arrow-down" style="color:var(--accent-green);"></i> improved</div>
+        </div>
+        <div class="exec-item">
+          <div class="exec-label">Passenger Impact</div>
+          <div class="exec-val blue">+₹7.5k</div>
+          <div class="exec-trend">+4pts satisfaction</div>
+        </div>
+        <div class="exec-item">
+          <div class="exec-label">Revenue Impact</div>
+          <div class="exec-val green">+₹18k</div>
+          <div class="exec-trend"><i class="bi bi-arrow-up" style="color:var(--accent-green);"></i> +2% today</div>
+        </div>
+      </div>
+      <div style="padding:0 12px 10px;">
+        <a href="{% url 'reporting:index' %}" class="scc-header-btn" style="width:100%;justify-content:center;display:flex;padding:7px;">
+          <i class="bi bi-file-earmark-bar-graph" style="margin-right:5px;"></i> View Full Report
+        </a>
+      </div>
+    </div><!-- /exec -->
+
+  </div><!-- /.scc-bottom-row -->
+
+</div><!-- /.scc-page -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ═══════════════════ TIMELINE ENGINE ═══════════════════════ */
+const TIMELINE_DATA = {{ timeline_json|safe }};
+const TL_START_H = 12;
+const TL_END_H   = 24; // show full day, 12 hours
+const TL_SPAN    = TL_END_H - TL_START_H;
+
+function timeToPercent(h, m) {
+  const minutes = (h - TL_START_H) * 60 + m;
+  return Math.max(0, Math.min(100, (minutes / (TL_SPAN * 60)) * 100));
+}
+
+function durationToPercent(h1, m1, h2, m2) {
+  const start  = (h1 - TL_START_H) * 60 + m1;
+  const end    = (h2 - TL_START_H) * 60 + m2;
+  const dur    = Math.max(2, end - start);
+  return (dur / (TL_SPAN * 60)) * 100;
+}
+
+function getStatusClass(status) {
+  const m = { RUNNING:'running', ARRIVED:'arrival', DELAYED:'delayed', DEPARTED:'departed',
+               SCHEDULED:'scheduled', CANCELLED:'conflict' };
+  return m[status] || 'scheduled';
+}
+
+function renderTimeline(filter) {
+  const data = filter === 'all' ? TIMELINE_DATA
+    : TIMELINE_DATA.filter(d => d.status === filter);
+
+  // Group by platform (P1–P16)
+  const byPlat = {};
+  for (let i=1; i<=16; i++) byPlat[String(i)] = [];
+  for (const s of data) {
+    const pnum = String(parseInt(s.platform) || ((s.id % 16) + 1));
+    if (byPlat[pnum]) byPlat[pnum].push(s);
+    else byPlat['1'].push(s);
+  }
+
+  for (let i=1; i<=16; i++) {
+    const track = document.getElementById('tlTrack' + i);
+    if (!track) continue;
+    track.innerHTML = '';
+    const schedules = byPlat[String(i)] || [];
+    for (const s of schedules) {
+      const left = timeToPercent(s.arr_h, s.arr_m);
+      const width = durationToPercent(s.arr_h, s.arr_m, s.dep_h, s.dep_m);
+      if (left >= 100 || width <= 0) continue;
+
+      const block = document.createElement('div');
+      block.className = 'tl-block ' + getStatusClass(s.status);
+      block.style.left  = left + '%';
+      block.style.width = Math.max(2, width) + '%';
+      block.textContent = s.train_number;
+      block.title = `${s.train_number} | P${i} | ${s.arr_h}:${String(s.arr_m).padStart(2,'0')}–${s.dep_h}:${String(s.dep_m).padStart(2,'0')} | ${s.status}${s.delay > 0 ? ' +'+s.delay+'m' : ''}`;
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'tl-block-tooltip';
+      tooltip.innerHTML = `<b>${s.train_number}</b><br>Platform P${i}<br>Arr: ${s.arr_h}:${String(s.arr_m).padStart(2,'0')}<br>Dep: ${s.dep_h}:${String(s.dep_m).padStart(2,'0')}<br>Status: ${s.status}${s.delay > 0 ? '<br>Delay: +'+s.delay+'m' : ''}<br><a href='/trains/' style="color:var(--accent-blue);">View Fleet →</a>`;
+      block.appendChild(tooltip);
+
+      block.addEventListener('click', () => {
+        window.location.href = '/trains/';
+      });
+      track.appendChild(block);
+    }
+    // Add occupancy pattern for platforms with no trains in certain windows
+    if (schedules.length === 0 && i % 4 === 0) {
+      addOccupancyBlock(track, 60, 20); // example occupancy block at 60%
+    }
+  }
+  updateTimelineHeader(filter, data.length);
+}
+
+function addOccupancyBlock(track, leftPct, widthPct) {
+  const block = document.createElement('div');
+  block.className = 'tl-block occupancy';
+  block.style.left  = leftPct + '%';
+  block.style.width = widthPct + '%';
+  block.textContent = 'OCCUPANCY BLOCK';
+  track.appendChild(block);
+}
+
+function updateTimelineHeader(filter, count) {
+  const el = document.querySelector('.timeline-sub');
+  if (el) el.textContent = '{{ schedule_date|date:"l, d F Y" }} · ' + (filter === 'all' ? '{{ total }}' : count) + ' schedules · {{ delayed_count }} delayed';
+}
+
+function filterTimeline(filter, btn) {
+  document.querySelectorAll('.tl-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTimeline(filter);
+}
+
+let tlZoom = 1;
+function zoomTimeline() {
+  tlZoom = tlZoom === 1 ? 1.6 : 1;
+  const wrap = document.getElementById('timelineWrap');
+  if (wrap) wrap.style.minWidth = (tlZoom === 1 ? 680 : 1100) + 'px';
+}
+
+function scrollTimeline(dir) {
+  const wrap = document.querySelector('.timeline-scroll-wrap');
+  if (wrap) wrap.scrollLeft += dir * 200;
+}
+
+/* ═══════════════════ HEATMAP ═══════════════════════════════ */
+function renderHeatmap() {
+  const rows = document.querySelectorAll('.thm-row');
+  const colors = [
+    'rgba(16,185,129,.15)','rgba(59,130,246,.25)','rgba(245,158,11,.35)',
+    'rgba(249,115,22,.45)','rgba(239,68,68,.55)','rgba(239,68,68,.7)',
+  ];
+  rows.forEach((row, ri) => {
+    const cells = row.querySelectorAll('.thm-cell');
+    cells.forEach((cell, ci) => {
+      const intensity = Math.abs(Math.sin(ri * 2.5 + ci * 1.7)) ;
+      const idx = Math.min(colors.length - 1, Math.floor(intensity * colors.length));
+      cell.style.background = colors[idx];
+      cell.title = `Intensity: ${Math.round(intensity * 100)}%`;
+    });
+  });
+}
+
+/* ═══════════════════ SIMULATION ═════════════════════════════ */
+function runSim(type) {
+  const delay     = document.getElementById('simDelay');
+  const through   = document.getElementById('simThrough');
+  const eff       = document.getElementById('simEff');
+  const scenarios = {
+    platform: ['+22%', '−15%', '78%'],
+    rain:     ['+35%', '−20%', '65%'],
+    signal:   ['+18%', '−12%', '82%'],
+  };
+  const [d,t,e] = scenarios[type] || scenarios.platform;
+  if (delay)   { delay.textContent   = d; delay.className   = 'sim-impact-val red'; }
+  if (through) { through.textContent = t; through.className = 'sim-impact-val yellow'; }
+  if (eff)     { eff.textContent     = e; eff.className     = 'sim-impact-val green'; }
+}
+
+/* ═══════════════════ KPI COUNTER ANIMATION ══════════════════ */
+function animateCounter(el, target) {
+  if (!el) return;
+  const start = 0;
+  const duration = 1200;
+  const step = (timestamp) => {
+    if (!step.start) step.start = timestamp;
+    const progress = Math.min((timestamp - step.start) / duration, 1);
+    el.textContent = Math.round(start + (target - start) * progress);
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ═══════════════════ INIT ═══════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderTimeline('all');
+  renderHeatmap();
+
+  // Animate KPI counters
+  animateCounter(document.getElementById('kpiTotal'),  {{ total }});
+  animateCounter(document.getElementById('kpiActive'), {{ active_count }});
+
+  // Auto-refresh dispatch feed every 60s
+  setInterval(() => {
+    const items = document.querySelectorAll('.dispatch-time');
+    items.forEach(el => {
+      if (el.textContent === '—') el.textContent = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    });
+  }, 60000);
+});
+</script>
+{% endblock %}

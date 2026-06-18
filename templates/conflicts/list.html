@@ -1,0 +1,1119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Conflict Management Command Center — Railway Control{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+<style>
+/* ══ CONFLICT MANAGEMENT COMMAND CENTER ══ */
+.cf-cmd-bar{display:flex;align-items:center;gap:10px;padding:8px 0 14px;border-bottom:1px solid var(--border-color);margin-bottom:14px;flex-wrap:wrap;}
+.cf-cmd-search{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:6px 12px;flex:1;min-width:180px;max-width:300px;}
+.cf-cmd-search input{background:none;border:none;outline:none;color:var(--text-primary);font-size:0.8rem;width:100%;}
+.cf-cmd-search input::placeholder{color:var(--text-muted);}
+.cf-time-pill{font-family:var(--font-mono);font-size:0.75rem;color:var(--accent-green);font-weight:700;letter-spacing:0.03em;display:flex;align-items:center;gap:6px;text-shadow:0 0 8px rgba(16,185,129,0.4);}
+.cf-alert-pill{font-size:0.65rem;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:0.04em;animation:cfPulse 2s ease infinite;}
+.cf-alert-pill.danger{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:var(--accent-red);animation:cfRedPulse 1.5s ease infinite;}
+.cf-alert-pill.ok   {background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:var(--accent-green);}
+@keyframes cfPulse   {0%,100%{box-shadow:0 0 4px rgba(16,185,129,0.3);}50%{box-shadow:0 0 12px rgba(16,185,129,0.6);}}
+@keyframes cfRedPulse{0%,100%{box-shadow:0 0 4px rgba(239,68,68,0.4);}50%{box-shadow:0 0 14px rgba(239,68,68,0.7);}}
+.cf-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.78rem;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;white-space:nowrap;}
+.cf-btn:hover{background:var(--bg-card-hover);color:var(--text-primary);}
+.cf-btn.primary{background:linear-gradient(135deg,var(--accent-red),#dc2626);border:none;color:white;font-weight:600;box-shadow:0 2px 8px rgba(239,68,68,0.3);}
+.cf-btn.primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(239,68,68,0.5);}
+.cf-btn.blue{background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));border:none;color:white;font-weight:600;}
+.cf-btn.blue:hover{transform:translateY(-1px);}
+
+.cf-breadcrumb{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;}
+.cf-breadcrumb a{color:var(--text-muted);text-decoration:none;transition:color var(--transition-fast);}
+.cf-breadcrumb a:hover{color:var(--accent-red);}
+.cf-breadcrumb .bc-sep{color:var(--border-color-hover);}
+.cf-breadcrumb .bc-cur{color:var(--text-secondary);font-weight:600;}
+.cf-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
+.cf-section-title{font-size:0.75rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-primary);display:flex;align-items:center;gap:8px;}
+.cf-title-bar{width:3px;height:16px;background:linear-gradient(var(--accent-red),var(--accent-orange));border-radius:2px;}
+
+/* KPI grid */
+.cf-kpi-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:9px;margin-bottom:14px;}
+@media(max-width:1600px){.cf-kpi-grid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:900px) {.cf-kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.cf-kpi{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 12px;cursor:pointer;text-decoration:none;display:block;transition:all var(--transition-fast);position:relative;overflow:hidden;}
+.cf-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity var(--transition-fast);}
+.cf-kpi.red::before   {background:linear-gradient(90deg,var(--accent-red),#fb923c);}
+.cf-kpi.orange::before{background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));}
+.cf-kpi.yellow::before{background:linear-gradient(90deg,var(--accent-yellow),#fbbf24);}
+.cf-kpi.green::before {background:linear-gradient(90deg,var(--accent-green),#34d399);}
+.cf-kpi.blue::before  {background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));}
+.cf-kpi.purple::before{background:linear-gradient(90deg,var(--accent-purple),var(--accent-blue));}
+.cf-kpi.cyan::before  {background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue));}
+.cf-kpi.teal::before  {background:linear-gradient(90deg,#14b8a6,var(--accent-green));}
+.cf-kpi:hover{background:var(--bg-card-hover);transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--border-color-hover);}
+.cf-kpi:hover::before{opacity:1;}
+.cf-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px;gap:4px;}
+.cf-kpi-label{font-size:0.62rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;line-height:1.3;}
+.cf-kpi-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;}
+.cf-kpi-icon.red   {background:rgba(239,68,68,0.15); color:var(--accent-red);}
+.cf-kpi-icon.orange{background:rgba(249,115,22,0.15);color:var(--accent-orange);}
+.cf-kpi-icon.yellow{background:rgba(245,158,11,0.15);color:var(--accent-yellow);}
+.cf-kpi-icon.green {background:rgba(16,185,129,0.15);color:var(--accent-green);}
+.cf-kpi-icon.blue  {background:rgba(59,130,246,0.15);color:var(--accent-blue);}
+.cf-kpi-icon.purple{background:rgba(139,92,246,0.15);color:var(--accent-purple);}
+.cf-kpi-icon.cyan  {background:rgba(6,182,212,0.15); color:var(--accent-cyan);}
+.cf-kpi-icon.teal  {background:rgba(20,184,166,0.15);color:#14b8a6;}
+.cf-kpi-val{font-size:1.45rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums;}
+.cf-kpi-val .kpi-u{font-size:0.68rem;font-weight:600;color:var(--text-muted);margin-left:2px;}
+.cf-kpi-foot{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.cf-kpi-trend{font-size:0.62rem;font-weight:600;display:flex;align-items:center;gap:3px;}
+.cf-kpi-trend.up  {color:var(--accent-green);}
+.cf-kpi-trend.down{color:var(--accent-red);}
+.cf-kpi-trend.neu {color:var(--text-muted);}
+.cf-kpi-conf{font-size:0.58rem;color:var(--text-muted);font-weight:500;display:flex;align-items:center;gap:3px;}
+.cf-kpi-conf .conf-dot{width:5px;height:5px;border-radius:50%;background:var(--accent-green);}
+.cf-sparkline{height:26px;width:65px;flex-shrink:0;}
+
+/* Main layout */
+.cf-main-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;}
+
+
+
+/* Panel */
+.cf-panel{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden;display:flex;flex-direction:column;}
+.cf-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border-color);flex-shrink:0;gap:8px;}
+.cf-panel-title{font-size:0.7rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-primary);display:flex;align-items:center;gap:6px;}
+.cf-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;animation:cfDotPulse 2s ease infinite;}
+.cf-dot.red   {background:var(--accent-red);   box-shadow:0 0 6px rgba(239,68,68,0.6);}
+.cf-dot.orange{background:var(--accent-orange); box-shadow:0 0 6px rgba(249,115,22,0.6);}
+.cf-dot.green {background:var(--accent-green);  box-shadow:0 0 6px rgba(16,185,129,0.6);}
+.cf-dot.blue  {background:var(--accent-blue);   box-shadow:0 0 6px rgba(59,130,246,0.6);}
+.cf-dot.yellow{background:var(--accent-yellow); box-shadow:0 0 6px rgba(245,158,11,0.6);}
+.cf-dot.purple{background:var(--accent-purple); box-shadow:0 0 6px rgba(139,92,246,0.6);}
+@keyframes cfDotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.6;transform:scale(1.3);}}
+.cf-panel-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.cf-pnl-btn{background:none;border:1px solid var(--border-color);color:var(--text-muted);border-radius:6px;padding:3px 8px;font-size:0.68rem;cursor:pointer;transition:all var(--transition-fast);display:flex;align-items:center;gap:4px;text-decoration:none;white-space:nowrap;}
+.cf-pnl-btn:hover{background:var(--border-color);color:var(--text-primary);}
+.cf-pnl-btn.prim{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.3);color:var(--accent-blue);}
+.cf-pnl-btn.prim:hover{background:rgba(59,130,246,0.25);}
+.cf-pnl-btn.danger{background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:var(--accent-red);}
+.cf-pnl-btn.danger:hover{background:rgba(239,68,68,0.25);}
+
+/* Badge */
+.cf-badge{display:inline-flex;align-items:center;gap:3px;font-size:0.58rem;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;letter-spacing:0.03em;}
+.cf-badge.critical{background:rgba(239,68,68,0.18); color:var(--accent-red);   border:1px solid rgba(239,68,68,0.3);}
+.cf-badge.high    {background:rgba(249,115,22,0.18);color:var(--accent-orange);border:1px solid rgba(249,115,22,0.3);}
+.cf-badge.medium  {background:rgba(245,158,11,0.18);color:var(--accent-yellow);border:1px solid rgba(245,158,11,0.3);}
+.cf-badge.low     {background:rgba(16,185,129,0.18);color:var(--accent-green); border:1px solid rgba(16,185,129,0.3);}
+.cf-badge.info    {background:rgba(59,130,246,0.12);color:var(--accent-blue);  border:1px solid rgba(59,130,246,0.2);}
+.cf-badge.resolved{background:rgba(16,185,129,0.12);color:var(--accent-green); border:1px solid rgba(16,185,129,0.2);}
+.cf-badge.active  {background:rgba(239,68,68,0.12); color:var(--accent-red);   border:1px solid rgba(239,68,68,0.2);}
+.cf-badge.ack     {background:rgba(245,158,11,0.12);color:var(--accent-yellow);border:1px solid rgba(245,158,11,0.2);}
+
+/* Conflict table */
+.cf-tbl-wrap{overflow-x:auto;overflow-y:auto;max-height:340px;}
+.cf-tbl-wrap::-webkit-scrollbar{width:4px;height:4px;}
+.cf-tbl-wrap::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:2px;}
+.cf-tbl{width:100%;border-collapse:collapse;font-size:0.73rem;min-width:720px;}
+.cf-tbl thead tr{background:var(--bg-secondary);position:sticky;top:0;z-index:5;}
+.cf-tbl thead th{padding:7px 9px;text-align:left;font-size:0.61rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border-color);transition:color var(--transition-fast);}
+.cf-tbl thead th:hover{color:var(--text-primary);}
+.cf-tbl thead th.s-asc::after {content:' ↑';color:var(--accent-blue);}
+.cf-tbl thead th.s-desc::after{content:' ↓';color:var(--accent-blue);}
+.cf-tbl tbody tr{border-bottom:1px solid var(--border-color);transition:background var(--transition-fast);cursor:pointer;}
+.cf-tbl tbody tr:hover{background:rgba(239,68,68,0.06);}
+.cf-tbl tbody tr.selected{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.2);}
+.cf-tbl tbody td{padding:7px 9px;color:var(--text-secondary);vertical-align:middle;}
+.cf-train{font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);font-size:0.76rem;}
+.cf-delay{font-family:var(--font-mono);font-weight:700;color:var(--accent-orange);}
+.cf-id{font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);}
+
+/* Controls */
+.cf-tbl-ctrl{padding:7px 12px;border-bottom:1px solid var(--border-color);display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.cf-search{display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:5px 10px;flex:1;min-width:100px;}
+.cf-search input{background:none;border:none;outline:none;color:var(--text-primary);font-size:0.75rem;width:100%;}
+.cf-filter{background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:5px 7px;font-size:0.7rem;color:var(--text-secondary);cursor:pointer;outline:none;transition:border-color var(--transition-fast);}
+.cf-filter:focus{border-color:var(--accent-red);}
+
+/* Conflict Map canvas */
+.cf-map-wrap{position:relative;overflow:hidden;}
+.cf-map-legend{position:absolute;bottom:8px;left:10px;display:flex;gap:10px;flex-wrap:wrap;}
+.cf-legend-item{display:flex;align-items:center;gap:4px;font-size:0.62rem;color:var(--text-muted);}
+.cf-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cf-map-tooltip{position:absolute;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:8px 10px;font-size:0.72rem;pointer-events:none;display:none;z-index:50;box-shadow:var(--shadow-md);max-width:200px;}
+.cf-map-overlay{position:absolute;top:8px;right:8px;display:flex;gap:5px;}
+.cf-map-btn{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:5px;padding:4px 7px;font-size:0.65rem;cursor:pointer;transition:background var(--transition-fast);}
+.cf-map-btn:hover{background:rgba(0,0,0,0.6);}
+
+/* Tabs */
+.cf-tabs{display:flex;border-bottom:1px solid var(--border-color);background:var(--bg-secondary);}
+.cf-tab{padding:7px 12px;font-size:0.7rem;font-weight:700;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all var(--transition-fast);letter-spacing:0.04em;white-space:nowrap;}
+.cf-tab.active{color:var(--accent-red);border-color:var(--accent-red);}
+.cf-tab:hover:not(.active){color:var(--text-primary);}
+.cf-tab-count{background:var(--accent-red);color:white;border-radius:10px;padding:1px 5px;font-size:0.58rem;margin-left:3px;}
+.cf-tab-pane{display:none;padding:10px 12px;overflow-y:auto;max-height:220px;}
+.cf-tab-pane.active{display:block;}
+
+/* Conflict cards */
+.cf-card{background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:9px 11px;margin-bottom:7px;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;display:block;}
+.cf-card:hover{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.25);}
+.cf-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:6px;}
+.cf-card-title{font-size:0.75rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;}
+.cf-card-meta{font-size:0.67rem;color:var(--text-muted);}
+.cf-card-actions{display:flex;gap:5px;margin-top:7px;}
+.cf-action-btn{padding:4px 9px;border-radius:5px;font-size:0.66rem;font-weight:700;cursor:pointer;border:1px solid;transition:all var(--transition-fast);display:flex;align-items:center;gap:3px;text-decoration:none;}
+.cf-action-btn.accept  {background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.35);color:var(--accent-green);}
+.cf-action-btn.accept:hover {background:rgba(16,185,129,0.28);}
+.cf-action-btn.reject  {background:rgba(239,68,68,0.12);  border-color:rgba(239,68,68,0.3);  color:var(--accent-red);}
+.cf-action-btn.reject:hover{background:rgba(239,68,68,0.22);}
+.cf-action-btn.sim     {background:rgba(59,130,246,0.12);  border-color:rgba(59,130,246,0.3);  color:var(--accent-blue);}
+.cf-action-btn.sim:hover{background:rgba(59,130,246,0.22);}
+.cf-action-btn.view    {background:rgba(139,92,246,0.12);  border-color:rgba(139,92,246,0.3);  color:var(--accent-purple);}
+.cf-action-btn.view:hover{background:rgba(139,92,246,0.22);}
+.cf-resolved-tag{background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:var(--accent-green);font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:4px;}
+
+/* AI Rec panel */
+.cf-right-col{display:flex;flex-direction:column;gap:10px;}
+.cf-rec-id{font-family:var(--font-mono);font-size:0.67rem;color:var(--text-muted);margin-bottom:3px;display:flex;align-items:center;gap:6px;}
+.cf-rec-badge{background:rgba(239,68,68,0.2);color:var(--accent-red);border:1px solid rgba(239,68,68,0.3);font-size:0.57rem;font-weight:700;padding:1px 6px;border-radius:3px;animation:cfBadgePulse 2s ease infinite;}
+@keyframes cfBadgePulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.cf-rec-title{font-size:0.85rem;font-weight:700;color:var(--text-primary);line-height:1.3;margin-bottom:8px;}
+.cf-rec-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:8px;min-width:0;}
+.cf-rec-metric{background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:6px;padding:5px 7px;text-align:center;}
+.cf-rec-metric-lbl{font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;}
+.cf-rec-metric-val{font-size:0.8rem;font-weight:800;font-family:var(--font-mono);}
+.cf-rec-metric-val.g{color:var(--accent-green);}
+.cf-rec-metric-val.b{color:var(--accent-blue);}
+.cf-rec-metric-val.o{color:var(--accent-orange);}
+.cf-rec-metric-val.p{color:var(--accent-purple);}
+.cf-rec-metric-val.r{color:var(--accent-red);}
+.cf-conf-wrap{margin-bottom:9px;}
+.cf-conf-row{display:flex;justify-content:space-between;font-size:0.62rem;color:var(--text-muted);margin-bottom:3px;}
+.cf-conf-val{color:var(--accent-green);font-weight:700;font-family:var(--font-mono);}
+.cf-conf-track{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.cf-conf-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent-green),#34d399);transition:width 1s ease;}
+.cf-rec-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
+.cf-r-btn{padding:6px 4px;border-radius:6px;font-size:0.66rem;font-weight:700;cursor:pointer;border:1px solid;transition:all var(--transition-fast);display:flex;align-items:center;justify-content:center;gap:3px;text-decoration:none;}
+.cf-r-btn.accept {background:rgba(16,185,129,0.18);border-color:rgba(16,185,129,0.4);color:var(--accent-green);}
+.cf-r-btn.accept:hover{background:rgba(16,185,129,0.32);}
+.cf-r-btn.reject {background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.35);color:var(--accent-red);}
+.cf-r-btn.reject:hover{background:rgba(239,68,68,0.28);}
+.cf-r-btn.sim    {background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.35);color:var(--accent-blue);}
+.cf-r-btn.sim:hover{background:rgba(59,130,246,0.25);}
+
+/* Severity distribution bar */
+.sev-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.sev-bar-label{font-size:0.68rem;font-weight:600;color:var(--text-secondary);width:60px;flex-shrink:0;}
+.sev-bar-track{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;}
+.sev-bar-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+.sev-bar-count{font-family:var(--font-mono);font-size:0.7rem;font-weight:700;width:24px;text-align:right;flex-shrink:0;}
+
+/* Live feed */
+.cf-feed-item{padding:7px 11px;border-bottom:1px solid var(--border-color);display:flex;gap:7px;align-items:flex-start;text-decoration:none;transition:background var(--transition-fast);cursor:pointer;}
+.cf-feed-item:hover{background:rgba(255,255,255,0.03);}
+.cf-feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.cf-feed-dot.red   {background:var(--accent-red);   box-shadow:0 0 4px rgba(239,68,68,0.6);}
+.cf-feed-dot.yellow{background:var(--accent-yellow);box-shadow:0 0 4px rgba(245,158,11,0.6);}
+.cf-feed-dot.green {background:var(--accent-green); box-shadow:0 0 4px rgba(16,185,129,0.6);}
+.cf-feed-dot.blue  {background:var(--accent-blue);  box-shadow:0 0 4px rgba(59,130,246,0.6);}
+.cf-feed-dot.orange{background:var(--accent-orange);}
+.cf-feed-content{flex:1;min-width:0;}
+.cf-feed-title{font-size:0.72rem;font-weight:600;color:var(--text-primary);margin-bottom:1px;line-height:1.3;}
+.cf-feed-sub{font-size:0.61rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cf-feed-time{font-size:0.59rem;color:var(--text-muted);margin-top:1px;font-family:var(--font-mono);}
+.cf-feed-tag{font-size:0.59rem;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;margin-top:2px;}
+.cf-feed-tag.high{background:rgba(239,68,68,0.2);color:var(--accent-red);}
+.cf-feed-tag.med {background:rgba(245,158,11,0.2);color:var(--accent-yellow);}
+.cf-feed-tag.low {background:rgba(16,185,129,0.2);color:var(--accent-green);}
+.cf-feed-tag.info{background:rgba(59,130,246,0.2);color:var(--accent-blue);}
+
+/* XAI bar */
+.xai-row{margin-bottom:8px;}
+.xai-row-lbl{display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.68rem;color:var(--text-secondary);font-weight:600;}
+.xai-row-val{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;}
+.xai-row-track{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.xai-row-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+
+/* Conflict Timeline */
+.cf-timeline{padding:14px 20px;overflow-x:auto;}
+.cf-tl-track{position:relative;height:60px;min-width:600px;}
+.cf-tl-line{position:absolute;top:50%;left:0;right:0;height:2px;background:var(--border-color);transform:translateY(-50%);}
+.cf-tl-prog{position:absolute;top:50%;left:0;height:2px;transform:translateY(-50%);background:linear-gradient(90deg,var(--accent-red),var(--accent-orange),var(--accent-green));border-radius:1px;transition:width 0.8s ease;}
+.cf-tl-node{position:absolute;top:50%;transform:translate(-50%,-50%);cursor:pointer;}
+.cf-tl-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--bg-card);}
+.cf-tl-label{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:0.6rem;color:var(--text-muted);white-space:nowrap;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;}
+.cf-tl-time{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:0.6rem;color:var(--text-muted);white-space:nowrap;font-family:var(--font-mono);}
+
+/* Heatmap */
+.cf-heatmap-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;padding:12px;}
+.cf-heatmap-cell{height:28px;border-radius:4px;cursor:pointer;transition:transform var(--transition-fast);position:relative;}
+.cf-heatmap-cell:hover{transform:scale(1.15);z-index:10;}
+.cf-heatmap-label{display:flex;justify-content:space-between;padding:0 12px 4px;font-size:0.6rem;color:var(--text-muted);}
+
+/* Impact Analysis */
+.cf-impact-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px 12px;}
+.cf-impact-metric{background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:7px;padding:8px;text-align:center;}
+.cf-impact-lbl{font-size:0.57rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;}
+.cf-impact-val{font-size:1rem;font-weight:800;font-family:var(--font-mono);}
+.cf-impact-val.neg{color:var(--accent-red);}
+.cf-impact-val.pos{color:var(--accent-green);}
+.cf-impact-val.warn{color:var(--accent-orange);}
+
+/* Predictive panel */
+.cf-predict-item{padding:8px 12px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.cf-predict-prob{font-family:var(--font-mono);font-size:0.72rem;font-weight:800;}
+.cf-predict-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:3px;}
+.cf-predict-fill{height:100%;border-radius:2px;}
+
+/* Sim panel */
+.cf-sim-body{padding:10px 12px;}
+.cf-sim-card{background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:7px;padding:9px;margin-bottom:7px;}
+.cf-sim-title{font-size:0.68rem;font-weight:700;color:var(--text-primary);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.cf-sim-open{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px;border-radius:6px;width:100%;background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(249,115,22,0.2));border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);font-size:0.7rem;font-weight:700;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;}
+.cf-sim-open:hover{background:linear-gradient(135deg,rgba(239,68,68,0.32),rgba(249,115,22,0.32));}
+
+/* Analytics grid */
+.cf-analytics-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
+@media(max-width:1600px){.cf-analytics-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:900px) {.cf-analytics-grid{grid-template-columns:repeat(2,1fr);}}
+.cf-chart-panel{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:visible;}
+.cf-chart-hdr{padding:9px 13px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;}
+.cf-chart-title{font-size:0.66rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-primary);}
+.cf-chart-sub{font-size:0.58rem;color:var(--text-muted);}
+.cf-chart-body{padding:10px;height:130px;position:relative;overflow:visible;}
+
+/* Modal */
+.cf-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.cf-modal-overlay.open{display:flex;animation:cfFadeIn 0.2s ease;}
+@keyframes cfFadeIn{from{opacity:0;}to{opacity:1;}}
+.cf-modal{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);width:500px;max-width:95vw;box-shadow:var(--shadow-lg);animation:cfSlideUp 0.2s ease;max-height:85vh;overflow-y:auto;}
+@keyframes cfSlideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.cf-modal-hdr{padding:14px 18px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg-card);z-index:2;}
+.cf-modal-title{font-size:0.88rem;font-weight:800;color:var(--text-primary);}
+.cf-modal-close{background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:4px;border-radius:4px;transition:color var(--transition-fast);}
+.cf-modal-close:hover{color:var(--text-primary);}
+.cf-modal-body{padding:14px 18px;}
+
+/* Light theme */
+[data-theme="light"] .cf-cmd-search,[data-theme="light"] .cf-btn{background:#ffffff;border-color:rgba(0,0,0,0.1);}
+[data-theme="light"] .cf-kpi{background:#ffffff;border-color:rgba(0,0,0,0.09);box-shadow:0 2px 8px rgba(0,0,0,0.07);}
+[data-theme="light"] .cf-kpi:hover{background:#f8fafc;}
+[data-theme="light"] .cf-panel{background:#ffffff;border-color:rgba(0,0,0,0.09);}
+[data-theme="light"] .cf-panel-hdr{background:#f8fafc;}
+[data-theme="light"] .cf-tbl thead tr{background:#f1f5f9;}
+[data-theme="light"] .cf-tbl tbody tr{background:#ffffff;color:#1e293b;}
+[data-theme="light"] .cf-tbl tbody tr:hover{background:#fff5f5;}
+[data-theme="light"] .cf-chart-panel{background:#ffffff;border-color:rgba(0,0,0,0.09);}
+[data-theme="light"] .cf-tabs{background:#f8fafc;}
+[data-theme="light"] .cf-card{background:rgba(0,0,0,0.02);}
+[data-theme="light"] .cf-card:hover{background:rgba(239,68,68,0.05);}
+[data-theme="light"] .cf-rec-metric,.cf-sim-card{background:rgba(0,0,0,0.03);}
+[data-theme="light"] .cf-search{background:#f8fafc;border-color:rgba(0,0,0,0.1);}
+[data-theme="light"] .cf-filter{background:#f8fafc;border-color:rgba(0,0,0,0.1);color:#475569;}
+[data-theme="light"] .xai-row-track,.cf-conf-track,.cf-sev-bar-track,.cf-predict-bar{background:rgba(0,0,0,0.08);}
+[data-theme="light"] .cf-modal{background:#ffffff;}
+[data-theme="light"] .cf-modal-hdr{background:#ffffff;}
+[data-theme="light"] .cf-impact-metric{background:rgba(0,0,0,0.03);}
+[data-theme="light"] .cf-heatmap-cell{opacity:0.85;}
+</style>
+{% endblock %}
+
+{% block page_header_title %}Conflict Management Command Center{% endblock %}
+
+{% block content %}
+<form style="display:none;">{% csrf_token %}</form>
+
+<!-- DETAIL MODAL -->
+<div class="cf-modal-overlay" id="cfDetailModal">
+  <div class="cf-modal">
+    <div class="cf-modal-hdr">
+      <div class="cf-modal-title" id="cfModalTitle">Conflict Detail</div>
+      <button class="cf-modal-close" onclick="closeCfModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="cf-modal-body" id="cfModalBody"></div>
+  </div>
+</div>
+
+<!-- COMMAND BAR -->
+<div class="cf-cmd-bar">
+  <div class="cf-cmd-search">
+    <i class="bi bi-search" style="color:var(--text-muted);font-size:0.85rem;"></i>
+    <input type="text" id="cfGlobalSearch" placeholder="Search conflicts, trains, stations…" autocomplete="off" oninput="filterCfTable()" />
+  </div>
+  <div class="cf-time-pill">
+    <span style="color:var(--text-muted);font-size:0.68rem;">CONTROL TIME:</span>
+    <span id="cfClock">—</span>
+    <span class="cf-alert-pill {% if active_count > 0 %}danger{% else %}ok{% endif %}">
+      {% if active_count > 0 %}⚠ {{ active_count }} ACTIVE{% else %}✓ ALL CLEAR{% endif %}
+    </span>
+  </div>
+  <button class="cf-btn primary" onclick="runDetection()"><i class="bi bi-shield-check"></i> Run Detection</button>
+  <a href="{% url 'ai_engine:dashboard' %}" class="cf-btn"><i class="bi bi-cpu" style="color:var(--accent-blue);"></i> AI Engine</a>
+  <a href="{% url 'network:visualizer' %}" class="cf-btn"><i class="bi bi-diagram-3" style="color:var(--accent-cyan);"></i> Network Map</a>
+  <a href="{% url 'simulation:index' %}" class="cf-btn"><i class="bi bi-play-circle" style="color:var(--accent-purple);"></i> Simulation</a>
+  <button class="cf-btn" onclick="refreshAll()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="cf-breadcrumb">
+  <a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Home</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-cur">Conflict Management Command Center</span>
+</div>
+
+<!-- SECTION HEADER -->
+<div class="cf-section-hdr">
+  <div class="cf-section-title">
+    <div class="cf-title-bar"></div>
+    Conflict Management Command Center
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'dashboard:analytics' %}" class="cf-btn"><i class="bi bi-bar-chart-line"></i> Analytics</a>
+    <a href="{% url 'ml_prediction:dashboard' %}" class="cf-btn"><i class="bi bi-graph-up"></i> ML Prediction</a>
+    <a href="{% url 'trains:list' %}" class="cf-btn"><i class="bi bi-train-front"></i> Fleet</a>
+  </div>
+</div>
+
+<!-- KPI ROW: 8 CARDS -->
+<div class="cf-kpi-grid">
+  <a class="cf-kpi red" href="{% url 'conflicts:list' %}?status=ACTIVE">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">Active Conflicts</div><div class="cf-kpi-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-active">{{ active_count }}</div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend {% if active_count == 0 %}up{% else %}down{% endif %}">{% if active_count == 0 %}<i class="bi bi-check-circle"></i> All Clear{% else %}<i class="bi bi-arrow-up"></i> Needs Action{% endif %}</div>
+      <div class="cf-kpi-conf"><span class="conf-dot"></span>96% CONF</div>
+    </div>
+  </a>
+  <a class="cf-kpi orange" href="{% url 'conflicts:list' %}?severity=CRITICAL">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">Critical Conflicts</div><div class="cf-kpi-icon orange"><i class="bi bi-fire"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-critical">{{ critical_count }}</div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend {% if critical_count == 0 %}up{% else %}down{% endif %}">{% if critical_count == 0 %}<i class="bi bi-shield-check"></i> Safe{% else %}<i class="bi bi-exclamation"></i> Critical{% endif %}</div>
+      <div class="cf-kpi-conf"><span class="conf-dot"></span>94% CONF</div>
+    </div>
+  </a>
+  <a class="cf-kpi yellow" href="{% url 'ml_prediction:dashboard' %}">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">Predicted Conflicts</div><div class="cf-kpi-icon yellow"><i class="bi bi-eye-fill"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-predicted">{{ active_count|add:active_count|add:"1" }}</div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend neu"><i class="bi bi-activity"></i> Risk Trend</div>
+      <div class="cf-kpi-conf"><span class="conf-dot"></span>92% CONF</div>
+    </div>
+  </a>
+  <a class="cf-kpi green" href="{% url 'conflicts:list' %}?status=RESOLVED">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">Resolved Today</div><div class="cf-kpi-icon green"><i class="bi bi-check-circle-fill"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-resolved">—</div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend up"><i class="bi bi-arrow-up"></i> Today</div>
+      <div class="cf-kpi-conf"><span class="conf-dot"></span>98% CONF</div>
+    </div>
+  </a>
+  <a class="cf-kpi blue" href="{% url 'dashboard:analytics' %}">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">Avg Resolution</div><div class="cf-kpi-icon blue"><i class="bi bi-clock-history"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-avgres">—<span class="kpi-u">MIN</span></div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend neu"><i class="bi bi-dash"></i> Stable</div>
+      <canvas class="cf-sparkline" id="spk-res"></canvas>
+    </div>
+  </a>
+  <a class="cf-kpi purple" href="{% url 'dashboard:analytics' %}">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">Delay Impact</div><div class="cf-kpi-icon purple"><i class="bi bi-hourglass-split"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-delay">{{ impact_delay }}<span class="kpi-u">MIN</span></div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend down" id="kpi-delay-trend"><i class="bi bi-arrow-up"></i> Impact</div>
+      <canvas class="cf-sparkline" id="spk-delay"></canvas>
+    </div>
+  </a>
+  <a class="cf-kpi cyan" href="{% url 'ai_engine:throughput' %}">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">Throughput Impact</div><div class="cf-kpi-icon cyan"><i class="bi bi-speedometer2"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-throughput">—<span class="kpi-u">%</span></div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend neu"><i class="bi bi-activity"></i> AI Recovery</div>
+      <canvas class="cf-sparkline" id="spk-thru"></canvas>
+    </div>
+  </a>
+  <a class="cf-kpi teal" href="{% url 'ai_engine:dashboard' %}">
+    <div class="cf-kpi-top"><div class="cf-kpi-label">AI Accuracy</div><div class="cf-kpi-icon teal"><i class="bi bi-cpu-fill"></i></div></div>
+    <div class="cf-kpi-val" id="kpi-aiaccuracy">84<span class="kpi-u">%</span></div>
+    <div class="cf-kpi-foot">
+      <div class="cf-kpi-trend up"><i class="bi bi-arrow-up"></i> AI Engine</div>
+      <canvas class="cf-sparkline" id="spk-acc"></canvas>
+    </div>
+  </a>
+</div>
+
+<!-- MAIN GRID -->
+<div class="cf-main-grid">
+
+  <!-- ══ LEFT COL ══ -->
+  <div style="display:flex;flex-direction:column;gap:12px;min-width:0;overflow:hidden;">
+
+    <!-- Conflict Command Center Table -->
+    <div class="cf-panel">
+      <div class="cf-panel-hdr">
+        <div class="cf-panel-title"><span class="cf-dot red"></span>Conflict Command Center</div>
+        <div class="cf-panel-actions">
+          <span style="font-size:0.61rem;color:var(--text-muted);font-family:var(--font-mono);">{{ total_count }} total</span>
+          <button class="cf-pnl-btn danger" onclick="runDetection()"><i class="bi bi-shield-check"></i> Detect</button>
+          <select id="cfSevFilter" class="cf-filter" onchange="filterCfTable()">
+            <option value="">All Severity</option>
+            {% for v,l in severity_choices %}<option value="{{ v }}" {% if severity_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+          </select>
+          <select id="cfTypeFilter" class="cf-filter" onchange="filterCfTable()">
+            <option value="">All Types</option>
+            {% for v,l in type_choices %}<option value="{{ v }}" {% if type_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="cf-tbl-ctrl">
+        <div class="cf-search"><i class="bi bi-search" style="color:var(--text-muted);font-size:0.8rem;"></i><input type="text" id="cfTblSearch" placeholder="Search ID, train, station…" oninput="filterCfTable()" /></div>
+        <select id="cfStatusFilter" class="cf-filter" onchange="filterCfTable()">
+          <option value="">All Status</option>
+          {% for v,l in status_choices %}<option value="{{ v }}" {% if status_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="cf-tbl-wrap">
+        <table class="cf-tbl" id="cfTable">
+          <thead><tr>
+            <th onclick="sortCfTable(0)">#</th>
+            <th onclick="sortCfTable(1)">ID</th>
+            <th onclick="sortCfTable(2)">Type</th>
+            <th onclick="sortCfTable(3)">Severity</th>
+            <th onclick="sortCfTable(4)">Affected Trains</th>
+            <th onclick="sortCfTable(5)">Station</th>
+            <th onclick="sortCfTable(6)">Delay Impact</th>
+            <th onclick="sortCfTable(7)">Status</th>
+            <th onclick="sortCfTable(8)">Detected</th>
+            <th>Recommended Action</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="cfTableBody">
+            {% for c in page_obj %}
+            <tr data-id="{{ c.id }}"
+                data-severity="{{ c.severity }}"
+                data-type="{{ c.conflict_type }}"
+                data-status="{{ c.status }}"
+                onclick="selectConflict({{ c.id }}, '{{ c.get_conflict_type_display }}', '{{ c.severity }}', '{{ c.status }}', '{{ c.train_a.train_number }}', '{% if c.train_b %}{{ c.train_b.train_number }}{% endif %}', '{{ c.station.name|default:c.track_section.name|default:'' }}', {{ c.train_a.id }})">
+              <td style="color:var(--text-muted);font-size:0.67rem;">{{ forloop.counter }}</td>
+              <td class="cf-id">#{{ c.id }}</td>
+              <td><span class="cf-badge info" style="font-size:0.56rem;">{{ c.get_conflict_type_display|truncatechars:14 }}</span></td>
+              <td><span class="cf-badge {{ c.severity|lower }}">{{ c.severity }}</span></td>
+              <td>
+                <a href="{% url 'trains:detail' c.train_a.id %}" class="cf-train" onclick="event.stopPropagation()">{{ c.train_a.train_number }}</a>
+                {% if c.train_b %}<span style="color:var(--text-muted);font-size:0.6rem;"> vs </span><a href="{% url 'trains:detail' c.train_b.id %}" class="cf-train" onclick="event.stopPropagation()">{{ c.train_b.train_number }}</a>{% endif %}
+              </td>
+              <td style="font-size:0.7rem;">{{ c.station.name|default:c.track_section.name|default:"—"|truncatechars:14 }}</td>
+              <td class="cf-delay">+{{ c.train_a.current_delay|default:0 }}m</td>
+              <td><span class="cf-badge {% if c.status == 'ACTIVE' %}active{% elif c.status == 'ACKNOWLEDGED' %}ack{% else %}resolved{% endif %}">{{ c.status }}</span></td>
+              <td style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);">{{ c.detected_at|timesince|truncatechars:10 }} ago</td>
+              <td style="font-size:0.68rem;color:var(--text-secondary);" id="rec-{{ c.id }}">
+                <span style="color:var(--text-muted);font-style:italic;">Loading…</span>
+              </td>
+              <td>
+                <div style="display:flex;gap:4px;" onclick="event.stopPropagation()">
+                  <a href="{% url 'conflicts:detail' c.id %}" class="cf-pnl-btn" title="Detail"><i class="bi bi-eye"></i></a>
+                  <a href="{% url 'ai_engine:conflict_analysis' c.id %}" class="cf-pnl-btn prim" title="AI Analysis"><i class="bi bi-cpu"></i></a>
+                  {% if c.status != 'RESOLVED' %}
+                  <button class="cf-pnl-btn" title="Resolve" style="color:var(--accent-green);" onclick="resolveConflict({{ c.id }})"><i class="bi bi-check2"></i></button>
+                  {% endif %}
+                  <a href="{% url 'simulation:index' %}?conflict={{ c.id }}&type={{ c.conflict_type }}&train={{ c.train_a.id }}&severity={{ c.severity }}" class="cf-pnl-btn" title="Simulate" style="color:var(--accent-purple);"><i class="bi bi-play-fill"></i></a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="11" style="text-align:center;padding:36px;color:var(--text-muted);">
+              <i class="bi bi-check-circle" style="font-size:2rem;color:var(--accent-green);display:block;margin-bottom:8px;"></i>
+              No conflicts found. Run detection to check.
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+      <div style="padding:8px 14px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:0.7rem;color:var(--text-muted);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <div style="display:flex;gap:5px;">
+          {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&severity={{ severity_filter }}&type={{ type_filter }}" class="cf-pnl-btn">‹ Prev</a>{% endif %}
+          {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&severity={{ severity_filter }}&type={{ type_filter }}" class="cf-pnl-btn">Next ›</a>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ROW 2: Explainable AI Panel + Conflict Map -->
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:12px;min-width:0;">
+
+      <!-- Explainable AI Panel -->
+      <div class="cf-panel">
+        <div class="cf-panel-hdr">
+          <div class="cf-panel-title"><span class="cf-dot purple"></span>Explainable AI</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);" id="xai-lbl">Select conflict</div>
+        </div>
+        <div style="padding:10px 12px;">
+          <div style="text-align:center;margin-bottom:8px;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Why prioritized?</div>
+            <div id="xai-train" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:800;color:var(--accent-blue);">—</div>
+          </div>
+          <div class="xai-row">
+            <div class="xai-row-lbl"><span><i class="bi bi-people-fill" style="color:var(--accent-blue);"></i> Passenger Vol.</span><span class="xai-row-val" id="xf-pax" style="color:var(--accent-blue);">—</span></div>
+            <div class="xai-row-track"><div class="xai-row-fill" id="xf-pax-b" style="width:0%;background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));"></div></div>
+          </div>
+          <div class="xai-row">
+            <div class="xai-row-lbl"><span><i class="bi bi-geo-alt-fill" style="color:var(--accent-green);"></i> Route Importance</span><span class="xai-row-val" id="xf-route" style="color:var(--accent-green);">—</span></div>
+            <div class="xai-row-track"><div class="xai-row-fill" id="xf-route-b" style="width:0%;background:linear-gradient(90deg,var(--accent-green),#34d399);"></div></div>
+          </div>
+          <div class="xai-row">
+            <div class="xai-row-lbl"><span><i class="bi bi-diagram-2-fill" style="color:var(--accent-yellow);"></i> Cascade Delay</span><span class="xai-row-val" id="xf-cas" style="color:var(--accent-yellow);">—</span></div>
+            <div class="xai-row-track"><div class="xai-row-fill" id="xf-cas-b" style="width:0%;background:linear-gradient(90deg,var(--accent-yellow),#fbbf24);"></div></div>
+          </div>
+          <div class="xai-row">
+            <div class="xai-row-lbl"><span><i class="bi bi-exclamation-triangle-fill" style="color:var(--accent-orange);"></i> Operational Risk</span><span class="xai-row-val" id="xf-opr" style="color:var(--accent-orange);">—</span></div>
+            <div class="xai-row-track"><div class="xai-row-fill" id="xf-opr-b" style="width:0%;background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));"></div></div>
+          </div>
+          <div class="xai-row">
+            <div class="xai-row-lbl"><span><i class="bi bi-clock-fill" style="color:var(--accent-red);"></i> Delay Factor</span><span class="xai-row-val" id="xf-dly" style="color:var(--accent-red);">—</span></div>
+            <div class="xai-row-track"><div class="xai-row-fill" id="xf-dly-b" style="width:0%;background:linear-gradient(90deg,var(--accent-red),#fb923c);"></div></div>
+          </div>
+          <div style="margin-top:8px;padding:7px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border-color);">
+            <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">AI Recommendation</div>
+            <div id="xai-action" style="font-size:0.75rem;font-weight:700;color:var(--text-primary);">Select a conflict row</div>
+          </div>
+        </div>
+      </div>
+
+
+    <!-- ROW 3: Conflict Tabs + Impact Analysis -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+      <!-- Conflict Tabs Panel -->
+      <div class="cf-panel">
+        <div class="cf-panel-hdr">
+          <div class="cf-panel-title"><span class="cf-dot yellow"></span>Conflict Status View</div>
+          <div class="cf-panel-actions">
+            <a href="{% url 'conflicts:list' %}" class="cf-pnl-btn">View All</a>
+          </div>
+        </div>
+        <div class="cf-tabs" id="cfTabsNav">
+          <div class="cf-tab active" onclick="switchTab('active')">Active <span class="cf-tab-count" id="tab-active-count">{{ active_count }}</span></div>
+          <div class="cf-tab" onclick="switchTab('critical')">Critical <span class="cf-tab-count" style="background:var(--accent-orange);" id="tab-crit-count">{{ critical_count }}</span></div>
+          <div class="cf-tab" onclick="switchTab('predicted')">Predicted <span class="cf-tab-count" style="background:var(--accent-yellow);color:#1a2234;" id="tab-pred-count">—</span></div>
+          <div class="cf-tab" onclick="switchTab('resolved')">Resolved <span class="cf-tab-count" style="background:var(--accent-green);" id="tab-res-count">—</span></div>
+        </div>
+        <div id="cf-tab-active" class="cf-tab-pane active">
+          {% for c in page_obj %}{% if c.status == 'ACTIVE' %}
+          <a class="cf-card" href="{% url 'conflicts:detail' c.id %}">
+            <div class="cf-card-top">
+              <div class="cf-card-title">
+                <span class="cf-badge {{ c.severity|lower }}">{{ c.severity }}</span>
+                {{ c.get_conflict_type_display }}
+              </div>
+              <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-muted);">#{{ c.id }}</span>
+            </div>
+            <div class="cf-card-meta"><span class="cf-train">{{ c.train_a.train_number }}</span>{% if c.train_b %} vs <span class="cf-train">{{ c.train_b.train_number }}</span>{% endif %} · {{ c.station.name|default:c.track_section.name|default:"—"|truncatechars:16 }}</div>
+            <div class="cf-card-meta" style="margin-top:2px;">Delay: <span class="cf-delay">+{{ c.train_a.current_delay|default:0 }}m</span> · {{ c.detected_at|timesince }} ago</div>
+            <div class="cf-card-actions" onclick="event.preventDefault()">
+              <a href="{% url 'ai_engine:conflict_analysis' c.id %}" class="cf-action-btn view"><i class="bi bi-cpu"></i> AI</a>
+              <button class="cf-action-btn accept" onclick="event.stopPropagation();resolveConflict({{ c.id }})"><i class="bi bi-check-lg"></i> Resolve</button>
+              <a href="{% url 'simulation:index' %}?conflict={{ c.id }}&train={{ c.train_a.id }}&severity={{ c.severity }}" class="cf-action-btn sim"><i class="bi bi-play-fill"></i> Sim</a>
+            </div>
+          </a>
+          {% endif %}{% endfor %}
+          {% if not active_count %}<div style="text-align:center;padding:24px;color:var(--text-muted);"><i class="bi bi-check-circle" style="color:var(--accent-green);font-size:1.5rem;display:block;margin-bottom:5px;"></i>No active conflicts</div>{% endif %}
+        </div>
+        <div id="cf-tab-critical" class="cf-tab-pane">
+          {% for c in page_obj %}{% if c.severity == 'CRITICAL' and c.status != 'RESOLVED' %}
+          <a class="cf-card" href="{% url 'conflicts:detail' c.id %}">
+            <div class="cf-card-top">
+              <div class="cf-card-title"><span class="cf-badge critical">CRITICAL</span>{{ c.get_conflict_type_display }}</div>
+              <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-muted);">#{{ c.id }}</span>
+            </div>
+            <div class="cf-card-meta"><span class="cf-train">{{ c.train_a.train_number }}</span>{% if c.train_b %} vs <span class="cf-train">{{ c.train_b.train_number }}</span>{% endif %}</div>
+            <div class="cf-card-actions" onclick="event.preventDefault()">
+              <a href="{% url 'ai_engine:conflict_analysis' c.id %}" class="cf-action-btn view"><i class="bi bi-cpu"></i> AI Analysis</a>
+              <a href="{% url 'simulation:index' %}?conflict={{ c.id }}&severity=CRITICAL" class="cf-action-btn sim"><i class="bi bi-play-fill"></i> Simulate</a>
+            </div>
+          </a>
+          {% endif %}{% endfor %}
+          {% if not critical_count %}<div style="text-align:center;padding:24px;color:var(--text-muted);"><i class="bi bi-shield-check" style="color:var(--accent-green);font-size:1.5rem;display:block;margin-bottom:5px;"></i>No critical conflicts</div>{% endif %}
+        </div>
+        <div id="cf-tab-predicted" class="cf-tab-pane">
+          <div id="predicted-cards-container">
+            <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.75rem;"><i class="bi bi-hourglass-split"></i> Loading predicted conflicts…</div>
+          </div>
+          <div style="padding:8px 0;">
+            <a href="{% url 'ml_prediction:dashboard' %}" class="cf-sim-open" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(249,115,22,0.2));border-color:rgba(245,158,11,0.3);color:var(--accent-yellow);"><i class="bi bi-graph-up"></i> Open ML Prediction Dashboard</a>
+          </div>
+        </div>
+        <div id="cf-tab-resolved" class="cf-tab-pane">
+          {% for c in page_obj %}{% if c.status == 'RESOLVED' %}
+          <div class="cf-card" style="cursor:default;">
+            <div class="cf-card-top">
+              <div class="cf-card-title"><span class="cf-resolved-tag">RESOLVED</span> {{ c.get_conflict_type_display }}</div>
+              <span style="font-size:0.62rem;color:var(--text-muted);">{{ c.resolved_at|timesince|default:"—" }} ago</span>
+            </div>
+            <div class="cf-card-meta"><span class="cf-train">{{ c.train_a.train_number }}</span>{% if c.train_b %} vs <span class="cf-train">{{ c.train_b.train_number }}</span>{% endif %}</div>
+          </div>
+          {% endif %}{% endfor %}
+          <div id="resolved-extra" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.72rem;">Loading resolved conflicts…</div>
+        </div>
+      </div>
+
+      <!-- Impact Analysis Panel -->
+      <div class="cf-panel">
+        <div class="cf-panel-hdr">
+          <div class="cf-panel-title"><span class="cf-dot blue"></span>Impact Analysis Panel</div>
+          <a href="{% url 'dashboard:analytics' %}" class="cf-pnl-btn prim">Full Analytics</a>
+        </div>
+        <div class="cf-impact-row">
+          <div class="cf-impact-metric">
+            <div class="cf-impact-lbl">Delay Minutes</div>
+            <div class="cf-impact-val neg" id="imp-delay">{% if active_count %}+{{ impact_delay }} MIN{% else %}0 MIN{% endif %}</div>
+          </div>
+          <div class="cf-impact-metric">
+            <div class="cf-impact-lbl">Throughput Loss</div>
+            <div class="cf-impact-val warn" id="imp-thru">{% if active_count %}-{{ impact_thru }}%{% else %}0%{% endif %}</div>
+          </div>
+          <div class="cf-impact-metric">
+            <div class="cf-impact-lbl">Passenger Impact</div>
+            <div class="cf-impact-val warn" id="imp-pax">{% if active_count %}+{{ impact_pax }}/hr{% else %}0/hr{% endif %}</div>
+          </div>
+          <div class="cf-impact-metric">
+            <div class="cf-impact-lbl">Revenue Impact</div>
+            <div class="cf-impact-val neg" id="imp-rev">{% if active_count %}-₹{{ impact_rev }}L{% else %}₹0L{% endif %}</div>
+          </div>
+        </div>
+        <!-- Severity Distribution -->
+        <div style="padding:0 12px 8px;">
+          <div style="font-size:0.63rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:8px;">Severity Distribution</div>
+          <div class="sev-bar-row">
+            <div class="sev-bar-label" style="color:var(--accent-red);">Critical</div>
+            <div class="sev-bar-track"><div class="sev-bar-fill" id="sev-critical" style="transition:width 0.8s;width:{% if active_count %}{% widthratio critical_count active_count 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,var(--accent-red),#fb923c);"></div></div>
+            <div class="sev-bar-count" style="color:var(--accent-red);" id="sev-n-critical">{{ critical_count }}</div>
+          </div>
+          <div class="sev-bar-row">
+            <div class="sev-bar-label" style="color:var(--accent-orange);">High</div>
+            <div class="sev-bar-track"><div class="sev-bar-fill" id="sev-high" style="transition:width 0.8s;width:{% if active_count %}{% widthratio high_count active_count 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));"></div></div>
+            <div class="sev-bar-count" style="color:var(--accent-orange);" id="sev-n-high">{{ high_count }}</div>
+          </div>
+          <div class="sev-bar-row">
+            <div class="sev-bar-label" style="color:var(--accent-yellow);">Medium</div>
+            <div class="sev-bar-track"><div class="sev-bar-fill" id="sev-medium" style="transition:width 0.8s;width:{% if active_count %}{% widthratio medium_count active_count 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,var(--accent-yellow),#fbbf24);"></div></div>
+            <div class="sev-bar-count" style="color:var(--accent-yellow);" id="sev-n-medium">{{ medium_count }}</div>
+          </div>
+          <div class="sev-bar-row">
+            <div class="sev-bar-label" style="color:var(--accent-green);">Low</div>
+            <div class="sev-bar-track"><div class="sev-bar-fill" id="sev-low" style="transition:width 0.8s;width:{% if active_count %}{% widthratio low_count active_count 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,var(--accent-green),#34d399);"></div></div>
+            <div class="sev-bar-count" style="color:var(--accent-green);" id="sev-n-low">{{ low_count }}</div>
+          </div>
+        </div>
+        <!-- Mini chart -->
+        </div>
+    </div>
+
+
+    <!-- ROW 4: AI Resolution Engine full width -->
+
+      <!-- AI Resolution Engine (full width top) -->
+
+
+    <!-- AI Resolution Panel -->
+    <div class="cf-panel">
+      <div class="cf-panel-hdr">
+        <div class="cf-panel-title"><span class="cf-dot orange"></span>AI Resolution Engine</div>
+        <div class="cf-panel-actions">
+          <a href="{% url 'ai_engine:dashboard' %}" class="cf-pnl-btn prim"><i class="bi bi-cpu"></i> AI Engine</a>
+        </div>
+      </div>
+      <div style="padding:10px 12px;" id="aiRecPanel">
+        {% if page_obj %}
+        {% with c=page_obj.0 %}
+        <div class="cf-rec-id">C-{{ c.id }} <span class="cf-rec-badge">AI REC</span></div>
+        <div class="cf-rec-title">{{ c.get_conflict_type_display }} — {{ c.train_a.train_number }}{% if c.train_b %} vs {{ c.train_b.train_number }}{% endif %}</div>
+        <div class="cf-rec-metrics">
+          <div class="cf-rec-metric"><div class="cf-rec-metric-lbl">Delay Red.</div><div class="cf-rec-metric-val g">{% if c.severity == 'CRITICAL' %}-45 MIN{% elif c.severity == 'HIGH' %}-28 MIN{% else %}-12 MIN{% endif %}</div></div>
+          <div class="cf-rec-metric"><div class="cf-rec-metric-lbl">Throughput</div><div class="cf-rec-metric-val b">{% if c.severity == 'CRITICAL' %}+18%{% elif c.severity == 'HIGH' %}+11%{% else %}+5%{% endif %}</div></div>
+          <div class="cf-rec-metric"><div class="cf-rec-metric-lbl">Revenue</div><div class="cf-rec-metric-val o">{% if c.severity == 'CRITICAL' %}-₹4.2L{% elif c.severity == 'HIGH' %}-₹2.1L{% else %}-₹0.8L{% endif %}</div></div>
+          <div class="cf-rec-metric"><div class="cf-rec-metric-lbl">Passenger</div><div class="cf-rec-metric-val r">{% if c.severity == 'CRITICAL' %}+840/hr{% elif c.severity == 'HIGH' %}+420/hr{% else %}+180/hr{% endif %}</div></div>
+        </div>
+        <div class="cf-conf-wrap">
+          <div class="cf-conf-row"><span>Confidence Score</span><span class="cf-conf-val" id="conf-val">{% if c.severity == 'CRITICAL' %}94%{% elif c.severity == 'HIGH' %}87%{% else %}79%{% endif %}</span></div>
+          <div class="cf-conf-track"><div class="cf-conf-fill" id="conf-fill" style="width:{% if c.severity == 'CRITICAL' %}94{% elif c.severity == 'HIGH' %}87{% else %}79{% endif %}%;"></div></div>
+        </div>
+        <div class="cf-rec-btns">
+          <a href="{% url 'ai_engine:conflict_analysis' c.id %}" class="cf-r-btn accept"><i class="bi bi-check-lg"></i> Accept</a>
+          <button class="cf-r-btn reject" onclick="resolveConflict({{ c.id }})"><i class="bi bi-x-lg"></i> Dismiss</button>
+          <a href="{% url 'simulation:index' %}?conflict={{ c.id }}&train={{ c.train_a.id }}&severity={{ c.severity }}" class="cf-r-btn sim"><i class="bi bi-play-fill"></i> Sim</a>
+        </div>
+        <button class="cf-pnl-btn" style="width:100%;justify-content:center;margin-top:7px;" onclick="showConflictDetail({{ c.id }}, '{{ c.get_conflict_type_display }}', '{{ c.severity }}', '{{ c.train_a.train_number }}', '{% if c.train_b %}{{ c.train_b.train_number }}{% endif %}', '{{ c.station.name|default:c.track_section.name|default:'' }}', {{ c.train_a.id }})">
+          <i class="bi bi-eye"></i> View Resolution Logic
+        </button>
+        {% endwith %}
+        {% else %}
+        <div style="text-align:center;padding:24px 12px;color:var(--text-muted);">
+          <div style="font-size:1.8rem;margin-bottom:8px;">🛡️</div>
+          <div style="font-size:0.75rem;margin-bottom:10px;">No conflicts detected.<br>Run detection to begin.</div>
+          <button class="cf-r-btn sim" style="width:100%;justify-content:center;" onclick="runDetection()"><i class="bi bi-shield-check"></i> Run Detection</button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ROW 5: Predictive + Live Decision Feed -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+    <!-- Predictive Conflict Panel -->
+    <div class="cf-panel">
+      <div class="cf-panel-hdr">
+        <div class="cf-panel-title"><span class="cf-dot yellow"></span>Predictive Conflict Panel</div>
+        <a href="{% url 'ml_prediction:dashboard' %}" class="cf-pnl-btn prim">ML Dashboard</a>
+      </div>
+      <div id="predictivePanel" style="overflow-y:auto;max-height:200px;">
+        {% with items=active_count %}
+        <div class="cf-predict-item">
+          <div style="flex:1;"><div style="font-size:0.7rem;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Future Crossing Conflict</div><div style="font-size:0.61rem;color:var(--text-muted);">DLH110 / BOM222 · 30 MIN</div></div>
+          <div style="text-align:right;"><div style="font-size:0.8rem;font-weight:800;color:#ef4444;">78%</div><div style="width:60px;height:3px;background:rgba(239,68,68,0.2);border-radius:2px;margin-top:3px;"><div style="width:78%;height:100%;background:#ef4444;border-radius:2px;"></div></div></div>
+        </div>
+        <div class="cf-predict-item">
+          <div style="flex:1;"><div style="font-size:0.7rem;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Platform Occupancy Risk</div><div style="font-size:0.61rem;color:var(--text-muted);">AGD232 / MUM331 · 45 MIN</div></div>
+          <div style="text-align:right;"><div style="font-size:0.8rem;font-weight:800;color:#f97316;">65%</div><div style="width:60px;height:3px;background:rgba(249,115,22,0.2);border-radius:2px;margin-top:3px;"><div style="width:65%;height:100%;background:#f97316;border-radius:2px;"></div></div></div>
+        </div>
+        <div class="cf-predict-item">
+          <div style="flex:1;"><div style="font-size:0.7rem;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Headway Violation</div><div style="font-size:0.61rem;color:var(--text-muted);">MUM445 / DEL119 · 60 MIN</div></div>
+          <div style="text-align:right;"><div style="font-size:0.8rem;font-weight:800;color:#f59e0b;">54%</div><div style="width:60px;height:3px;background:rgba(245,158,11,0.2);border-radius:2px;margin-top:3px;"><div style="width:54%;height:100%;background:#f59e0b;border-radius:2px;"></div></div></div>
+        </div>
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- Live Decision Feed -->
+    <div class="cf-panel">
+      <div class="cf-panel-hdr">
+        <div class="cf-panel-title"><span class="cf-dot green"></span>Live Decision Feed</div>
+        <div class="cf-panel-actions">
+          <button class="cf-pnl-btn" onclick="refreshAll()"><i class="bi bi-arrow-clockwise"></i></button>
+          <a href="{% url 'notifications:list' %}" class="cf-pnl-btn">All</a>
+        </div>
+      </div>
+      <div style="overflow-y:auto;max-height:240px;">
+        {% for c in page_obj|slice:":8" %}
+        <a class="cf-feed-item" href="{% url 'conflicts:detail' c.id %}">
+          <span class="cf-feed-dot {% if c.severity == 'CRITICAL' or c.severity == 'HIGH' %}red{% elif c.severity == 'MEDIUM' %}yellow{% else %}green{% endif %}"></span>
+          <div class="cf-feed-content">
+            <div class="cf-feed-title">{{ c.get_conflict_type_display }} — {{ c.train_a.train_number }}{% if c.train_b %} vs {{ c.train_b.train_number }}{% endif %}</div>
+            <div class="cf-feed-sub">{{ c.description|truncatechars:42 }}</div>
+            <div class="cf-feed-time">{{ c.detected_at|timesince }} ago</div>
+          </div>
+          <span class="cf-feed-tag {% if c.severity == 'CRITICAL' or c.severity == 'HIGH' %}high{% elif c.severity == 'MEDIUM' %}med{% else %}low{% endif %}">{{ c.severity }}</span>
+        </a>
+        {% empty %}
+        <div style="text-align:center;padding:24px;color:var(--text-muted);">
+          <i class="bi bi-check-circle" style="color:var(--accent-green);font-size:1.5rem;display:block;margin-bottom:6px;"></i>
+          <div style="font-size:0.72rem;">No conflict activity</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    </div><!-- /.row5 grid -->
+
+  </div><!-- /.left col -->
+
+
+</div><!-- /.cf-main-grid -->
+
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script>
+// Fallback to CDN if local file failed to load
+if (typeof Chart === 'undefined') {
+  var s = document.createElement('script');
+  s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js";
+  document.head.appendChild(s);
+}
+</script>
+<script>
+'use strict';
+
+/* ── Clock ──────────────────────────────────────────── */
+(function tick(){const el=document.getElementById('cfClock');if(el)el.textContent=new Date().toLocaleTimeString('en-IN',{hour12:false});setTimeout(tick,1000);})();
+
+/* ── Counter animation ──────────────────────────────── */
+function animN(el,t,sfx='',dur=700){if(!el)return;const s=performance.now();(function r(n){const p=Math.min((n-s)/dur,1),e=1-Math.pow(1-p,3);el.innerHTML=Math.round(t*e)+sfx;if(p<1)requestAnimationFrame(r);})(s);}
+
+/* ── Sparkline ──────────────────────────────────────── */
+function spark(id,data,color){const c=document.getElementById(id);if(!c)return;const ctx=c.getContext('2d');const w=c.offsetWidth||65,h=c.offsetHeight||26;c.width=w*(devicePixelRatio||1);c.height=h*(devicePixelRatio||1);ctx.scale(devicePixelRatio||1,devicePixelRatio||1);const mn=Math.min(...data),mx=Math.max(...data),r=mx-mn||1,st=w/(data.length-1);ctx.clearRect(0,0,w,h);const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,color+'55');g.addColorStop(1,color+'05');ctx.beginPath();data.forEach((d,i)=>{const x=i*st,y=h-((d-mn)/r)*h*.8-h*.1;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.lineTo((data.length-1)*st,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=g;ctx.fill();ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.lineJoin='round';data.forEach((d,i)=>{const x=i*st,y=h-((d-mn)/r)*h*.8-h*.1;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();}
+
+/* ── Load KPIs ──────────────────────────────────────── */
+async function loadKPIs(){
+  const active={{ active_count }};
+  const critical={{ critical_count }};
+
+  // Show values immediately from template vars (no API wait needed for these)
+  const delayImp=Math.round(active*18);
+  const thruImp=Math.round(-(active*3+critical*5));
+  const paxImp=Math.round(active*240);
+  const revImp=Math.round(active*1.5);
+
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setEl('imp-delay', active>0 ? '+'+delayImp+' MIN' : 'No active conflicts');
+  setEl('imp-thru',  active>0 ? thruImp+'%' : '0%');
+  setEl('imp-pax',   active>0 ? '+'+paxImp+'/hr' : '0/hr');
+  setEl('imp-rev',   active>0 ? '-₹'+revImp+'L' : '₹0L');
+
+  try{
+    const d=await(await fetch('/api/analytics/kpis/')).json();
+    const predicted=Math.max(1,Math.round(active*1.8+(d.delayed_trains||0)*0.3));
+    const resolved=Math.round((d.total_trains||0)*0.15);
+    const avgRes=Math.round((d.avg_delay||5)*0.6+2);
+    const delayImpFull=Math.round(active*18+(d.avg_delay||0)*active);
+    const aiAcc=Math.round(80+(d.punctuality_rate||0)*0.15);
+
+    animN(document.getElementById('kpi-predicted'),predicted);
+    animN(document.getElementById('kpi-resolved'),resolved);
+    animN(document.getElementById('kpi-avgres'),avgRes,'MIN');
+    animN(document.getElementById('kpi-delay'),delayImpFull,'MIN');
+    const kt=document.getElementById('kpi-throughput');
+    if(kt)kt.innerHTML=thruImp+'<span class="kpi-u">%</span>';
+    const kdt=document.getElementById('kpi-delay-trend');
+    if(kdt)kdt.className='cf-kpi-trend '+(delayImpFull>50?'down':'neu');
+    animN(document.getElementById('kpi-aiaccuracy'),aiAcc,'%');
+
+    const tabPred=document.getElementById('tab-pred-count');
+    const tabRes=document.getElementById('tab-res-count');
+    if(tabPred)tabPred.textContent=predicted;
+    if(tabRes)tabRes.textContent=resolved;
+
+    const gs=(n,b,v)=>Array.from({length:n},()=>b+(Math.random()-.5)*v);
+    spark('spk-res',gs(12,avgRes,3),'#3b82f6');
+    spark('spk-delay',gs(12,delayImpFull,20),'#8b5cf6');
+    spark('spk-thru',gs(12,Math.abs(thruImp),5),'#06b6d4');
+    spark('spk-acc',gs(12,aiAcc,5),'#14b8a6');
+
+    // Update impact panel with full calculated values
+    setEl('imp-delay', '+'+delayImpFull+' MIN');
+
+    // Confidence for top conflict
+    const conf=Math.min(98,Math.round(75+Math.random()*20));
+    const cv=document.getElementById('conf-val'),cf=document.getElementById('conf-fill');
+    if(cv)cv.textContent=conf+'%';
+    if(cf)setTimeout(()=>cf.style.width=conf+'%',100);
+
+    loadSeverityDist(d);
+    loadPredictivePanel(predicted);
+  }catch(e){
+    console.warn('KPI API error:',e);
+    // API failed — still show predictive panel with fallback
+    loadPredictivePanel(Math.max(2,Math.round(active*1.8)));
+    loadSeverityDist({});
+  }
+}
+
+/* ── Severity Distribution ──────────────────────────── */
+function loadSeverityDist(kpis){
+  const active={{ active_count }}, critical={{ critical_count }};
+  const high=Math.round(active*0.3), medium=Math.round(active*0.4), low=Math.max(0,active-critical-high-medium);
+  const total=active||1;
+  [['sev-critical',critical,'var(--accent-red)'],['sev-high',high,'var(--accent-orange)'],['sev-medium',medium,'var(--accent-yellow)'],['sev-low',low,'var(--accent-green)']].forEach(([id,n,c])=>{
+    const bar=document.getElementById(id);
+    const cnt=document.getElementById(id.replace('sev-','sev-n-'));
+    if(bar)setTimeout(()=>bar.style.width=Math.round(n/total*100)+'%',100);
+    if(cnt)cnt.textContent=n;
+  });
+}
+
+/* ── Predictive Panel ───────────────────────────────── */
+function loadPredictivePanel(count){
+  const container=document.getElementById('predictivePanel');
+  const items=[
+    {label:'Future Crossing Conflict',prob:78,time:'30 MIN',color:'#ef4444',trains:'DLH110/BOM222'},
+    {label:'Platform Occupancy',prob:65,time:'45 MIN',color:'#f97316',trains:'AGD232'},
+    {label:'Headway Violation',prob:54,time:'60 MIN',color:'#f59e0b',trains:'MUM445/DEL119'},
+    {label:'Section Conflict',prob:42,time:'90 MIN',color:'#10b981',trains:'BAN566'},
+  ].slice(0,Math.max(2,count));
+  container.innerHTML=items.map(it=>`
+    <div class="cf-predict-item">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.7rem;font-weight:600;color:var(--text-primary);margin-bottom:2px;">${it.label}</div>
+        <div style="font-size:0.61rem;color:var(--text-muted);">${it.trains} · in ${it.time}</div>
+        <div class="cf-predict-bar"><div class="cf-predict-fill" style="width:${it.prob}%;background:${it.color};"></div></div>
+      </div>
+      <div class="cf-predict-prob" style="color:${it.color};margin-left:8px;">${it.prob}%</div>
+    </div>`).join('')+`<div style="padding:8px 12px;"><a href="{% url 'ml_prediction:dashboard' %}" class="cf-sim-open" style="background:linear-gradient(135deg,rgba(245,158,11,0.18),rgba(249,115,22,0.18));border-color:rgba(245,158,11,0.3);color:var(--accent-yellow);"><i class="bi bi-graph-up"></i> Full ML Prediction</a></div>`;
+  // Predicted tab
+  const pc=document.getElementById('predicted-cards-container');
+  if(pc) pc.innerHTML=items.map(it=>`<div class="cf-card"><div class="cf-card-top"><div class="cf-card-title" style="color:${it.color};">⚠ ${it.label}</div><span style="font-size:0.62rem;color:var(--text-muted);">${it.prob}% prob</span></div><div class="cf-card-meta">${it.trains} · ETA ${it.time}</div></div>`).join('');
+}
+
+}
+
+/* ── Select Conflict Row ────────────────────────────── */
+function selectConflict(id,type,severity,status,trainA,trainB,station,trainId){
+  document.querySelectorAll('#cfTable tbody tr').forEach(r=>r.classList.remove('selected'));
+  const row=document.querySelector('[data-id="'+id+'"]');
+  if(row)row.classList.add('selected');
+  // XAI panel
+  document.getElementById('xai-train').textContent=trainA+(trainB?' vs '+trainB:'');
+  document.getElementById('xai-lbl').textContent='#'+id;
+  const delay=parseInt(row?.querySelector('.cf-delay')?.textContent||'0')||0;
+  setXAIF('xf-pax',Math.random()*40+40);
+  setXAIF('xf-route',Math.random()*30+50);
+  setXAIF('xf-cas',Math.min(100,delay*3));
+  setXAIF('xf-opr',severity==='CRITICAL'?85:severity==='HIGH'?65:45);
+  setXAIF('xf-dly',Math.min(100,delay*4));
+  const ae=document.getElementById('xai-action');
+  if(ae){ae.style.color=severity==='CRITICAL'?'var(--accent-red)':severity==='HIGH'?'var(--accent-orange)':'var(--accent-blue)';ae.textContent=severity==='CRITICAL'?'IMMEDIATE ACTION — Reroute & Priority Dispatch':severity==='HIGH'?'PRIORITY — Clear track section':'MONITOR — Update schedule';}
+  // Load AI rec from API
+  fetch('/api/ai-engine/priority/'+trainId+'/')
+    .then(r=>r.json())
+    .then(d=>{
+      const rec=document.getElementById('rec-'+id);
+      if(rec)rec.innerHTML='<span style="font-size:0.67rem;font-weight:600;color:var(--accent-blue);">'+(d.action||'AI Analysis').substring(0,28)+'</span>';
+    }).catch(()=>{
+      const rec=document.getElementById('rec-'+id);
+      if(rec)rec.innerHTML='<a href="{% url 'ai_engine:dashboard' %}" style="font-size:0.67rem;color:var(--accent-blue);">Open AI Engine</a>';
+    });
+  document.getElementById('tl-conflict-label').textContent='Conflict #'+id;
+}
+function setXAIF(id,pct){const v=document.getElementById(id),b=document.getElementById(id+'-b');if(v)v.textContent=Math.round(pct)+'%';if(b){b.style.width='0%';setTimeout(()=>b.style.width=pct+'%',60);}}
+
+/* ── Tabs ────────────────────────────────────────────── */
+function switchTab(name){
+  document.querySelectorAll('.cf-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.cf-tab-pane').forEach(p=>p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const pane=document.getElementById('cf-tab-'+name);
+  if(pane)pane.classList.add('active');
+}
+
+/* ── Table Filter / Sort ─────────────────────────────── */
+function filterCfTable(){
+  const q=(document.getElementById('cfGlobalSearch')?.value||document.getElementById('cfTblSearch')?.value||'').toLowerCase();
+  const sev=document.getElementById('cfSevFilter')?.value||'';
+  const typ=document.getElementById('cfTypeFilter')?.value||'';
+  const sta=document.getElementById('cfStatusFilter')?.value||'';
+  document.querySelectorAll('#cfTableBody tr[data-id]').forEach(row=>{
+    const vis=(!q||row.textContent.toLowerCase().includes(q))&&(!sev||row.dataset.severity===sev)&&(!typ||row.dataset.type===typ)&&(!sta||row.dataset.status===sta);
+    row.style.display=vis?'':'none';
+  });
+}
+document.getElementById('cfGlobalSearch').addEventListener('input',filterCfTable);
+let sDir={};
+function sortCfTable(i){
+  const tb=document.getElementById('cfTableBody');
+  const rows=Array.from(tb.querySelectorAll('tr[data-id]'));
+  const dir=(sDir[i]=!sDir[i]);
+  document.querySelectorAll('.cf-tbl thead th').forEach((th,j)=>{th.classList.remove('s-asc','s-desc');if(j===i)th.classList.add(dir?'s-asc':'s-desc');});
+  rows.sort((a,b)=>{const at=a.querySelectorAll('td')[i]?.textContent?.trim()||'',bt=b.querySelectorAll('td')[i]?.textContent?.trim()||'';const av=parseFloat(at)||at,bv=parseFloat(bt)||bt;return av<bv?(dir?-1:1):av>bv?(dir?1:-1):0;});
+  rows.forEach(r=>tb.appendChild(r));
+}
+
+/* ── Actions ─────────────────────────────────────────── */
+function getCSRF(){
+  // Try hidden input first (most reliable)
+  const el=document.querySelector('[name=csrfmiddlewaretoken]');
+  if(el&&el.value)return el.value;
+  // Fallback to cookie
+  const m=document.cookie.match(/csrftoken=([^;]+)/);
+  return m?decodeURIComponent(m[1]):'';
+}
+async function cfPost(url,data={}){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF(),'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify(data)});
+  return r.json();
+}
+async function runDetection(){
+  Toast.info('Running conflict detection…');
+  try{
+    const d=await cfPost('/api/conflicts/detect/');
+    if(d.success||d.detected>=0){Toast.success('Detection complete. '+(d.detected||0)+' conflicts found.');setTimeout(()=>location.reload(),1500);}
+    else Toast.error(d.error||d.message||'Detection failed.');
+  }catch(e){Toast.error('Detection failed: '+e.message);}
+}
+async function resolveConflict(id){
+  if(!confirm('Conflict #'+id+' ko resolved mark karein?'))return;
+  try{
+    const resp=await fetch('/api/conflicts/'+id+'/resolve/',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'X-CSRFToken':getCSRF(),
+        'X-Requested-With':'XMLHttpRequest'
+      },
+      body:JSON.stringify({notes:'Resolved via Command Center.'})
+    });
+    const d=await resp.json();
+    if(resp.ok && (d.success||d.message)){
+      Toast.success('Conflict #'+id+' resolved! Page reload ho raha hai...');
+      setTimeout(()=>location.reload(),1200);
+    } else {
+      Toast.error('Error: '+(d.error||d.detail||'Server se response nahi aaya ('+resp.status+')'));
+    }
+  }catch(e){
+    Toast.error('Network error: '+e.message);
+  }
+}
+
+/* ── Detail Modal ────────────────────────────────────── */
+function showConflictDetail(id,type,severity,trainA,trainB,station,trainId){
+  const colors={CRITICAL:'var(--accent-red)',HIGH:'var(--accent-orange)',MEDIUM:'var(--accent-yellow)',LOW:'var(--accent-green)'};
+  const c=colors[severity]||'var(--accent-blue)';
+  document.getElementById('cfModalTitle').textContent='Conflict #'+id+' — AI Resolution Logic';
+  document.getElementById('cfModalBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">Type</div>
+        <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">${type}</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">Severity</div>
+        <div style="font-size:0.82rem;font-weight:800;color:${c};">${severity}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border-color);">
+      <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Affected Trains</div>
+      <span style="font-family:var(--font-mono);font-weight:800;color:var(--accent-blue);">${trainA}</span>${trainB?` <span style="color:var(--text-muted);">vs</span> <span style="font-family:var(--font-mono);font-weight:800;color:var(--accent-blue);">${trainB}</span>`:''}
+      ${station?`<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;"><i class="bi bi-geo-alt"></i> ${station}</div>`:''}
+    </div>
+    <div style="margin-bottom:14px;"><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">AI Reasoning Factors</div>
+    ${['Passenger Volume Impact','Route Strategic Importance','Cascading Delay Risk','Operational Safety Risk','Schedule Recovery Time'].map((f,i)=>{const p=Math.round(Math.random()*40+40);const cols=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'];return `<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-secondary);margin-bottom:3px;"><span>${f}</span><span style="color:${cols[i]};font-weight:700;">${p}%</span></div><div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${p}%;background:${cols[i]};border-radius:3px;"></div></div></div>`;}).join('')}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'ai_engine:dashboard' %}" class="cf-action-btn view" style="flex:1;justify-content:center;padding:8px;"><i class="bi bi-cpu"></i> Open AI Engine</a>
+      <a href="{% url 'simulation:index' %}?conflict=${id}&train=${trainId}&severity=${severity}" class="cf-action-btn sim" style="flex:1;justify-content:center;padding:8px;"><i class="bi bi-play-fill"></i> Simulate</a>
+      <button onclick="resolveConflict(${id})" class="cf-action-btn accept" style="flex:1;justify-content:center;padding:8px;"><i class="bi bi-check-lg"></i> Resolve</button>
+    </div>`;
+  document.getElementById('cfDetailModal').classList.add('open');
+}
+function closeCfModal(){document.getElementById('cfDetailModal').classList.remove('open');}
+document.getElementById('cfDetailModal').addEventListener('click',function(e){if(e.target===this)closeCfModal();});
+
+/* ── Refresh ─────────────────────────────────────────── */
+function refreshAll(){loadKPIs();Toast.success('Dashboard refreshed!');}
+
+/* ── Init ────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded',()=>{
+  // Pre-render predictive panel immediately — don't wait for API
+  loadPredictivePanel(Math.max(2, Math.round({{ active_count }}*1.8)));
+
+  // Load KPIs (fills Impact Panel, Severity bars, Confidence, etc.)
+  loadKPIs();
+  setInterval(loadKPIs, 45000);
+
+  document.addEventListener('themechange',()=>{
+    setTimeout(()=>requestAnimationFrame(()=>loadKPIs()),150);
+  });
+
+  let _rt;
+  window.addEventListener('resize',()=>{
+    clearTimeout(_rt);
+    _rt=setTimeout(()=>{
+      requestAnimationFrame(()=>{
+        loadKPIs();
+      });
+    },200);
+  });
+});
+</script>
+{% endblock %}

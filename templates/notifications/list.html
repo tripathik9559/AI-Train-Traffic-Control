@@ -1,0 +1,211 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-bell"></i> Notification Centre</div>
+    <div class="page-subtitle">
+      <span id="unread-badge" class="badge badge-high" style="margin-right:6px;">{{ unread_count }} unread</span>
+      {{ stats.total }} total notifications
+    </div>
+  </div>
+  <div class="page-header-actions" style="gap:8px;display:flex;flex-wrap:wrap;">
+    <button onclick="markAllRead()" class="btn btn-secondary btn-sm">
+      <i class="bi bi-check2-all"></i> Mark All Read
+    </button>
+    <button onclick="deleteAllRead()" class="btn btn-ghost btn-sm" style="color:var(--accent-red);">
+      <i class="bi bi-trash3"></i> Delete Read
+    </button>
+  </div>
+</div>
+
+<!-- ── Stats Row ──────────────────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
+  <div class="kpi-card" style="padding:14px 16px;">
+    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Total</div>
+    <div style="font-size:1.6rem;font-weight:700;color:var(--text-primary);">{{ stats.total }}</div>
+  </div>
+  <div class="kpi-card" style="padding:14px 16px;">
+    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Unread</div>
+    <div style="font-size:1.6rem;font-weight:700;color:var(--accent-blue);">{{ stats.unread }}</div>
+  </div>
+  <div class="kpi-card" style="padding:14px 16px;">
+    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Critical</div>
+    <div style="font-size:1.6rem;font-weight:700;color:var(--accent-red);">{{ stats.critical_unread }}</div>
+  </div>
+  <div class="kpi-card" style="padding:14px 16px;">
+    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Read</div>
+    <div style="font-size:1.6rem;font-weight:700;color:var(--accent-green);">{{ stats.read }}</div>
+  </div>
+</div>
+
+<!-- ── Filter Bar ─────────────────────────────────────────────────────── -->
+<div class="card" style="padding:14px 18px;margin-bottom:16px;">
+  <form method="get" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+    <div style="flex:1;min-width:140px;">
+      <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Type</label>
+      <select name="type" class="form-select form-select-sm" style="min-width:130px;">
+        <option value="">All Types</option>
+        {% for val,label in type_choices %}
+          <option value="{{ val }}" {% if filter_type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:1;min-width:130px;">
+      <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Priority</label>
+      <select name="priority" class="form-select form-select-sm">
+        <option value="">All Priorities</option>
+        {% for val,label in priority_choices %}
+          <option value="{{ val }}" {% if filter_priority == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:1;min-width:120px;">
+      <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Status</label>
+      <select name="read" class="form-select form-select-sm">
+        <option value="">All</option>
+        <option value="unread" {% if filter_read == "unread" %}selected{% endif %}>Unread only</option>
+        <option value="read"   {% if filter_read == "read"   %}selected{% endif %}>Read only</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel"></i> Filter</button>
+      <a href="{% url 'notifications:list' %}" class="btn btn-ghost btn-sm">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- ── Notification List ──────────────────────────────────────────────── -->
+<div class="card" id="notif-list" style="padding:0 20px;">
+  {% for n in notifications %}
+  <div id="notif-row-{{ n.id }}"
+       style="padding:14px 0;border-bottom:1px solid var(--border-color);display:flex;gap:14px;align-items:flex-start;transition:opacity 0.3s ease;{% if not n.is_read %}background:rgba(59,130,246,0.03);{% endif %}">
+
+    <!-- Icon -->
+    <div style="font-size:1.5rem;flex-shrink:0;line-height:1;padding-top:2px;">{{ n.type_icon }}</div>
+
+    <!-- Body -->
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+        <div style="font-weight:{% if not n.is_read %}700{% else %}500{% endif %};color:var(--text-primary);font-size:0.88rem;">
+          {{ n.title }}
+          {% if not n.is_read %}
+            <span style="display:inline-block;width:7px;height:7px;background:var(--accent-blue);border-radius:50%;margin-left:6px;vertical-align:middle;animation:pulse 2s infinite;"></span>
+          {% endif %}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <!-- Priority badge -->
+          {% if n.priority == 'CRITICAL' %}
+            <span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;font-size:0.68rem;">CRITICAL</span>
+          {% elif n.priority == 'HIGH' %}
+            <span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;font-size:0.68rem;">HIGH</span>
+          {% elif n.priority == 'NORMAL' %}
+            <span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.68rem;">NORMAL</span>
+          {% else %}
+            <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;font-size:0.68rem;">LOW</span>
+          {% endif %}
+          <span style="font-size:0.72rem;color:var(--text-muted);">{{ n.created_at|timesince }} ago</span>
+        </div>
+      </div>
+
+      <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;line-height:1.5;">{{ n.message }}</div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        {% if n.link %}
+          <a href="{{ n.link }}" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:3px 10px;">
+            <i class="bi bi-arrow-right-circle"></i> View
+          </a>
+        {% endif %}
+        {% if not n.is_read %}
+          <button onclick="markRead({{ n.id }})" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:3px 10px;color:var(--text-muted);">
+            <i class="bi bi-check2"></i> Mark Read
+          </button>
+        {% endif %}
+        <button onclick="deleteNotif({{ n.id }})" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:3px 10px;color:var(--accent-red);">
+          <i class="bi bi-x"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div id="empty-state" style="text-align:center;padding:72px 32px;color:var(--text-muted);">
+    <i class="bi bi-bell-slash" style="font-size:3.5rem;display:block;margin-bottom:16px;opacity:0.25;"></i>
+    <div style="font-size:1rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">All clear!</div>
+    <div style="font-size:0.85rem;">No notifications match the current filters.</div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+@keyframes pulse {
+  0%, 100% { opacity:1; transform:scale(1); }
+  50%       { opacity:0.5; transform:scale(1.4); }
+}
+</style>
+<script>
+async function markRead(id) {
+  const res = await fetch(`/api/notifications/${id}/read/`, { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
+  if (res.ok) {
+    const row = document.getElementById(`notif-row-${id}`);
+    if (row) {
+      row.style.background = '';
+      const dot  = row.querySelector('[style*="animation:pulse"]');
+      if (dot) dot.remove();
+      const btn  = row.querySelector('button[onclick*="markRead"]');
+      if (btn) btn.remove();
+      const title = row.querySelector('div[style*="font-weight:700"]');
+      if (title) title.style.fontWeight = '500';
+    }
+    updateUnreadBadge(-1);
+    Toast.success('Marked as read.');
+  }
+}
+
+async function markAllRead() {
+  const res = await fetch('/api/notifications/mark-all/', { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
+  if (res.ok) {
+    Toast.success('All notifications marked as read.');
+    setTimeout(() => location.reload(), 700);
+  }
+}
+
+async function deleteNotif(id) {
+  const res = await fetch(`/notifications/${id}/delete/`, { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
+  if (res.ok) {
+    const row = document.getElementById(`notif-row-${id}`);
+    if (row) {
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(-16px)';
+      setTimeout(() => row.remove(), 300);
+    }
+    Toast.info('Notification deleted.');
+  }
+}
+
+async function deleteAllRead() {
+  if (!confirm('Delete all read notifications?')) return;
+  const res = await fetch('/notifications/delete-all-read/', { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
+  if (res.ok) {
+    const data = await res.json();
+    Toast.success(`Deleted ${data.deleted} read notifications.`);
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+function updateUnreadBadge(delta) {
+  const badge = document.getElementById('unread-badge');
+  if (!badge) return;
+  const current = parseInt(badge.textContent) || 0;
+  const next = Math.max(0, current + delta);
+  badge.textContent = `${next} unread`;
+}
+
+function getCsrfToken() {
+  return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+</script>
+{% endblock %}

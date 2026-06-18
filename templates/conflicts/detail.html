@@ -1,0 +1,89 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">⚠️ Conflict #{{ conflict.id }} — {{ conflict.get_conflict_type_display }}</div>
+    <div class="page-subtitle">Detected {{ conflict.detected_at|timesince }} ago · Severity: {{ conflict.severity }}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'conflicts:list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    {% if conflict.status == 'ACTIVE' %}
+    <a href="{% url 'ai_engine:conflict_analysis' conflict.id %}" class="btn btn-primary">🤖 AI Analysis</a>
+    <button onclick="resolveConflict({{ conflict.id }})" class="btn btn-success"><i class="bi bi-check2"></i> Resolve</button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Conflict Card -->
+<div class="card" style="margin-bottom:20px;border-color:{% if conflict.severity == 'CRITICAL' %}var(--accent-red){% elif conflict.severity == 'HIGH' %}var(--accent-orange){% else %}var(--accent-yellow){% endif %}44;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;margin-bottom:20px;">
+    <div><div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Type</div>
+      <span class="badge badge-scheduled">{{ conflict.get_conflict_type_display }}</span></div>
+    <div><div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Severity</div>
+      <span class="badge badge-{{ conflict.severity|lower }}">{{ conflict.severity }}</span></div>
+    <div><div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Status</div>
+      <span class="badge badge-{{ conflict.status|lower }}">{{ conflict.status }}</span></div>
+    <div><div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Train A</div>
+      <div style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);">{{ conflict.train_a.train_number }}</div>
+      <div style="font-size:0.72rem;color:var(--text-muted);">{{ conflict.train_a.train_name|truncatechars:20 }}</div></div>
+    {% if conflict.train_b %}
+    <div><div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Train B</div>
+      <div style="font-family:var(--font-mono);font-weight:700;color:var(--accent-purple);">{{ conflict.train_b.train_number }}</div>
+      <div style="font-size:0.72rem;color:var(--text-muted);">{{ conflict.train_b.train_name|truncatechars:20 }}</div></div>
+    {% endif %}
+    <div><div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Location</div>
+      <div style="font-size:0.875rem;font-weight:600;">{{ conflict.station.name|default:conflict.track_section.name|default:"Unknown" }}</div></div>
+  </div>
+  <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;border-left:4px solid {% if conflict.severity == 'CRITICAL' %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">
+    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Description</div>
+    <div style="font-size:0.875rem;color:var(--text-primary);">{{ conflict.description }}</div>
+  </div>
+</div>
+
+<!-- AI Recommendations -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">🤖 AI Recommendations</div>
+    <a href="{% url 'ai_engine:conflict_analysis' conflict.id %}" class="btn btn-primary btn-sm">Full Analysis</a>
+  </div>
+  {% for rec in recommendations %}
+  <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:16px;margin-bottom:12px;border:1px solid var(--border-color);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div style="font-size:0.875rem;font-weight:700;color:var(--text-primary);">{{ rec.title }}</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span class="badge badge-scheduled">{{ rec.get_recommendation_type_display }}</span>
+        <span style="font-size:0.72rem;color:var(--accent-green);">{{ rec.confidence_percentage }}% confidence</span>
+      </div>
+    </div>
+    <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px;">{{ rec.description }}</div>
+    {% if rec.status == 'PENDING' %}
+    <div style="display:flex;gap:8px;">
+      <button onclick="acceptRec({{ rec.id }})" class="btn btn-success btn-sm"><i class="bi bi-check2"></i> Accept</button>
+      <button onclick="rejectRec({{ rec.id }})" class="btn btn-danger btn-sm"><i class="bi bi-x"></i> Reject</button>
+    </div>
+    {% else %}
+    <span class="badge badge-{{ rec.status|lower }}">{{ rec.status }}</span>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div style="text-align:center;padding:32px;color:var(--text-muted);">
+    <a href="{% url 'ai_engine:conflict_analysis' conflict.id %}" class="btn btn-primary">🤖 Generate AI Recommendations</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block extra_js %}<script>
+async function resolveConflict(id) {
+  const notes = prompt('Resolution notes (optional):') || '';
+  const data = await apiPost(`/api/conflicts/${id}/resolve/`, {notes});
+  if (data.success) { Toast.success('Resolved.'); setTimeout(()=>location.reload(),1200); }
+}
+async function acceptRec(id) {
+  await apiPost(`/ai-engine/recommendation/${id}/accept/`);
+  Toast.success('Recommendation accepted.'); setTimeout(()=>location.reload(),1000);
+}
+async function rejectRec(id) {
+  await apiPost(`/ai-engine/recommendation/${id}/reject/`);
+  Toast.warning('Recommendation rejected.'); setTimeout(()=>location.reload(),1000);
+}
+</script>{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">⚠️ Conflict Report: {{ from_date }} → {{ to_date }}</div>
+    <div class="page-subtitle">{{ total }} conflicts · {{ resolved }} resolved · {{ critical }} critical</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="?from={{ from_date }}&to={{ to_date }}&format=csv" class="btn btn-secondary"><i class="bi bi-filetype-csv"></i> CSV</a>
+    <a href="{% url 'reporting:index' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:20px;">
+  <div class="kpi-card red"><div class="kpi-top"><div class="kpi-label">Total</div><div class="kpi-icon red"><i class="bi bi-exclamation-triangle"></i></div></div><div class="kpi-value">{{ total }}</div></div>
+  <div class="kpi-card green"><div class="kpi-top"><div class="kpi-label">Resolved</div><div class="kpi-icon green"><i class="bi bi-check"></i></div></div><div class="kpi-value">{{ resolved }}</div></div>
+  <div class="kpi-card yellow"><div class="kpi-top"><div class="kpi-label">Active</div><div class="kpi-icon yellow"><i class="bi bi-broadcast"></i></div></div><div class="kpi-value">{{ active }}</div></div>
+  <div class="kpi-card red"><div class="kpi-top"><div class="kpi-label">Critical</div><div class="kpi-icon red"><i class="bi bi-fire"></i></div></div><div class="kpi-value">{{ critical }}</div></div>
+</div>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead><tr><th>ID</th><th>Type</th><th>Severity</th><th>Trains</th><th>Station</th><th>Status</th><th>Detected</th></tr></thead>
+      <tbody>
+        {% for c in conflicts %}
+        <tr>
+          <td style="font-family:var(--font-mono);color:var(--text-muted);">#{{ c.id }}</td>
+          <td><span class="badge badge-scheduled">{{ c.get_conflict_type_display }}</span></td>
+          <td><span class="badge badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
+          <td style="font-family:var(--font-mono);font-size:0.82rem;color:var(--accent-blue);">{{ c.train_a.train_number }}{% if c.train_b %} / {{ c.train_b.train_number }}{% endif %}</td>
+          <td style="font-size:0.82rem;">{{ c.station.name|default:"—" }}</td>
+          <td><span class="badge badge-{{ c.status|lower }}">{{ c.status }}</span></td>
+          <td style="font-size:0.78rem;color:var(--text-muted);">{{ c.detected_at|date:"d M H:i" }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No conflicts in selected period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

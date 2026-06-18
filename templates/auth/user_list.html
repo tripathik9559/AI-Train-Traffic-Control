@@ -1,0 +1,72 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-people"></i> User Management</div>
+    <div class="page-subtitle">{{ total_users }} users · {{ admin_count }} admins · {{ controller_count }} controllers</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'auth:register' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add User</a>
+  </div>
+</div>
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:180px;"><label class="form-label">Search</label><input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Name, username, email…"/></div>
+    <div><label class="form-label">Role</label><select name="role" class="form-select" style="min-width:160px;"><option value="">All Roles</option>{% for v,l in roles %}<option value="{{ v }}" {% if role_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div style="display:flex;gap:8px;"><button type="submit" class="btn btn-primary">Filter</button><a href="{% url 'auth:user_list' %}" class="btn btn-secondary">Clear</a></div>
+  </form>
+</div>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead><tr><th>User</th><th>Role</th><th>Employee ID</th><th>Section</th><th>Status</th><th>Last Active</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for u in page_obj %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white;flex-shrink:0;">{{ u.display_name|first|upper }}</div>
+              <div><div style="font-weight:600;">{{ u.display_name }}</div><div style="font-size:0.72rem;color:var(--text-muted);">{{ u.email }}</div></div>
+            </div>
+          </td>
+          <td><span class="badge badge-scheduled">{{ u.get_role_display }}</span></td>
+          <td style="font-family:var(--font-mono);">{{ u.employee_id|default:"—" }}</td>
+          <td style="font-size:0.82rem;">{{ u.section_assigned|default:"—" }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="status-dot {% if u.is_active %}green{% else %}red{% endif %}"></div>
+              {% if u.is_active %}
+                <span style="font-size:0.78rem;color:var(--accent-green);">Active</span>
+              {% else %}
+                <span style="font-size:0.78rem;color:var(--accent-red);">Inactive</span>
+              {% endif %}
+            </div>
+          </td>
+          <td style="font-size:0.78rem;color:var(--text-muted);">{% if u.last_active %}{{ u.last_active|timesince }} ago{% else %}Never{% endif %}</td>
+          <td>
+            <div style="display:flex;gap:4px;">
+              {% if u != request.user %}
+              <button onclick="toggleUser({{ u.id }}, this)" class="btn btn-ghost btn-sm btn-icon" title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}" style="color:{% if u.is_active %}var(--accent-red){% else %}var(--accent-green){% endif %};">
+                <i class="bi bi-{% if u.is_active %}person-x{% else %}person-check{% endif %}"></i>
+              </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted);">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}<script>
+async function toggleUser(id, btn) {
+  const data = await apiPost(`/auth/users/${id}/toggle/`);
+  if (data.success) {
+    Toast.success(data.message);
+    setTimeout(() => location.reload(), 1000);
+  } else Toast.error(data.error || 'Failed.');
+}
+</script>{% endblock %}

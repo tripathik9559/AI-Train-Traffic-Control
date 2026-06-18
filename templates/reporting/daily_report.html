@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">📊 Daily Report — {{ report_date|date:"d F Y" }}</div>
+    <div class="page-subtitle">Generated {{ generated_at|date:"H:i" }} by {{ generated_by.username }}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="?date={{ report_date|date:'Y-m-d' }}&format=csv" class="btn btn-secondary"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+    <a href="?date={{ report_date|date:'Y-m-d' }}&format=pdf" class="btn btn-primary"><i class="bi bi-filetype-pdf"></i> Export PDF</a>
+    <a href="{% url 'reporting:index' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px;">
+  <div class="kpi-card blue"><div class="kpi-top"><div class="kpi-label">Total Trains</div><div class="kpi-icon blue">🚂</div></div><div class="kpi-value">{{ total_trains }}</div></div>
+  <div class="kpi-card green"><div class="kpi-top"><div class="kpi-label">On-Time</div><div class="kpi-icon green"><i class="bi bi-check-circle"></i></div></div><div class="kpi-value">{{ on_time_trains }}</div></div>
+  <div class="kpi-card yellow"><div class="kpi-top"><div class="kpi-label">Delayed</div><div class="kpi-icon yellow"><i class="bi bi-clock-history"></i></div></div><div class="kpi-value">{{ delayed_trains }}</div></div>
+  <div class="kpi-card red"><div class="kpi-top"><div class="kpi-label">Cancelled</div><div class="kpi-icon red"><i class="bi bi-x-circle"></i></div></div><div class="kpi-value">{{ cancelled_trains }}</div></div>
+  <div class="kpi-card purple"><div class="kpi-top"><div class="kpi-label">Punctuality</div><div class="kpi-icon purple"><i class="bi bi-percent"></i></div></div><div class="kpi-value">{{ punctuality_rate }}%</div></div>
+  <div class="kpi-card cyan"><div class="kpi-top"><div class="kpi-label">Avg Delay</div><div class="kpi-icon cyan"><i class="bi bi-clock"></i></div></div><div class="kpi-value">{{ avg_delay }}'</div></div>
+</div>
+
+<!-- Schedule Table -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header"><div class="card-title">📋 Schedule Summary</div></div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead><tr><th>Train No.</th><th>Station</th><th>Platform</th><th>Scheduled Dep.</th><th>Status</th><th>Delay</th></tr></thead>
+      <tbody>
+        {% for s in schedules %}
+        <tr>
+          <td><span style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);">{{ s.train.train_number }}</span><div style="font-size:0.72rem;color:var(--text-muted);">{{ s.train.train_name|truncatechars:18 }}</div></td>
+          <td><span style="font-family:var(--font-mono);">{{ s.station.code }}</span></td>
+          <td>{{ s.platform.platform_number|default:"—" }}</td>
+          <td style="font-family:var(--font-mono);">{% if s.scheduled_departure %}{{ s.scheduled_departure|time:"H:i" }}{% else %}—{% endif %}</td>
+          <td><span class="badge badge-{{ s.status|lower }}">{{ s.status }}</span></td>
+          <td style="{% if s.current_delay > 5 %}color:var(--accent-red){% else %}color:var(--accent-green){% endif %};font-family:var(--font-mono);font-weight:700;">{% if s.current_delay > 0 %}+{% endif %}{{ s.current_delay }}'</td>
+        </tr>
+        {% empty %}<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">No schedule data for this date.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Conflicts -->
+<div class="card">
+  <div class="card-header"><div class="card-title">⚠️ Conflicts ({{ total_conflicts }} total · {{ resolved_conflicts }} resolved)</div></div>
+  {% for c in conflicts %}
+  <div style="padding:10px 0;border-bottom:1px solid var(--border-color);display:flex;gap:12px;align-items:center;">
+    <span class="badge badge-{{ c.severity|lower }}">{{ c.severity }}</span>
+    <span class="badge badge-scheduled" style="font-size:0.68rem;">{{ c.get_conflict_type_display }}</span>
+    <span style="font-family:var(--font-mono);font-size:0.82rem;color:var(--accent-blue);">{{ c.train_a.train_number }}{% if c.train_b %} / {{ c.train_b.train_number }}{% endif %}</span>
+    <span style="font-size:0.78rem;color:var(--text-muted);flex:1;">{{ c.description|truncatechars:80 }}</span>
+    <span class="badge badge-{{ c.status|lower }}" style="font-size:0.68rem;">{{ c.status }}</span>
+  </div>
+  {% empty %}<div style="text-align:center;padding:32px;color:var(--accent-green);">✅ No conflicts on this date.</div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+name,code,station_type,city,state,zone,division,latitude,longitude,total_platforms,is_junction,has_goods_shed
+Lucknow Charbagh,LKO,MAJOR,Lucknow,Uttar Pradesh,NR,Lucknow,26.8467,80.9462,9,True,True
+Kanpur Central,CNB,JUNCTION,Kanpur,Uttar Pradesh,NCR,Allahabad,26.4609,80.3319,10,True,True
+Allahabad Junction,ALD,JUNCTION,Allahabad,Uttar Pradesh,NCR,Allahabad,25.4358,81.8463,10,True,True
+Mughal Sarai Junction,MGS,JUNCTION,Chandauli,Uttar Pradesh,ECR,Varanasi,25.2833,83.1167,12,True,True
+Patna Junction,PNBE,MAJOR,Patna,Bihar,ECR,Patna,25.5941,85.1376,10,True,True
+Varanasi Junction,BSB,JUNCTION,Varanasi,Uttar Pradesh,NER,Varanasi,25.3176,82.9739,8,True,False
+New Delhi,NDLS,TERMINAL,New Delhi,Delhi,NR,Delhi,28.6424,77.2194,16,True,False
+Agra Cantt,AGC,JUNCTION,Agra,Uttar Pradesh,NCR,Agra,27.1591,77.9858,6,True,True
+Gwalior,GWL,JUNCTION,Gwalior,Madhya Pradesh,NCR,Jhansi,26.2183,78.1828,5,False,True
+Mathura Junction,MTJ,JUNCTION,Mathura,Uttar Pradesh,NCR,Agra,27.4924,77.6737,6,True,False
+Etawah,ETW,CROSSING,Etawah,Uttar Pradesh,NCR,Allahabad,26.7805,79.0169,3,False,False
+Faridabad,FBD,HALT,Faridabad,Haryana,NR,Delhi,28.4089,77.3178,4,False,False

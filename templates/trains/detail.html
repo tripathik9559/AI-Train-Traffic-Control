@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">
+      <span style="font-family:var(--font-mono);color:var(--accent-blue);">{{ train.train_number }}</span>
+      — {{ train.train_name }}
+    </div>
+    <div class="page-subtitle">{{ train.get_train_type_display }} · Priority {{ train.priority_level }}/5</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'trains:edit' train.id %}" class="btn btn-secondary"><i class="bi bi-pencil"></i> Edit</a>
+    <a href="{% url 'ai_engine:train_analysis' train.id %}" class="btn btn-primary">🤖 AI Analysis</a>
+  </div>
+</div>
+
+<!-- Status Banner -->
+<div class="card" style="margin-bottom:20px;border-color:{{ train.type_color }}44;background:linear-gradient(135deg,{{ train.type_color }}0a,var(--bg-card));">
+  <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <div style="text-align:center;">
+      <div style="font-size:2.5rem;">🚂</div>
+      <span class="train-type-badge" style="background:{{ train.type_color }}22;color:{{ train.type_color }};border:1px solid {{ train.type_color }}44;">
+        {{ train.get_train_type_display }}
+      </span>
+    </div>
+    <div style="flex:1;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Status</div>
+          <span class="badge badge-{{ train.current_status|lower }} badge-dot" style="font-size:0.85rem;margin-top:4px;">{{ train.current_status }}</span>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Delay</div>
+          <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);{% if train.current_delay > 0 %}color:var(--accent-red){% else %}color:var(--accent-green){% endif %}">
+            {% if train.current_delay > 0 %}+{% endif %}{{ train.current_delay }}'
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Max Speed</div>
+          <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--accent-blue)">{{ train.speed }}<span style="font-size:0.75rem;font-weight:400"> km/h</span></div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Coaches</div>
+          <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--text-primary)">{{ train.total_coaches }}</div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Route</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text-primary)">
+            {{ train.source_station.code|default:"—" }} → {{ train.destination_station.code|default:"—" }}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Priority</div>
+          <div style="margin-top:6px;">
+            <div class="score-bar" style="width:80px;">
+              <div class="score-bar-fill {% if train.priority_level >= 4 %}high{% elif train.priority_level >= 3 %}medium{% else %}low{% endif %}"
+                   style="width:{{ train.priority_level }}0%;"></div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">{{ train.priority_level }}/5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Status Update -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-sliders" style="color:var(--accent-yellow)"></i> Quick Status Update</div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <label class="form-label">Status</label>
+      <select id="status-select" class="form-select" style="min-width:160px;">
+        {% for val, label in train.Status.choices %}
+          <option value="{{ val }}" {% if train.current_status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">Delay (minutes)</label>
+      <input type="number" id="delay-input" class="form-control" style="width:120px;"
+             value="{{ train.current_delay }}" min="-60" max="300" />
+    </div>
+    <button class="btn btn-warning" onclick="quickStatusUpdate()">
+      <i class="bi bi-lightning"></i> Update Status
+    </button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <!-- Today's Schedule -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-calendar3" style="color:var(--accent-blue)"></i> Today's Schedule</div>
+    </div>
+    {% if today_schedules %}
+      <div class="table-wrapper">
+        <table class="table" style="font-size:0.82rem;">
+          <thead><tr><th>#</th><th>Station</th><th>Arr.</th><th>Dep.</th><th>Status</th><th>Delay</th></tr></thead>
+          <tbody>
+            {% for s in today_schedules %}
+            <tr>
+              <td style="color:var(--text-muted);">{{ s.stop_sequence }}</td>
+              <td><span style="font-family:var(--font-mono);color:var(--accent-blue);">{{ s.station.code }}</span></td>
+              <td style="font-family:var(--font-mono);">{% if s.scheduled_arrival %}{{ s.scheduled_arrival|time:"H:i" }}{% else %}—{% endif %}</td>
+              <td style="font-family:var(--font-mono);">{% if s.scheduled_departure %}{{ s.scheduled_departure|time:"H:i" }}{% else %}—{% endif %}</td>
+              <td><span class="badge badge-{{ s.status|lower }}" style="font-size:0.68rem;">{{ s.status }}</span></td>
+              <td style="{% if s.current_delay > 0 %}color:var(--accent-red){% else %}color:var(--accent-green){% endif %};font-family:var(--font-mono);">
+                {% if s.current_delay > 0 %}+{% endif %}{{ s.current_delay }}'
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align:center;padding:32px;color:var(--text-muted);">No schedule entries for today.</div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Conflicts -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-exclamation-triangle" style="color:var(--accent-red)"></i> Recent Conflicts</div>
+    </div>
+    {% for conflict in recent_conflicts %}
+      <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+          <span class="badge badge-{{ conflict.severity|lower }}">{{ conflict.severity }}</span>
+          <span class="badge badge-{{ conflict.conflict_type|lower }}" style="font-size:0.68rem;">{{ conflict.get_conflict_type_display }}</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);">{{ conflict.description|truncatechars:80 }}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">{{ conflict.detected_at|timesince }} ago</div>
+      </div>
+    {% empty %}
+      <div style="text-align:center;padding:32px;color:var(--text-muted);">No recent conflicts.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ML Predictions -->
+{% if recent_predictions %}
+<div class="card" style="margin-top:20px;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-graph-up-arrow" style="color:var(--accent-purple)"></i> Recent ML Predictions</div>
+    <a href="{% url 'ml_prediction:predict_for_train' train.id %}" class="btn btn-primary btn-sm">Predict Now</a>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    {% for pred in recent_predictions %}
+      <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px;min-width:180px;">
+        <div style="font-size:1.6rem;font-weight:800;font-family:var(--font-mono);" class="text-{{ pred.risk_level|lower }}">
+          {{ pred.risk_icon }} {{ pred.predicted_delay_minutes }}'
+        </div>
+        <span class="badge badge-{{ pred.risk_level|lower }}" style="margin-top:4px;">{{ pred.risk_level }}</span>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">{{ pred.predicted_at|timesince }} ago</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function quickStatusUpdate() {
+  const status = document.getElementById('status-select').value;
+  const delay = parseInt(document.getElementById('delay-input').value) || 0;
+  const ok = await updateTrainStatus({{ train.id }}, status, delay);
+  if (ok) setTimeout(() => location.reload(), 1500);
+}
+</script>
+{% endblock %}

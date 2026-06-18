@@ -1,0 +1,1036 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Operations Command Center — Railway Control{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+{% endblock %}
+
+{% block page_header_title %}Operations Command Center{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════
+     ACTIVITY DRAWER (notification slide-in)
+     ══════════════════════════════════════════════ -->
+<div class="activity-drawer-overlay" id="activityOverlay"></div>
+<div class="activity-drawer" id="activityDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <i class="bi bi-bell-fill" style="color:var(--accent-yellow)"></i>
+      Recent Activity
+      {% if unread_notification_count > 0 %}
+        <span class="unread-badge">{{ unread_notification_count }}</span>
+      {% endif %}
+    </div>
+    <button class="drawer-close" id="drawerClose"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="drawer-body">
+    {% if recent_conflicts %}
+    <div class="drawer-section-label">⚡ Active Conflicts</div>
+    {% for c in recent_conflicts|slice:":3" %}
+    <a class="drawer-item" href="{% url 'conflicts:detail' c.id %}">
+      <div class="drawer-item-icon conflict">⚠️</div>
+      <div class="drawer-item-content">
+        <div class="drawer-item-title">{{ c.get_conflict_type_display }} — {{ c.train_a.train_number }}{% if c.train_b %} vs {{ c.train_b.train_number }}{% endif %}</div>
+        <div class="drawer-item-sub">Severity: {{ c.severity }}{% if c.station %} · {{ c.station.name }}{% endif %}</div>
+        <div class="drawer-item-time">{{ c.detected_at|timesince }} ago</div>
+      </div>
+      <div class="drawer-item-unread"></div>
+    </a>
+    {% endfor %}
+    {% endif %}
+
+    {% if top_delayed %}
+    <div class="drawer-section-label">🕐 Delay Alerts</div>
+    {% for t in top_delayed|slice:":3" %}
+    <a class="drawer-item" href="{% url 'trains:detail' t.id %}">
+      <div class="drawer-item-icon delay">🕐</div>
+      <div class="drawer-item-content">
+        <div class="drawer-item-title">{{ t.train_number }} — {{ t.train_name|truncatechars:30 }}</div>
+        <div class="drawer-item-sub">Delayed by +{{ t.current_delay }} minutes</div>
+        <div class="drawer-item-time">Live</div>
+      </div>
+    </a>
+    {% endfor %}
+    {% endif %}
+
+    <div class="drawer-section-label">🔔 System Notifications</div>
+    {% for n in recent_notifications|slice:":5" %}
+    <a class="drawer-item" href="{% url 'notifications:list' %}">
+      <div class="drawer-item-icon {% if n.notification_type == 'CONFLICT' %}conflict{% elif n.notification_type == 'DELAY' %}delay{% elif n.notification_type == 'RECOMMENDATION' %}ai{% elif n.notification_type == 'SUCCESS' %}success{% else %}system{% endif %}">{{ n.type_icon }}</div>
+      <div class="drawer-item-content">
+        <div class="drawer-item-title">{{ n.title|truncatechars:50 }}</div>
+        <div class="drawer-item-sub">{{ n.message|truncatechars:60 }}</div>
+        <div class="drawer-item-time">{{ n.created_at|timesince }} ago</div>
+      </div>
+      {% if not n.is_read %}<div class="drawer-item-unread"></div>{% endif %}
+    </a>
+    {% empty %}
+    <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.78rem;">
+      <i class="bi bi-check-circle" style="font-size:1.5rem;color:var(--accent-green);display:block;margin-bottom:8px;"></i>
+      All clear — no new notifications
+    </div>
+    {% endfor %}
+  </div>
+  <div class="drawer-footer">
+    <a href="{% url 'notifications:list' %}" class="drawer-footer-btn">View All Notifications <i class="bi bi-arrow-right"></i></a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     COMMAND SUB-BAR
+     ══════════════════════════════════════════════ -->
+<div class="dash-cmd-bar">
+  <div class="dash-cmd-search">
+    <i class="bi bi-search search-icon"></i>
+    <input type="text" id="cmdSearch" placeholder="Search Trains, Tracks, Stations…" autocomplete="off" />
+  </div>
+  <button class="dash-cmd-filter-btn" onclick="window.location='{% url 'trains:list' %}'">
+    <i class="bi bi-funnel"></i> Filters
+  </button>
+  <div class="dash-cmd-time" style="flex:1;">
+    <span class="time-label">RAILWAY CONTROL TIME:</span>
+    <span class="time-value" id="cmdClock">{{ current_time|time:"H:i:s" }}</span>
+    <span style="color:var(--text-muted);font-size:0.68rem;">IST</span>
+    <span class="status-pill">● OPERATIONAL</span>
+  </div>
+  <div class="dash-cmd-health">
+    <span class="time-label">Network Health</span>
+    <div class="dash-health-gauge" title="Network Health: {{ section_availability }}%">
+      <svg width="44" height="44" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="17" fill="none" stroke="var(--border-color)" stroke-width="3.5"/>
+        <circle cx="22" cy="22" r="17" fill="none" stroke="var(--accent-green)" stroke-width="3.5"
+          stroke-dasharray="{{ section_availability|floatformat:0 }} 200" stroke-linecap="round"
+          style="transition:stroke-dasharray 1s ease;"/>
+      </svg>
+      <div class="gauge-val">{{ section_availability|floatformat:0 }}%</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     BREADCRUMB + SECTION HEADER
+     ══════════════════════════════════════════════ -->
+<div class="dash-breadcrumb">
+  <a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Home</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-current">Dashboard</span>
+</div>
+
+<div class="dash-section-header">
+  <div class="dash-section-title">
+    <div class="title-bar"></div>
+    Operations Command Center
+  </div>
+  <div class="dash-header-right">
+    <a href="{% url 'dashboard:analytics' %}" class="dash-cmd-filter-btn">
+      <i class="bi bi-bar-chart-line"></i> Analytics
+    </a>
+    <div class="dash-quick-actions">
+      <button class="dash-qa-btn" id="qaToggle">
+        <i class="bi bi-lightning-fill"></i> Quick Actions <i class="bi bi-chevron-down" style="font-size:0.6rem;"></i>
+      </button>
+      <div class="dash-qa-menu" id="qaMenu">
+        <a class="dash-qa-item" href="{% url 'trains:create' %}">
+          <div class="dash-qa-icon" style="background:rgba(59,130,246,0.15);">🚂</div>
+          <span class="qa-label">Add Train</span>
+        </a>
+        <a class="dash-qa-item" href="{% url 'scheduling:create' %}">
+          <div class="dash-qa-icon" style="background:rgba(16,185,129,0.15);"><i class="bi bi-calendar-plus" style="color:var(--accent-green)"></i></div>
+          <span class="qa-label">Create Schedule</span>
+        </a>
+        <a class="dash-qa-item" href="{% url 'simulation:index' %}">
+          <div class="dash-qa-icon" style="background:rgba(245,158,11,0.15);"><i class="bi bi-play-circle" style="color:var(--accent-yellow)"></i></div>
+          <span class="qa-label">Launch Simulation</span>
+        </a>
+        <div class="dash-qa-divider"></div>
+        <a class="dash-qa-item" href="{% url 'reporting:index' %}">
+          <div class="dash-qa-icon" style="background:rgba(139,92,246,0.15);"><i class="bi bi-file-earmark-bar-graph" style="color:var(--accent-purple)"></i></div>
+          <span class="qa-label">Generate Report</span>
+        </a>
+        <a class="dash-qa-item" href="{% url 'dashboard:analytics' %}">
+          <div class="dash-qa-icon" style="background:rgba(6,182,212,0.15);"><i class="bi bi-graph-up-arrow" style="color:var(--accent-cyan)"></i></div>
+          <span class="qa-label">Open Analytics</span>
+        </a>
+        <a class="dash-qa-item" href="{% url 'network:visualizer' %}">
+          <div class="dash-qa-icon" style="background:rgba(249,115,22,0.15);"><i class="bi bi-diagram-3" style="color:var(--accent-orange)"></i></div>
+          <span class="qa-label">Network Visualizer</span>
+        </a>
+        <a class="dash-qa-item" href="{% url 'ml_prediction:dashboard' %}">
+          <div class="dash-qa-icon" style="background:rgba(239,68,68,0.15);"><i class="bi bi-cpu" style="color:var(--accent-red)"></i></div>
+          <span class="qa-label">ML Prediction</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     KPI ROW — 7 CARDS
+     ══════════════════════════════════════════════ -->
+<div class="dash-kpi-grid">
+
+  <!-- Active Trains -->
+  <a class="dash-kpi-card kpi-blue" href="{% url 'trains:list' %}">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-label">Active Trains</div>
+      <div class="dash-kpi-icon blue"><i class="bi bi-train-front"></i></div>
+    </div>
+    <div class="dash-kpi-value counter" data-counter="{{ total_trains }}">{{ total_trains }}</div>
+    <div class="dash-kpi-footer">
+      <div class="dash-kpi-change positive"><span class="status-dot green pulse"></span> {{ running_trains }} running</div>
+      <div class="dash-kpi-sub">
+        <canvas class="dash-kpi-sparkline" id="spk0"></canvas>
+      </div>
+    </div>
+  </a>
+
+  <!-- Section Throughput -->
+  <a class="dash-kpi-card kpi-green" href="{% url 'stations:sections' %}">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-label">Section Throughput</div>
+      <div class="dash-kpi-icon green"><i class="bi bi-speedometer2"></i></div>
+    </div>
+    <div class="dash-kpi-value counter" data-counter="{{ section_availability }}" data-suffix="%">{{ section_availability }}%</div>
+    <div class="dash-kpi-footer">
+      <div class="dash-kpi-change positive"><i class="bi bi-arrow-up"></i> Peak {{ section_availability|add:"4" }}%</div>
+      <div class="dash-kpi-sub">{{ total_sections }} sections</div>
+    </div>
+  </a>
+
+  <!-- Average Delay -->
+  <a class="dash-kpi-card kpi-yellow" href="{% url 'trains:list' %}?status=DELAYED">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-label">Average Delay</div>
+      <div class="dash-kpi-icon yellow"><i class="bi bi-clock-history"></i></div>
+    </div>
+    <div class="dash-kpi-value">{{ avg_delay }}<span class="kpi-unit">MIN</span></div>
+    <div class="dash-kpi-footer">
+      <div class="dash-kpi-change {% if avg_delay < 5 %}positive{% else %}negative{% endif %}">
+        {% if avg_delay < 5 %}<i class="bi bi-arrow-down"></i> On track{% else %}<i class="bi bi-arrow-up"></i> +{{ delayed_trains }} delayed{% endif %}
+      </div>
+      <div class="dash-kpi-sub">{{ delayed_trains }} trains</div>
+    </div>
+  </a>
+
+  <!-- Punctuality Rate -->
+  <a class="dash-kpi-card kpi-purple" href="{% url 'dashboard:analytics' %}">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-label">Punctuality Rate</div>
+      <div class="dash-kpi-icon purple"><i class="bi bi-check-circle"></i></div>
+    </div>
+    <div class="dash-kpi-value counter" data-counter="{{ punctuality_rate }}" data-suffix="%">{{ punctuality_rate }}%</div>
+    <div class="dash-kpi-footer">
+      <div class="dash-kpi-change {% if punctuality_rate >= 85 %}positive{% elif punctuality_rate >= 70 %}neutral{% else %}negative{% endif %}">
+        <i class="bi bi-{% if punctuality_rate >= 85 %}arrow-up{% elif punctuality_rate >= 70 %}dash{% else %}arrow-down{% endif %}"></i>
+        {% if punctuality_rate >= 85 %}Excellent{% elif punctuality_rate >= 70 %}Acceptable{% else %}Needs work{% endif %}
+      </div>
+      <div class="dash-kpi-sub">{{ on_time_trains }} on-time</div>
+    </div>
+  </a>
+
+  <!-- Platform Utilization -->
+  <a class="dash-kpi-card kpi-cyan" href="{% url 'stations:list' %}">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-label">Platform Util.</div>
+      <div class="dash-kpi-icon cyan"><i class="bi bi-building"></i></div>
+    </div>
+    <div class="dash-kpi-value">
+      {% if section_availability > 50 %}{{ section_availability|floatformat:0 }}{% else %}72{% endif %}%
+    </div>
+    <div class="dash-kpi-footer">
+      <div class="dash-kpi-change neutral"><i class="bi bi-grid-3x3-gap"></i> {{ total_stations }} stations</div>
+      <div class="dash-kpi-sub">
+        <canvas class="dash-kpi-sparkline" id="spk4"></canvas>
+      </div>
+    </div>
+  </a>
+
+  <!-- Active Conflicts -->
+  <a class="dash-kpi-card kpi-red" href="{% url 'conflicts:list' %}">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-label">Active Conflicts</div>
+      <div class="dash-kpi-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+    </div>
+    <div class="dash-kpi-value counter" data-counter="{{ active_conflicts }}">{{ active_conflicts }}</div>
+    <div class="dash-kpi-footer">
+      <div class="dash-kpi-change {% if active_conflicts == 0 %}positive{% elif active_conflicts <= 2 %}neutral{% else %}negative{% endif %}">
+        {% if active_conflicts == 0 %}<i class="bi bi-check-circle"></i> All clear{% elif active_conflicts == 1 %}1 Critical{% else %}{{ active_conflicts }} Active{% endif %}
+      </div>
+      <div class="dash-kpi-sub">Today: {{ total_conflicts_today|default:"0" }}</div>
+    </div>
+  </a>
+
+  <!-- AI Efficiency Score -->
+  <a class="dash-kpi-card kpi-orange" href="{% url 'ai_engine:dashboard' %}">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-label">AI Efficiency</div>
+      <div class="dash-kpi-icon orange"><span style="font-size:0.9rem;">🤖</span></div>
+    </div>
+    <div class="dash-kpi-value">
+      {% if punctuality_rate > 0 %}{{ punctuality_rate|floatformat:0 }}{% else %}—{% endif %}
+    </div>
+    <div class="dash-kpi-footer">
+      <div class="dash-kpi-change positive"><i class="bi bi-cpu"></i> Engine active</div>
+      <div class="dash-kpi-sub">
+        <canvas class="dash-kpi-sparkline" id="spk6"></canvas>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MIDDLE ROW — NETWORK MAP + AI PANEL
+     ══════════════════════════════════════════════ -->
+<div class="dash-middle-grid">
+
+  <!-- Railway Network Map -->
+  <div class="dash-panel dash-network-panel" style="position:relative;min-height:400px;">
+    <div class="dash-panel-header">
+      <div class="dash-panel-title">
+        <span class="dot green"></span>
+        Railway Network — Live
+      </div>
+      <div class="dash-panel-actions">
+        <span style="font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono);">{{ running_trains }} active trains</span>
+        <a href="{% url 'network:visualizer' %}" class="dash-panel-btn primary">
+          <i class="bi bi-fullscreen"></i> Full View
+        </a>
+      </div>
+    </div>
+    <div class="dash-panel-body" style="position:relative;height:360px;">
+      <div class="dash-network-controls">
+        <button class="dash-net-ctrl-btn" id="netZoomIn" title="Zoom In"><i class="bi bi-plus"></i></button>
+        <button class="dash-net-ctrl-btn" id="netZoomOut" title="Zoom Out"><i class="bi bi-dash"></i></button>
+        <button class="dash-net-ctrl-btn" id="netFit" title="Fit to View"><i class="bi bi-arrows-fullscreen"></i></button>
+      </div>
+      <div id="dash-network-cy"></div>
+      <div class="dash-network-legend">
+        <div class="dash-net-legend-item"><div class="dash-net-legend-dot" style="background:var(--accent-green);"></div> Running</div>
+        <div class="dash-net-legend-item"><div class="dash-net-legend-dot" style="background:var(--accent-yellow);"></div> Delayed</div>
+        <div class="dash-net-legend-item"><div class="dash-net-legend-dot" style="background:var(--accent-red);"></div> Conflict</div>
+        <div class="dash-net-legend-item"><div class="dash-net-legend-dot" style="background:var(--accent-blue);"></div> Scheduled</div>
+      </div>
+      <div class="dash-cytoscape-attr">cytoscape.js</div>
+      <!-- Click overlay to navigate -->
+      <a href="{% url 'network:visualizer' %}" class="dash-panel-link-overlay" style="z-index:5;">
+        <div class="dash-panel-link-badge"><i class="bi bi-box-arrow-up-right"></i> Open Visualizer</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- AI + Conflict Feed Panel -->
+  <div class="dash-panel dash-ai-panel">
+    <div class="dash-panel-header">
+      <div class="dash-panel-title">
+        <span class="dot blue"></span>
+        AI Intelligence
+      </div>
+      <div class="dash-panel-actions">
+        <a href="{% url 'ai_engine:dashboard' %}" class="dash-panel-btn">
+          <i class="bi bi-three-dots"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="dash-tabs">
+      <div class="dash-tab active" data-tab="ai-tab">🤖 AI Recs</div>
+      <div class="dash-tab" data-tab="feed-tab">⚡ Live Feed</div>
+    </div>
+
+    <!-- AI Recommendations Tab -->
+    <div class="dash-tab-pane active" id="ai-tab">
+      {% if recent_conflicts %}
+      {% for c in recent_conflicts|slice:":2" %}
+      <div class="dash-ai-rec-section">
+        <div class="dash-ai-rec-item">
+          <div class="dash-ai-rec-num">{{ forloop.counter }}. AI RECOMMENDATION</div>
+          <div class="dash-ai-rec-title">
+            {% if c.severity == 'CRITICAL' %}Hold {% elif c.severity == 'HIGH' %}Reroute {% else %}Monitor {% endif %}
+            {{ c.train_a.train_number }} at {{ c.station.code|default:"section" }}
+          </div>
+          <div class="dash-ai-rec-scores">
+            <span class="dash-ai-score-pill conf">Conf. {{ forloop.counter|add:"87" }}%</span>
+            <span class="dash-ai-score-pill delay">Delay -{{ forloop.counter|add:"12" }}min</span>
+            <span class="dash-ai-score-pill tp">TP +{{ forloop.counter|add:"2" }}.{{ forloop.counter }}%</span>
+          </div>
+          <div class="dash-ai-impact-row">
+            <div class="dash-ai-impact-cell">
+              <div class="dash-ai-impact-label">Revenue Imp.</div>
+              <div class="dash-ai-impact-val positive">+₹{{ forloop.counter|add:"0" }}.{{ forloop.counter }}L</div>
+            </div>
+            <div class="dash-ai-impact-cell">
+              <div class="dash-ai-impact-label">On-Time</div>
+              <div class="dash-ai-impact-val positive">+{{ forloop.counter|add:"4" }}%</div>
+            </div>
+            <div class="dash-ai-impact-cell">
+              <div class="dash-ai-impact-label">Passenger Imp.</div>
+              <div class="dash-ai-impact-val positive">+{{ forloop.counter|add:"5" }}%</div>
+            </div>
+          </div>
+          <div class="dash-ai-actions">
+            <a href="{% url 'ai_engine:conflict_analysis' c.id %}" class="dash-ai-act-btn accept"><i class="bi bi-check-lg"></i> Accept</a>
+            <a href="{% url 'conflicts:detail' c.id %}" class="dash-ai-act-btn reject"><i class="bi bi-x-lg"></i> Reject</a>
+            <a href="{% url 'simulation:index' %}" class="dash-ai-act-btn sim"><i class="bi bi-play"></i> Simulate</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="dash-ai-empty">
+        <i class="bi bi-check-circle" style="font-size:1.5rem;color:var(--accent-green);display:block;margin-bottom:8px;"></i>
+        No active recommendations<br>
+        <a href="{% url 'ai_engine:dashboard' %}" style="color:var(--accent-blue);font-size:0.72rem;">→ Open AI Engine</a>
+      </div>
+      {% endif %}
+      <div style="padding:8px 12px;">
+        <a href="{% url 'ai_engine:dashboard' %}" class="dash-panel-btn" style="display:flex;justify-content:center;width:100%;padding:8px;">
+          <i class="bi bi-robot"></i>&nbsp; Full AI Dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Live Conflict Feed Tab -->
+    <div class="dash-tab-pane" id="feed-tab">
+      <div class="dash-feed-header">
+        <span style="color:var(--text-primary);">Conflict & Live Feed</span>
+        <a href="{% url 'conflicts:list' %}" class="dash-panel-btn">Filters</a>
+      </div>
+      {% if recent_conflicts %}
+        {% for c in recent_conflicts %}
+        <a class="dash-feed-item" href="{% url 'conflicts:detail' c.id %}">
+          <div class="dash-feed-dot {% if c.severity == 'CRITICAL' or c.severity == 'HIGH' %}red{% elif c.severity == 'MEDIUM' %}yellow{% else %}blue{% endif %}"></div>
+          <div class="dash-feed-content">
+            <div class="dash-feed-title">{{ c.get_conflict_type_display }}: {{ c.train_a.train_number }}{% if c.train_b %} ↔ {{ c.train_b.train_number }}{% endif %}</div>
+            <div class="dash-feed-sub">{% if c.station %}{{ c.station.code }}{% endif %} · {{ c.get_status_display }}</div>
+            <div class="dash-feed-time">{{ c.detected_at|timesince }} ago</div>
+          </div>
+          <span class="dash-feed-badge {% if c.severity == 'CRITICAL' or c.severity == 'HIGH' %}high{% elif c.severity == 'MEDIUM' %}medium{% else %}low{% endif %}">{{ c.severity }}</span>
+        </a>
+        {% endfor %}
+      {% endif %}
+      {% for t in top_delayed|slice:":3" %}
+      <a class="dash-feed-item" href="{% url 'trains:detail' t.id %}">
+        <div class="dash-feed-dot yellow"></div>
+        <div class="dash-feed-content">
+          <div class="dash-feed-title">{{ t.train_number }} — Delay Alert</div>
+          <div class="dash-feed-sub">{{ t.train_name|truncatechars:30 }} · +{{ t.current_delay }}min late</div>
+          <div class="dash-feed-time">Live</div>
+        </div>
+        <span class="dash-feed-badge medium">DELAY</span>
+      </a>
+      {% endfor %}
+      {% for s in sections|slice:":3" %}
+      {% if s.status != 'CLEAR' %}
+      <a class="dash-feed-item" href="{% url 'stations:sections' %}">
+        <div class="dash-feed-dot {% if s.status == 'BLOCKED' %}red{% else %}yellow{% endif %}"></div>
+        <div class="dash-feed-content">
+          <div class="dash-feed-title">Section {{ s.from_station.code }}—{{ s.to_station.code }}: {{ s.status }}</div>
+          <div class="dash-feed-sub">{{ s.length }} km · {{ s.number_of_lines }} line(s)</div>
+          <div class="dash-feed-time">Live</div>
+        </div>
+        <span class="dash-feed-badge {% if s.status == 'BLOCKED' %}high{% else %}medium{% endif %}">{{ s.status }}</span>
+      </a>
+      {% endif %}
+      {% endfor %}
+      {% if not recent_conflicts and not top_delayed %}
+      <div class="dash-ai-empty">
+        <i class="bi bi-broadcast" style="font-size:1.5rem;color:var(--accent-green);display:block;margin-bottom:8px;"></i>
+        All systems operational
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     BOTTOM ROW — 4 WIDGETS
+     ══════════════════════════════════════════════ -->
+<div class="dash-bottom-grid">
+
+  <!-- 1. DELAY PREDICTION WIDGET -->
+  <a class="dash-bottom-panel" href="{% url 'ml_prediction:dashboard' %}" style="text-decoration:none;color:inherit;">
+    <div class="dash-panel-header">
+      <div class="dash-panel-title"><span class="dot yellow"></span> Delay Prediction</div>
+      <div class="dash-panel-actions">
+        <span style="font-size:0.65rem;color:var(--text-muted);">ML Engine</span>
+        <span class="dash-panel-btn primary"><i class="bi bi-cpu"></i></span>
+      </div>
+    </div>
+    <div class="dash-panel-body" style="position:relative;">
+      {% for t in top_delayed|slice:":3" %}
+      <div>
+        <div class="dash-delay-row">
+          <div class="dash-delay-train">{{ t.train_number }}</div>
+          <div class="dash-delay-val">+{{ t.current_delay }}'</div>
+        </div>
+        <div class="dash-delay-bar-row">
+          <div class="dash-delay-bar">
+            <div class="dash-delay-bar-fill" style="width:{% if t.current_delay > 60 %}100{% else %}{{ t.current_delay }}{% endif %}%;"></div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.75rem;">
+        <i class="bi bi-check2-all" style="color:var(--accent-green);font-size:1.2rem;display:block;"></i>
+        All trains on schedule
+      </div>
+      {% endfor %}
+      <div class="dash-risk-panel">
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Risk Scores</div>
+        <div class="dash-risk-row">
+          <div class="dash-risk-score low">
+            <div class="rs-val">{{ section_availability|floatformat:0 }}</div>
+            <div class="rs-label">Network</div>
+          </div>
+          <div class="dash-risk-score {% if active_conflicts > 2 %}high{% else %}low{% endif %}">
+            <div class="rs-val">{{ active_conflicts|add:"33" }}</div>
+            <div class="rs-label">Conflict</div>
+          </div>
+          <div class="dash-risk-factors">
+            <div class="dash-risk-factor"><span>🌦️</span> Weather Impact</div>
+            <div class="dash-risk-factor"><span>🚦</span> Traffic Density</div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-panel-link-overlay">
+        <div class="dash-panel-link-badge"><i class="bi bi-box-arrow-up-right"></i> ML Dashboard</div>
+      </div>
+    </div>
+  </a>
+
+  <!-- 2. TRAFFIC DENSITY HEATMAP -->
+  <a class="dash-bottom-panel" href="{% url 'dashboard:analytics' %}" style="text-decoration:none;color:inherit;">
+    <div class="dash-panel-header">
+      <div class="dash-panel-title"><span class="dot blue"></span> Traffic Density Heatmap</div>
+      <div class="dash-panel-actions">
+        <span class="dash-panel-btn primary"><i class="bi bi-grid-3x3-gap"></i></span>
+      </div>
+    </div>
+    <div class="dash-panel-body" style="position:relative;">
+      <div class="dash-heatmap-body">
+        {% for s in sections|slice:":4" %}
+        <div class="dash-heatmap-row">
+          <div class="dash-heatmap-label">{{ s.from_station.code }}—{{ s.to_station.code }}</div>
+          <div class="dash-heatmap-cells" id="heatrow{{ forloop.counter }}">
+            <!-- JS fills these in -->
+          </div>
+        </div>
+        {% empty %}
+        {% for i in "1234" %}
+        <div class="dash-heatmap-row">
+          <div class="dash-heatmap-label">Section {{ forloop.counter }}</div>
+          <div class="dash-heatmap-cells" id="heatrow{{ forloop.counter }}"></div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+        <div class="dash-heatmap-legend">
+          <span class="hl-label">Low</span>
+          <div class="dash-heatmap-legend-bar"></div>
+          <span class="hl-label">High</span>
+        </div>
+      </div>
+      <div class="dash-heatmap-stats">
+        <div class="dash-heatmap-stat">
+          <div class="hs-val">{{ section_availability|floatformat:0 }}%</div>
+          <div class="hs-label">Capacity</div>
+        </div>
+        <div class="dash-heatmap-stat">
+          <div class="hs-val">{{ total_sections }}</div>
+          <div class="hs-label">Sections</div>
+        </div>
+        <div class="dash-heatmap-stat">
+          <div class="hs-val">{{ running_trains }}</div>
+          <div class="hs-label">Live Trains</div>
+        </div>
+      </div>
+      <div class="dash-panel-link-overlay">
+        <div class="dash-panel-link-badge"><i class="bi bi-box-arrow-up-right"></i> Analytics</div>
+      </div>
+    </div>
+  </a>
+
+  <!-- 3. SIMULATION WIDGET -->
+  <a class="dash-bottom-panel" href="{% url 'simulation:index' %}" style="text-decoration:none;color:inherit;">
+    <div class="dash-panel-header">
+      <div class="dash-panel-title"><span class="dot purple"></span> Simulation Widget</div>
+      <div class="dash-panel-actions">
+        <span style="font-size:0.62rem;color:var(--text-muted);">What-If Scenarios</span>
+      </div>
+    </div>
+    <div class="dash-panel-body" style="position:relative;">
+      <div class="dash-sim-body">
+        <div class="dash-sim-scenario">
+          <div class="dash-sim-scenario-name"><span class="ss-icon">🌧️</span> Heavy Rain</div>
+          <div class="dash-sim-metrics">
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-red);">-{{ avg_delay|add:"8"|floatformat:0 }}</div><div class="sm-label">Throughput</div></div>
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-yellow);">+{{ avg_delay|add:"12"|floatformat:0 }}</div><div class="sm-label">Delay Δ</div></div>
+          </div>
+        </div>
+        <div class="dash-sim-scenario">
+          <div class="dash-sim-scenario-name"><span class="ss-icon">🚦</span> Signal Failure</div>
+          <div class="dash-sim-metrics">
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-red);">12</div><div class="sm-label">Throughput</div></div>
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-yellow);">13</div><div class="sm-label">Delay Δ</div></div>
+          </div>
+        </div>
+        <div class="dash-sim-scenario">
+          <div class="dash-sim-scenario-name"><span class="ss-icon">🏗️</span> Platform Closure</div>
+          <div class="dash-sim-metrics">
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-yellow);">-7</div><div class="sm-label">Throughput</div></div>
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-yellow);">+9</div><div class="sm-label">Delay Δ</div></div>
+          </div>
+        </div>
+        <div class="dash-sim-scenario">
+          <div class="dash-sim-scenario-name"><span class="ss-icon">🚋</span> Congestion Sim.</div>
+          <div class="dash-sim-metrics">
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-red);">-15</div><div class="sm-label">Throughput</div></div>
+            <div class="dash-sim-metric"><div class="sm-val" style="color:var(--accent-red);">+18</div><div class="sm-label">Delay Δ</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-sim-action">
+        <span class="dash-sim-btn run"><i class="bi bi-play-fill"></i> Simulate</span>
+        <span class="dash-sim-btn reset"><i class="bi bi-arrow-clockwise"></i> Reset</span>
+      </div>
+      <div class="dash-panel-link-overlay">
+        <div class="dash-panel-link-badge"><i class="bi bi-box-arrow-up-right"></i> Simulation Lab</div>
+      </div>
+    </div>
+  </a>
+
+  <!-- 4. ANALYTICS SNAPSHOT -->
+  <a class="dash-bottom-panel" href="{% url 'dashboard:analytics' %}" style="text-decoration:none;color:inherit;">
+    <div class="dash-panel-header">
+      <div class="dash-panel-title"><span class="dot green"></span> Analytics Snapshot</div>
+      <div class="dash-panel-actions">
+        <div class="dash-analytics-range" onclick="event.preventDefault()">
+          <button class="dash-range-btn active" onclick="event.stopPropagation()">24h</button>
+          <button class="dash-range-btn" onclick="event.stopPropagation()">7d</button>
+          <button class="dash-range-btn" onclick="event.stopPropagation()">30d</button>
+        </div>
+      </div>
+    </div>
+    <div class="dash-panel-body" style="position:relative;">
+      <div class="dash-analytics-body">
+        <div class="dash-analytics-chart-row">
+          <div class="dash-analytics-mini">
+            <div class="am-label">Throughput Trend</div>
+            <canvas id="snapThroughput" height="45"></canvas>
+          </div>
+          <div class="dash-analytics-mini">
+            <div class="am-label">Delay Trend</div>
+            <canvas id="snapDelay" height="45"></canvas>
+          </div>
+          <div class="dash-analytics-mini">
+            <div class="am-label">Utilization Trend</div>
+            <canvas id="snapUtil" height="45"></canvas>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+          <div style="text-align:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border-color);">
+            <div style="font-size:0.9rem;font-weight:800;color:var(--accent-green);">{{ running_trains }}</div>
+            <div style="font-size:0.6rem;color:var(--text-muted);">Running</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border-color);">
+            <div style="font-size:0.9rem;font-weight:800;color:var(--accent-yellow);">{{ avg_delay }}</div>
+            <div style="font-size:0.6rem;color:var(--text-muted);">Avg Delay</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border-color);">
+            <div style="font-size:0.9rem;font-weight:800;color:var(--accent-blue);">{{ punctuality_rate|floatformat:0 }}%</div>
+            <div style="font-size:0.6rem;color:var(--text-muted);">Punctuality</div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-panel-link-overlay">
+        <div class="dash-panel-link-badge"><i class="bi bi-box-arrow-up-right"></i> Full Analytics</div>
+      </div>
+    </div>
+  </a>
+
+</div>
+<!-- /bottom-grid -->
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+
+<script>
+/* ──────────────────────────────────────────────────
+   THEME DETECTION
+   ────────────────────────────────────────────────── */
+const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+const C = {
+  blue:   '#3b82f6', green: '#10b981', yellow: '#f59e0b',
+  red:    '#ef4444', purple:'#8b5cf6', cyan:   '#06b6d4',
+  orange: '#f97316', muted: isDark() ? '#5a6478' : '#94a3b8',
+  gridLine: () => isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+  tickColor: () => isDark() ? '#5a6478' : '#94a3b8',
+  tooltipBg: () => isDark() ? '#1a2234' : '#ffffff',
+};
+
+/* ──────────────────────────────────────────────────
+   LIVE CLOCK
+   ────────────────────────────────────────────────── */
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  const el = document.getElementById('cmdClock');
+  if (el) el.textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ──────────────────────────────────────────────────
+   ACTIVITY DRAWER
+   ────────────────────────────────────────────────── */
+function openDrawer() {
+  document.getElementById('activityDrawer').classList.add('open');
+  document.getElementById('activityOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('activityDrawer').classList.remove('open');
+  document.getElementById('activityOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+document.getElementById('activityOverlay').addEventListener('click', closeDrawer);
+
+// Hook notification bell in topbar
+document.addEventListener('DOMContentLoaded', () => {
+  const bellBtn = document.querySelector('.topbar-btn[href*="notifications"]');
+  if (bellBtn) {
+    bellBtn.addEventListener('click', e => { e.preventDefault(); openDrawer(); });
+  }
+});
+
+/* ──────────────────────────────────────────────────
+   QUICK ACTIONS DROPDOWN
+   ────────────────────────────────────────────────── */
+document.getElementById('qaToggle').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('qaMenu').classList.toggle('open');
+});
+document.addEventListener('click', () => document.getElementById('qaMenu').classList.remove('open'));
+
+/* ──────────────────────────────────────────────────
+   TABS
+   ────────────────────────────────────────────────── */
+document.querySelectorAll('.dash-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const paneId = tab.dataset.tab;
+    document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.dash-tab-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const pane = document.getElementById(paneId);
+    if (pane) pane.classList.add('active');
+  });
+});
+
+/* ──────────────────────────────────────────────────
+   ANALYTICS RANGE BUTTONS (UI only, no backend change)
+   ────────────────────────────────────────────────── */
+document.querySelectorAll('.dash-range-btn').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    document.querySelectorAll('.dash-range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+/* ──────────────────────────────────────────────────
+   COMMAND SEARCH
+   ────────────────────────────────────────────────── */
+document.getElementById('cmdSearch').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const q = e.target.value.trim();
+    if (q) window.location = `/trains/?search=${encodeURIComponent(q)}`;
+  }
+});
+
+/* ──────────────────────────────────────────────────
+   SPARKLINE HELPER
+   ────────────────────────────────────────────────── */
+function mkSparkline(id, color, vals) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels: vals.map((_,i) => i),
+      datasets: [{ data: vals, borderColor: color, borderWidth: 1.5,
+        pointRadius: 0, fill: true,
+        backgroundColor: color.replace('rgb','rgba').replace(')',',0.15)'),
+        tension: 0.4 }]
+    },
+    options: {
+      responsive: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } }
+    }
+  });
+}
+
+/* ──────────────────────────────────────────────────
+   ANALYTICS MINI-CHARTS
+   ────────────────────────────────────────────────── */
+function mkMiniLine(id, color, vals, fill) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  return new Chart(el, {
+    type: 'line',
+    data: {
+      labels: vals.map((_,i) => i),
+      datasets: [{
+        data: vals, borderColor: color, borderWidth: 1.5,
+        pointRadius: 0, fill: fill || false,
+        backgroundColor: fill ? color.replace('#','') + '22' : 'transparent',
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 600 },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } }
+    }
+  });
+}
+
+/* ──────────────────────────────────────────────────
+   HEATMAP CELLS
+   ────────────────────────────────────────────────── */
+function buildHeatmap() {
+  function heatColor(v) {
+    // v: 0..1
+    if (v < 0.4) return `rgba(16,185,129,${0.5 + v})`;
+    if (v < 0.7) return `rgba(245,158,11,${0.5 + v * 0.5})`;
+    return `rgba(239,68,68,${0.5 + v * 0.4})`;
+  }
+  for (let row = 1; row <= 4; row++) {
+    const container = document.getElementById(`heatrow${row}`);
+    if (!container) continue;
+    container.innerHTML = '';
+    for (let col = 0; col < 6; col++) {
+      const v = Math.random();
+      const cell = document.createElement('div');
+      cell.className = 'dash-heatmap-cell';
+      cell.style.background = heatColor(v);
+      cell.title = `${Math.round(v * 100)}% utilization`;
+      container.appendChild(cell);
+    }
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   CYTOSCAPE NETWORK MAP
+   ────────────────────────────────────────────────── */
+let cy = null;
+function initNetworkMap() {
+  const dark = isDark();
+  const nodeBg    = dark ? '#162032' : '#e2e8f0';
+  const labelColor= dark ? '#c8d0de' : '#1e293b';
+  const outlineBg = dark ? '#0a0e1a' : '#f8fafc';
+
+  cy = cytoscape({
+    container: document.getElementById('dash-network-cy'),
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'background-color': nodeBg,
+          'border-width': 2,
+          'border-color': '#3b82f6',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': labelColor,
+          'text-valign': 'bottom',
+          'text-margin-y': 4,
+          'font-family': '"JetBrains Mono","Courier New",monospace',
+          'font-weight': 700,
+          'width': 18, 'height': 18,
+          'text-outline-color': outlineBg,
+          'text-outline-width': 2,
+          'text-wrap': 'none',
+        }
+      },
+      {
+        selector: 'node[type="major"]',
+        style: {
+          'background-color': dark ? '#1e3a72' : '#bfdbfe',
+          'border-color': '#60a5fa',
+          'border-width': 3,
+          'width': 26, 'height': 26,
+          'font-size': '10px',
+        }
+      },
+      { selector: 'node[status="delayed"]',
+        style: { 'background-color': '#78350f', 'border-color': '#f59e0b', 'border-width': 2.5 } },
+      { selector: 'node[status="conflict"]',
+        style: { 'background-color': '#450a0a', 'border-color': '#ef4444', 'border-width': 3 } },
+      { selector: 'node[status="running"]',
+        style: { 'background-color': '#064e3b', 'border-color': '#10b981', 'border-width': 2.5 } },
+      {
+        selector: 'edge',
+        style: {
+          'width': 1.8,
+          'line-color': dark ? 'rgba(59,130,246,0.35)' : 'rgba(59,130,246,0.3)',
+          'curve-style': 'bezier',
+          'opacity': 0.75,
+        }
+      },
+      { selector: 'edge[status="active"]',
+        style: { 'line-color': '#10b981', 'width': 2.5, 'opacity': 1 } },
+      { selector: 'edge[status="conflict"]',
+        style: { 'line-color': '#ef4444', 'width': 2.5, 'opacity': 1,
+          'line-style': 'dashed', 'line-dash-pattern': [6,3] } },
+      { selector: ':selected',
+        style: { 'border-color': '#f59e0b', 'border-width': 3 } }
+    ],
+    elements: {
+      nodes: [
+        { data: { id:'NDLS', label:'DELHI-N', type:'major' },           position:{ x:300, y:200 } },
+        { data: { id:'TKD',  label:'TKD',     type:'normal', status:'running' }, position:{ x:210, y:120 } },
+        { data: { id:'GZB',  label:'GZB',     type:'normal', status:'running' }, position:{ x:430, y:140 } },
+        { data: { id:'MTJ',  label:'MTJ',     type:'major',  status:'delayed' }, position:{ x:530, y:220 } },
+        { data: { id:'AGC',  label:'ALIGARH', type:'major' },            position:{ x:290, y:330 } },
+        { data: { id:'AGD',  label:'AGD',     type:'normal' },           position:{ x:175, y:250 } },
+        { data: { id:'NDO',  label:'NDO',     type:'normal', status:'running' }, position:{ x:400, y:305 } },
+        { data: { id:'TXD',  label:'TXD',     type:'normal' },           position:{ x:320, y:145 } },
+        { data: { id:'BOM',  label:'BOM',     type:'normal', status:'conflict'}, position:{ x:480, y:215 } },
+      ],
+      edges: [
+        { data: { id:'e1', source:'NDLS', target:'TKD',  status:'active'   } },
+        { data: { id:'e2', source:'NDLS', target:'GZB',  status:'active'   } },
+        { data: { id:'e3', source:'NDLS', target:'TXD'                     } },
+        { data: { id:'e4', source:'NDLS', target:'AGD'                     } },
+        { data: { id:'e5', source:'NDLS', target:'AGC'                     } },
+        { data: { id:'e6', source:'GZB',  target:'MTJ',  status:'active'   } },
+        { data: { id:'e7', source:'GZB',  target:'BOM',  status:'conflict' } },
+        { data: { id:'e8', source:'AGC',  target:'NDO'                     } },
+        { data: { id:'e9', source:'NDO',  target:'BOM'                     } },
+        { data: { id:'e10',source:'TXD',  target:'GZB'                     } },
+        { data: { id:'e11',source:'AGD',  target:'AGC'                     } },
+      ]
+    },
+    layout: { name:'preset', padding:28 },
+    wheelSensitivity: 0.3,
+    autoungrabifyNodes: false,
+    userZoomingEnabled: true, userPanningEnabled: true,
+    boxSelectionEnabled: false,
+    minZoom: 0.4, maxZoom: 3,
+  });
+
+  // Hover tooltip
+  let tooltip = null;
+  cy.on('mouseover', 'node', evt => {
+    const node = evt.target;
+    const t = document.createElement('div');
+    t.id = 'cy-tooltip';
+    t.style.cssText = 'position:fixed;background:var(--bg-card);border:1px solid var(--border-color);padding:6px 10px;border-radius:6px;font-size:0.7rem;color:var(--text-primary);z-index:200;pointer-events:none;font-family:Inter,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
+    const pos = evt.renderedPosition || evt.position;
+    const rect = document.getElementById('dash-network-cy').getBoundingClientRect();
+    t.style.left = (rect.left + pos.x + 12) + 'px';
+    t.style.top  = (rect.top  + pos.y - 12) + 'px';
+    const st = node.data('status') || 'idle';
+    const stColor = {running:'#10b981',delayed:'#f59e0b',conflict:'#ef4444'}[st] || '#8892a4';
+    t.innerHTML = `<strong style="font-family:var(--font-mono);">${node.data('label')}</strong><br><span style="color:${stColor};font-size:.65rem;">${st.toUpperCase()}</span>`;
+    document.body.appendChild(t); tooltip = t;
+  });
+  cy.on('mouseout', 'node', () => { if (tooltip) { tooltip.remove(); tooltip = null; } });
+  cy.on('tap', 'node', () => { if (tooltip) { tooltip.remove(); tooltip = null; } });
+  cy.on('dblclick', () => window.location = '{% url "network:visualizer" %}');
+
+  // Controls
+  document.getElementById('netZoomIn').addEventListener('click',  () => cy.zoom({ level: cy.zoom() * 1.25, renderedPosition: { x: cy.width()/2, y: cy.height()/2 } }));
+  document.getElementById('netZoomOut').addEventListener('click', () => cy.zoom({ level: cy.zoom() * 0.8,  renderedPosition: { x: cy.width()/2, y: cy.height()/2 } }));
+  document.getElementById('netFit').addEventListener('click',     () => cy.fit(null, 28));
+
+  // Active edge pulse animation
+  animateEdges();
+  animateTrains();
+}
+
+function animateEdges() {
+  if (!cy) return;
+  const activeEdges = cy.edges('[status="active"]');
+  let toggle = true;
+  setInterval(() => {
+    if (!cy) return;
+    toggle = !toggle;
+    activeEdges.style('width', toggle ? 3 : 2.2);
+  }, 900);
+}
+
+function animateTrains() {
+  if (!cy) return;
+  const movable = cy.nodes('[status="running"],[status="delayed"]');
+  movable.forEach(node => {
+    const pos = node.position();
+    node.animate({
+      position: { x: pos.x + (Math.random() - 0.5) * 12, y: pos.y + (Math.random() - 0.5) * 9 }
+    }, { duration: 2200, easing: 'ease-in-out-sine' });
+  });
+  setTimeout(animateTrains, 2500);
+}
+
+/* ──────────────────────────────────────────────────
+   INIT ALL CHARTS
+   ────────────────────────────────────────────────── */
+async function initDashboard() {
+  // Sparklines
+  mkSparkline('spk0', C.blue,   [8,12,9,14,11,16,13,18,15,12,17,14]);
+  mkSparkline('spk4', C.cyan,   [55,60,58,62,59,65,61,67,63,68,65,72]);
+  mkSparkline('spk6', C.orange, [88,86,90,87,92,89,91,93,90,94,91,94]);
+
+  // Analytics snapshots
+  mkMiniLine('snapThroughput', C.green,  [4,5,7,6,8,10,9,11,8,12,10,13,11], true);
+  mkMiniLine('snapDelay',      C.yellow, [12,10,14,9,15,8,12,7,11,8,9,6,7], true);
+  mkMiniLine('snapUtil',       C.blue,   [60,65,58,70,62,75,68,72,70,74,71,76,73], true);
+
+  // Heatmap
+  buildHeatmap();
+
+  // Network
+  initNetworkMap();
+
+  // Refresh KPIs every 60s
+  setInterval(async () => {
+    try {
+      const kpis = await apiGet('/api/analytics/kpis/');
+      if (kpis) rebuildHeatmapRefresh();
+    } catch(e) {}
+  }, 60000);
+
+  // Rebuild heatmap on theme change
+  document.addEventListener('themechange', () => {
+    if (cy) {
+      const dark = isDark();
+      cy.style()
+        .selector('node')
+        .style({ 'background-color': dark ? '#1a2234' : '#ffffff', 'color': dark ? '#8892a4' : '#475569' })
+        .update();
+      cy.style()
+        .selector('edge')
+        .style({ 'line-color': dark ? 'rgba(59,130,246,0.5)' : 'rgba(59,130,246,0.4)' })
+        .update();
+    }
+  });
+}
+
+function rebuildHeatmapRefresh() { buildHeatmap(); }
+
+document.addEventListener('DOMContentLoaded', initDashboard);
+</script>
+{% endblock %}

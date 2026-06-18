@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-map"></i> Route Management</div>
+    <div class="page-subtitle">{{ routes.count }} routes defined</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'stations:route_create' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Add Route</a>
+  </div>
+</div>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead><tr><th>Route Name</th><th>From</th><th>To</th><th>Distance</th><th>Est. Duration</th><th>Avg Speed</th><th>Lines</th></tr></thead>
+      <tbody>
+        {% for r in routes %}
+        <tr>
+          <td style="font-weight:600;">{{ r.name }}</td>
+          <td><span style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);">{{ r.source_station.code }}</span></td>
+          <td><span style="font-family:var(--font-mono);font-weight:700;color:var(--accent-purple);">{{ r.destination_station.code }}</span></td>
+          <td style="font-family:var(--font-mono);">{{ r.distance }} km</td>
+          <td>{{ r.estimated_duration }} min</td>
+          <td style="font-family:var(--font-mono);">{{ r.average_speed }} km/h</td>
+          <td>{% if r.is_double_line %}<span style="color:var(--accent-green);">Double</span>{% else %}<span style="color:var(--accent-yellow);">Single</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No routes configured.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+/* ── Root ───────────────────────────────────────────── */
+.sr-wrap{padding:0 0 20px;font-family:var(--font-sans);}
+
+/* ── Top Bar ────────────────────────────────────────── */
+.sr-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 0 12px;border-bottom:1px solid var(--border-color);margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.sr-title-block{display:flex;flex-direction:column;}
+.sr-title{font-size:1.05rem;font-weight:800;color:var(--text-primary);letter-spacing:.02em;}
+.sr-subtitle{font-size:0.62rem;color:var(--text-muted);font-weight:500;margin-top:1px;}
+.sr-ctrl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sr-sel{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.65rem;padding:5px 8px;border-radius:5px;cursor:pointer;outline:none;}
+.sr-btn{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.65rem;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-decoration:none;transition:all .2s;}
+.sr-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue);}
+.sr-btn.prim{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.4);color:#60a5fa;}
+
+/* ── KPI Row ────────────────────────────────────────── */
+.sr-kpi-row{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:1400px){.sr-kpi-row{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:768px){.sr-kpi-row{grid-template-columns:repeat(2,1fr);}}
+.sr-kpi{background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden;cursor:default;transition:border-color .2s;}
+.sr-kpi:hover{border-color:rgba(59,130,246,.4);}
+.sr-kpi-lbl{font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px;}
+.sr-kpi-val{font-size:1.25rem;font-weight:800;font-family:var(--font-mono);line-height:1;margin-bottom:2px;}
+.sr-kpi-trend{font-size:0.6rem;font-weight:600;color:#34d399;}
+.sr-kpi-trend.down{color:#f87171;}
+.sr-kpi-spark{position:absolute;bottom:0;right:0;width:70px;height:30px;opacity:.45;}
+.sr-kpi-icon{position:absolute;top:10px;right:10px;font-size:1.1rem;opacity:.18;}
+
+/* ── Panel Base ─────────────────────────────────────── */
+.sr-panel{background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;height:100%;display:flex;flex-direction:column;}
+.sr-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border-color);}
+.sr-panel-title{font-size:0.67rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-primary);display:flex;align-items:center;gap:6px;}
+.sr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sr-dot.blue{background:#3b82f6;box-shadow:0 0 6px rgba(59,130,246,.5);}
+.sr-dot.green{background:#10b981;box-shadow:0 0 6px rgba(16,185,129,.5);}
+.sr-dot.orange{background:#f97316;box-shadow:0 0 6px rgba(249,115,22,.5);}
+.sr-dot.red{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5);}
+.sr-dot.purple{background:#8b5cf6;box-shadow:0 0 6px rgba(139,92,246,.5);}
+.sr-dot.cyan{background:#06b6d4;box-shadow:0 0 6px rgba(6,182,212,.5);}
+.sr-dot.yellow{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5);}
+.sr-pnl-btn{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#60a5fa;font-size:0.6rem;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .2s;}
+.sr-pnl-btn:hover{background:rgba(59,130,246,.2);}
+.sr-pnl-btn.red{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;}
+.sr-pnl-btn.green{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#34d399;}
+
+/* ── Station Table ──────────────────────────────────── */
+.sr-search-row{display:flex;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border-color);}
+.sr-search{flex:1;background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-primary);font-size:0.7rem;padding:5px 10px;border-radius:5px;outline:none;}
+.sr-search:focus{border-color:rgba(59,130,246,.5);}
+.sr-table{width:100%;border-collapse:collapse;}
+.sr-table th{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 12px;border-bottom:1px solid var(--border-color);text-align:left;white-space:nowrap;cursor:pointer;}
+.sr-table th:hover{color:var(--accent-blue);}
+.sr-table td{font-size:0.7rem;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;}
+.sr-table tr:hover td{background:rgba(59,130,246,.04);cursor:pointer;}
+.sr-table tr:last-child td{border-bottom:none;}
+.sr-status-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:0.58rem;font-weight:700;text-transform:uppercase;}
+.sr-status-pill.high{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3);}
+.sr-status-pill.low{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+.sr-status-pill.critical{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
+.sr-health-bar{width:60px;background:rgba(255,255,255,.07);border-radius:2px;height:5px;overflow:hidden;}
+.sr-health-fill{height:100%;border-radius:2px;}
+.sr-code{font-family:var(--font-mono);font-size:0.68rem;color:#60a5fa;font-weight:700;}
+
+/* ── Network Topology Map ───────────────────────────── */
+#topoCanvas{width:100%;display:block;cursor:grab;flex:1;min-height:200px;}
+#topoCanvas:active{cursor:grabbing;}
+.topo-controls{display:flex;gap:6px;padding:6px 12px;border-bottom:1px solid var(--border-color);}
+.topo-ctrl-btn{background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.62rem;padding:3px 8px;border-radius:4px;cursor:pointer;transition:all .2s;}
+.topo-ctrl-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue);}
+.topo-tooltip{position:fixed;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;padding:8px 10px;font-size:0.65rem;color:var(--text-primary);pointer-events:none;display:none;z-index:9999;min-width:140px;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+
+/* ── Route Table ────────────────────────────────────── */
+.route-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s;}
+.route-row:hover{background:rgba(59,130,246,.04);}
+.route-row:last-child{border-bottom:none;}
+.route-lbl{font-size:0.67rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono);}
+.route-meta{font-size:0.6rem;color:var(--text-muted);}
+.route-util-bar{flex:1;background:rgba(255,255,255,.07);border-radius:2px;height:4px;}
+.route-util-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);}
+
+/* ── Track Sections ─────────────────────────────────── */
+.section-row{display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:8px;padding:6px 14px;border-bottom:1px solid rgba(255,255,255,.04);}
+.section-row:last-child{border-bottom:none;}
+.section-row:hover{background:rgba(255,255,255,.02);}
+.section-name{font-size:0.65rem;color:var(--text-primary);font-weight:600;}
+.section-badge{padding:2px 7px;border-radius:3px;font-size:0.58rem;font-weight:700;text-transform:uppercase;}
+.section-badge.CLEAR{background:rgba(16,185,129,.15);color:#34d399;}
+.section-badge.OCCUPIED{background:rgba(245,158,11,.15);color:#fbbf24;}
+.section-badge.BLOCKED{background:rgba(239,68,68,.2);color:#f87171;}
+.section-badge.MAINTENANCE{background:rgba(59,130,246,.15);color:#60a5fa;}
+.section-badge.SIGNAL_FAILURE{background:rgba(139,92,246,.15);color:#a78bfa;}
+
+/* ── Platform Management ────────────────────────────── */
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(32px,1fr));gap:4px;padding:10px 14px;}
+.plat-cell{height:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;font-weight:700;cursor:default;title:'';transition:transform .15s;}
+.plat-cell:hover{transform:scale(1.1);}
+.plat-cell.AVAILABLE{background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.3);}
+.plat-cell.OCCUPIED{background:rgba(245,158,11,.2);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+.plat-cell.MAINTENANCE{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
+.plat-cell.CLOSED{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);}
+
+/* ── Network Health Gauges ──────────────────────────── */
+.health-gauges{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;}
+.health-gauge{text-align:center;}
+.health-gauge canvas{display:block;margin:0 auto;}
+.health-gauge-lbl{font-size:0.58rem;color:var(--text-muted);margin-top:2px;}
+.health-gauge-val{font-size:0.78rem;font-weight:800;font-family:var(--font-mono);}
+
+/* ── Digital Twin ───────────────────────────────────── */
+.dt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:10px 14px;}
+.dt-cell{background:var(--bg-secondary);border-radius:6px;padding:10px;text-align:center;}
+.dt-icon{font-size:1.4rem;margin-bottom:4px;}
+.dt-lbl{font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
+.dt-val{font-size:0.8rem;font-weight:800;font-family:var(--font-mono);margin-top:2px;}
+
+/* ── Resource Allocation ────────────────────────────── */
+.ra-section{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.04);}
+.ra-section:last-child{border-bottom:none;}
+.ra-lbl{font-size:0.6rem;font-weight:700;color:var(--text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;}
+.ra-bar-wrap{background:rgba(255,255,255,.06);border-radius:3px;height:8px;overflow:hidden;margin-bottom:2px;}
+.ra-bar{height:100%;border-radius:3px;transition:width .8s;}
+.ra-meta{font-size:0.58rem;color:var(--text-muted);display:flex;justify-content:space-between;}
+
+/* ── AI Insights ────────────────────────────────────── */
+.ai-ins-item{display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);}
+.ai-ins-item:last-child{border-bottom:none;}
+.ai-ins-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.72rem;}
+.ai-ins-title{font-size:0.63rem;font-weight:700;color:var(--text-primary);margin-bottom:1px;}
+.ai-ins-text{font-size:0.61rem;color:var(--text-secondary);line-height:1.4;}
+
+/* ── Live Event Feed ────────────────────────────────── */
+.event-item{display:flex;align-items:flex-start;gap:8px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);}
+.event-item:last-child{border-bottom:none;}
+.event-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.event-text{font-size:0.63rem;color:var(--text-secondary);line-height:1.4;}
+.event-title{font-size:0.63rem;font-weight:700;color:var(--text-primary);}
+.event-time{font-size:0.57rem;color:var(--text-muted);font-family:var(--font-mono);}
+
+/* ── Bottom Analytics ───────────────────────────────── */
+.analytics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;}
+@media(max-width:1200px){.analytics-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:768px){.analytics-grid{grid-template-columns:1fr;}}
+.analytics-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;}
+.analytics-lbl{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:4px;}
+.analytics-val{font-size:0.9rem;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);margin-bottom:4px;}
+.analytics-canvas{width:100%;height:45px;}
+
+/* ── Executive Insights ─────────────────────────────── */
+.exec-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 14px;}
+@media(max-width:1200px){.exec-row{grid-template-columns:repeat(2,1fr);}}
+.exec-metric{text-align:center;}
+.exec-lbl{font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.exec-val{font-size:0.9rem;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);}
+.exec-chg{font-size:0.58rem;font-weight:600;margin-top:1px;}
+.exec-chg.pos{color:#34d399;}
+.exec-chg.neg{color:#f87171;}
+
+/* ── Station Detail Panel ───────────────────────────── */
+.station-detail-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-color);z-index:1000;transition:right .3s ease;overflow-y:auto;box-shadow:-8px 0 30px rgba(0,0,0,.3);}
+.station-detail-panel.open{right:0;}
+.sdp-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-color);position:sticky;top:0;background:var(--bg-card);z-index:1;}
+.sdp-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:4px;}
+.sdp-close:hover{color:var(--text-primary);}
+
+/* ── Layout ─────────────────────────────────────────── */
+.sr-grid-main{display:grid;grid-template-columns:320px 1fr 260px;gap:10px;margin-bottom:10px;}
+@media(max-width:1400px){.sr-grid-main{grid-template-columns:280px 1fr 240px;}}
+@media(max-width:1100px){.sr-grid-main{grid-template-columns:1fr;}}
+.sr-grid-mid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+@media(max-width:1100px){.sr-grid-mid{grid-template-columns:1fr 1fr;}}
+@media(max-width:768px){.sr-grid-mid{grid-template-columns:1fr;}}
+.sr-grid-bot{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+@media(max-width:1200px){.sr-grid-bot{grid-template-columns:1fr 1fr;}}
+@media(max-width:768px){.sr-grid-bot{grid-template-columns:1fr;}}
+.sr-grid-right{display:flex;flex-direction:column;gap:10px;height:100%;}
+
+/* ── Light mode ─────────────────────────────────────── */
+[data-theme="light"] .sr-kpi,[data-theme="light"] .sr-panel,[data-theme="light"] .station-detail-panel{background:#fff;}
+[data-theme="light"] .sr-table tr:hover td{background:rgba(0,0,0,.02);}
+[data-theme="light"] .sr-table td,[data-theme="light"] .sr-table th{border-bottom-color:rgba(0,0,0,.06);}
+[data-theme="light"] .dt-cell,[data-theme="light"] .ra-bar-wrap{background:#f8fafc;}
+[data-theme="light"] .analytics-card{background:#fff;}
+</style>
+{% endblock %}
+
+{% block content %}
+<form style="display:none;">{% csrf_token %}</form>
+<div class="sr-wrap">
+
+<!-- ── TOP BAR ──────────────────────────────────────── -->
+<div class="sr-topbar">
+  <div class="sr-title-block">
+    <div class="sr-title">Station & Route Management Command Center</div>
+    <div class="sr-subtitle">Railway Operations · Infrastructure Monitor</div>
+  </div>
+  <div class="sr-ctrl">
+    <select class="sr-sel" id="zoneFilterTop">
+      <option value="">Northern Zone</option>
+      {% for z in zones %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+    </select>
+    <select class="sr-sel" id="divFilterTop">
+      <option>Delhi Division</option>
+      <option>Allahabad Division</option>
+      <option>Lucknow Division</option>
+    </select>
+    <select class="sr-sel" id="stationFilterTop">
+      <option value="">All Stations</option>
+      {% for s in all_stations %}<option value="{{ s.id }}">{{ s.code }}</option>{% endfor %}
+    </select>
+    <select class="sr-sel">
+      <option>Route Filter</option>
+      {% for r in routes %}<option>{{ r.source_station.code }}–{{ r.destination_station.code }}</option>{% endfor %}
+    </select>
+    <a href="{% url 'network:visualizer' %}" class="sr-btn prim"><i class="bi bi-diagram-3"></i> Network Map</a>
+    <a href="{% url 'trains:list' %}" class="sr-btn"><i class="bi bi-train-front"></i> Trains</a>
+    <button class="sr-btn" onclick="exportData()"><i class="bi bi-download"></i> Export</button>
+  </div>
+</div>
+
+<!-- ── KPI ROW ───────────────────────────────────────── -->
+<div class="sr-kpi-row">
+  <div class="sr-kpi">
+    <div class="sr-kpi-lbl">Total Stations</div>
+    <div class="sr-kpi-val" style="color:#60a5fa;">{{ total_stations }}</div>
+    <div class="sr-kpi-trend"><i class="bi bi-arrow-up-right"></i> +{{ total_stations }} Active</div>
+    <canvas class="sr-kpi-spark" id="spk-stations"></canvas>
+    <div class="sr-kpi-icon" style="color:#3b82f6;"><i class="bi bi-geo-alt"></i></div>
+  </div>
+  <div class="sr-kpi">
+    <div class="sr-kpi-lbl">Active Stations</div>
+    <div class="sr-kpi-val" style="color:#34d399;">{{ active_stations }}</div>
+    <div class="sr-kpi-trend"><i class="bi bi-arrow-up-right"></i> +32%</div>
+    <canvas class="sr-kpi-spark" id="spk-active"></canvas>
+    <div class="sr-kpi-icon" style="color:#10b981;"><i class="bi bi-check-circle"></i></div>
+  </div>
+  <div class="sr-kpi">
+    <div class="sr-kpi-lbl">Platforms Available</div>
+    <div class="sr-kpi-val" style="color:#fb923c;">{{ avail_platforms }}</div>
+    <div class="sr-kpi-trend down"><i class="bi bi-arrow-down-right"></i> -10%</div>
+    <canvas class="sr-kpi-spark" id="spk-platforms"></canvas>
+    <div class="sr-kpi-icon" style="color:#f97316;"><i class="bi bi-columns-gap"></i></div>
+  </div>
+  <div class="sr-kpi">
+    <div class="sr-kpi-lbl">Routes Active</div>
+    <div class="sr-kpi-val" style="color:#34d399;">{{ total_routes }}</div>
+    <div class="sr-kpi-trend"><i class="bi bi-arrow-up-right"></i> +55%</div>
+    <canvas class="sr-kpi-spark" id="spk-routes"></canvas>
+    <div class="sr-kpi-icon" style="color:#10b981;"><i class="bi bi-arrows-expand"></i></div>
+  </div>
+  <div class="sr-kpi">
+    <div class="sr-kpi-lbl">Track Sections</div>
+    <div class="sr-kpi-val" style="color:#22d3ee;">{{ total_sections }}</div>
+    <div class="sr-kpi-trend"><i class="bi bi-arrow-up-right"></i> +1.2%</div>
+    <canvas class="sr-kpi-spark" id="spk-sections"></canvas>
+    <div class="sr-kpi-icon" style="color:#06b6d4;"><i class="bi bi-router"></i></div>
+  </div>
+  <div class="sr-kpi" style="position:relative;">
+    <div class="sr-kpi-lbl">Average Utilization</div>
+    <div class="sr-kpi-val" style="color:#a78bfa;font-size:1.4rem;">{{ avg_utilization }}%</div>
+    <div class="sr-kpi-trend"><i class="bi bi-graph-up"></i> Network Load</div>
+    <canvas class="sr-kpi-spark" id="spk-util"></canvas>
+    <div class="sr-kpi-icon" style="color:#8b5cf6;"><i class="bi bi-speedometer2"></i></div>
+  </div>
+  <div class="sr-kpi">
+    <div class="sr-kpi-lbl">Network Capacity</div>
+    <div class="sr-kpi-val" style="color:#60a5fa;font-size:1rem;">{{ total_platforms }}  <span style="font-size:.65rem;opacity:.7;">Pf.</span></div>
+    <div class="sr-kpi-trend"><i class="bi bi-arrow-up-right"></i> Passenger Cap.</div>
+    <canvas class="sr-kpi-spark" id="spk-cap"></canvas>
+    <div class="sr-kpi-icon" style="color:#3b82f6;"><i class="bi bi-diagram-2"></i></div>
+  </div>
+  <div class="sr-kpi">
+    <div class="sr-kpi-lbl">Infrastructure Health</div>
+    <div class="sr-kpi-val" style="color:#34d399;">{{ network_health }}%</div>
+    <div class="sr-kpi-trend"><i class="bi bi-arrow-up-right"></i> +9.4%</div>
+    <canvas class="sr-kpi-spark" id="spk-health"></canvas>
+    <div class="sr-kpi-icon" style="color:#10b981;"><i class="bi bi-heart-pulse"></i></div>
+  </div>
+</div>
+
+<!-- ── MAIN GRID: Station Table | Topology Map | Right Col ── -->
+<div class="sr-grid-main">
+
+  <!-- Station Command Center -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot blue"></span>Station Command Center</div>
+      <a href="{% url 'stations:create' %}" class="sr-pnl-btn"><i class="bi bi-plus"></i> Add</a>
+    </div>
+    <div class="sr-search-row">
+      <input type="text" class="sr-search" placeholder="🔍 Search station…" id="stSearch" oninput="filterStations()">
+      <select class="sr-sel" id="stTypeFilter" onchange="filterStations()" style="font-size:0.62rem;">
+        <option value="">All Types</option>
+        {% for val, label in type_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div style="overflow-y:auto;max-height:260px;flex:1;">
+      <table class="sr-table" id="stTable">
+        <thead>
+          <tr>
+            <th>Name</th><th>Code</th><th>Status</th>
+            <th>Capacity</th><th>Usage</th><th>Health</th>
+          </tr>
+        </thead>
+        <tbody id="stTbody">
+          {% for station in all_stations %}
+          <tr onclick="selectStation({{ station.id }},'{{ station.code }}','{{ station.name }}',{{ station.total_platforms }})" data-type="{{ station.station_type }}" data-name="{{ station.name|lower }}" data-code="{{ station.code|lower }}">
+            <td style="font-size:0.65rem;font-weight:600;color:var(--text-primary);">{{ station.name|truncatechars:16 }}</td>
+            <td><span class="sr-code">{{ station.code }}</span></td>
+            <td>
+              {% if station.station_type == 'MAJOR' or station.station_type == 'TERMINAL' %}
+                <span class="sr-status-pill high">High</span>
+              {% elif station.station_type == 'JUNCTION' %}
+                <span class="sr-status-pill low">Low</span>
+              {% else %}
+                <span class="sr-status-pill critical">Critical</span>
+              {% endif %}
+            </td>
+            <td style="font-size:0.65rem;color:var(--text-secondary);">{{ station.total_platforms }}</td>
+            <td>
+              <div class="sr-health-bar">
+                <div class="sr-health-fill" style="width:{% if station.station_type == 'MAJOR' %}75{% elif station.station_type == 'TERMINAL' %}85{% elif station.station_type == 'JUNCTION' %}50{% else %}30{% endif %}%;background:{% if station.station_type == 'MAJOR' %}#f97316{% elif station.station_type == 'TERMINAL' %}#ef4444{% else %}#10b981{% endif %};"></div>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div class="sr-health-bar" style="width:50px;">
+                  <div class="sr-health-fill" style="width:{% if station.is_junction %}88{% else %}72{% endif %}%;background:#10b981;"></div>
+                </div>
+                <span style="font-size:0.6rem;font-family:var(--font-mono);">{% if station.is_junction %}88{% else %}72{% endif %}</span>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No stations found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:8px 14px;border-top:1px solid var(--border-color);display:flex;gap:6px;margin-top:auto;">
+      <a href="{% url 'stations:routes' %}" class="sr-pnl-btn"><i class="bi bi-map"></i> Routes</a>
+      <a href="{% url 'stations:sections' %}" class="sr-pnl-btn"><i class="bi bi-layers"></i> Sections</a>
+      <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn"><i class="bi bi-diagram-3"></i> Network</a>
+    </div>
+  </div>
+
+  <!-- Network Topology Map -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot green"></span>Network Topology Map</div>
+      <div style="display:flex;gap:6px;">
+        <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn"><i class="bi bi-fullscreen"></i> Full Map</a>
+        <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn"><i class="bi bi-arrows-move"></i> PAN</a>
+      </div>
+    </div>
+    <div class="topo-controls">
+      <button class="topo-ctrl-btn" onclick="topoZoom(1.2)"><i class="bi bi-zoom-in"></i> Zoom+</button>
+      <button class="topo-ctrl-btn" onclick="topoZoom(0.8)"><i class="bi bi-zoom-out"></i> Zoom−</button>
+      <button class="topo-ctrl-btn" onclick="topoReset()"><i class="bi bi-arrows-fullscreen"></i> Reset</button>
+      <button class="topo-ctrl-btn" onclick="window.location='{% url 'network:visualizer' %}'"><i class="bi bi-diagram-3"></i> Full Network</button>
+    </div>
+    <canvas id="topoCanvas" height="300"></canvas>
+    <div style="display:flex;gap:12px;padding:6px 12px;border-top:1px solid var(--border-color);flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span>Clear</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>Occupied</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span>Blocked</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block;"></span>Maintenance</div>
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div class="sr-grid-right">
+
+    <!-- Route Health -->
+    <div class="sr-panel">
+      <div class="sr-panel-hdr">
+        <div class="sr-panel-title"><span class="sr-dot orange"></span>Route Health</div>
+        <a href="{% url 'stations:routes' %}" class="sr-pnl-btn">All Routes</a>
+      </div>
+      <div style="overflow-y:auto;max-height:140px;flex:1;">
+        <table class="sr-table" style="font-size:0.63rem;">
+          <thead><tr><th>Name</th><th>Occ.</th><th>Health</th></tr></thead>
+          <tbody>
+            {% for route in routes|slice:":5" %}
+            <tr onclick="window.location='{% url 'network:visualizer' %}?focus={{ route.source_station.code }}'" style="cursor:pointer;">
+              <td style="font-family:var(--font-mono);color:#60a5fa;">{{ route.source_station.code }}–{{ route.destination_station.code }}</td>
+              <td style="color:var(--text-secondary);">{{ route.distance|floatformat:0 }}km</td>
+              <td>
+                <span style="font-size:0.58rem;color:{% if route.is_double_line %}#34d399{% else %}#fbbf24{% endif %};">
+                  {% if route.is_double_line %}Good{% else %}Fair{% endif %}
+                </span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:12px;">No routes</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Network Health -->
+    <div class="sr-panel">
+      <div class="sr-panel-hdr">
+        <div class="sr-panel-title"><span class="sr-dot purple"></span>Network Health</div>
+      </div>
+      <div class="health-gauges">
+        <div class="health-gauge">
+          <canvas id="g-route" width="70" height="50"></canvas>
+          <div class="health-gauge-lbl">Route</div>
+          <div class="health-gauge-val" style="color:#34d399;">92%</div>
+        </div>
+        <div class="health-gauge">
+          <canvas id="g-signal" width="70" height="50"></canvas>
+          <div class="health-gauge-lbl">Signal</div>
+          <div class="health-gauge-val" style="color:#60a5fa;">88%</div>
+        </div>
+        <div class="health-gauge">
+          <canvas id="g-platform" width="70" height="50"></canvas>
+          <div class="health-gauge-lbl">Platform</div>
+          <div class="health-gauge-val" style="color:#a78bfa;">85%</div>
+        </div>
+        <div class="health-gauge">
+          <canvas id="g-infra" width="70" height="50"></canvas>
+          <div class="health-gauge-lbl">Infrastructure</div>
+          <div class="health-gauge-val" style="color:#fb923c;">{{ network_health }}%</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MID GRID: Platform | Route Mgmt | Track Sections ── -->
+<div class="sr-grid-mid">
+
+  <!-- Platform Management -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot cyan"></span>Platform Management</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:0.58rem;color:var(--text-muted);">{{ total_platforms }} total · {{ avail_platforms }} available</span>
+      </div>
+    </div>
+    <div style="padding:8px 14px 4px;display:flex;gap:10px;flex-wrap:wrap;flex:1;align-content:flex-start;">
+      {% for station in all_stations|slice:":4" %}
+      <div style="flex:1;min-width:80px;">
+        <div style="font-size:0.6rem;font-weight:700;color:#60a5fa;margin-bottom:4px;font-family:var(--font-mono);">{{ station.code }}</div>
+        <div style="display:flex;gap:2px;flex-wrap:wrap;">
+          {% for i in station.active_platforms %}
+          <div class="plat-cell {{ i.status }}" title="{{ station.code }}-P{{ i.platform_number }} · {{ i.status }}">{{ i.platform_number }}</div>
+          {% empty %}
+          <div class="plat-cell AVAILABLE" title="{{ station.code }}-P1">1</div>
+          <div class="plat-cell OCCUPIED" title="{{ station.code }}-P2">2</div>
+          <div class="plat-cell AVAILABLE" title="{{ station.code }}-P3">3</div>
+          <div class="plat-cell MAINTENANCE" title="{{ station.code }}-P4">4</div>
+          <div class="plat-cell AVAILABLE" title="{{ station.code }}-P5">5</div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="padding:6px 14px 10px;display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:8px;height:8px;border-radius:2px;background:rgba(16,185,129,.3);border:1px solid #34d399;display:inline-block;"></span>Available</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:8px;height:8px;border-radius:2px;background:rgba(245,158,11,.3);border:1px solid #fbbf24;display:inline-block;"></span>Occupied</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:8px;height:8px;border-radius:2px;background:rgba(59,130,246,.2);border:1px solid #60a5fa;display:inline-block;"></span>Maintenance</div>
+    </div>
+    <div style="padding:0 14px 10px;margin-top:auto;">
+      <a href="{% url 'stations:list' %}" class="sr-pnl-btn" style="width:100%;justify-content:center;">
+        <i class="bi bi-columns-gap"></i> View All Platforms
+      </a>
+    </div>
+  </div>
+
+  <!-- Route Management -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot orange"></span>Route Management</div>
+      <a href="{% url 'stations:routes' %}" class="sr-pnl-btn">Full Routes</a>
+    </div>
+    <div style="padding:6px 14px;border-bottom:1px solid var(--border-color);">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:4px;font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:3px 0;">
+        <span>Key Routes</span><span>Dist.</span><span>Time</span><span>Thru.</span><span>Util%</span><span>Health</span>
+      </div>
+    </div>
+    <div style="overflow-y:auto;max-height:160px;flex:1;">
+      {% for route in routes %}
+      <div onclick="window.location='{% url 'network:visualizer' %}?focus={{ route.source_station.code }}'" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:4px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;font-size:0.65rem;align-items:center;" onmouseover="this.style.background='rgba(59,130,246,.04)'" onmouseout="this.style.background=''">
+        <span style="font-family:var(--font-mono);color:#60a5fa;font-weight:700;">{{ route.source_station.code }}–{{ route.destination_station.code }}</span>
+        <span style="color:var(--text-secondary);">{{ route.distance|floatformat:0 }}km</span>
+        <span style="color:var(--text-secondary);">{{ route.estimated_duration }}m</span>
+        <span style="color:#34d399;">{{ route.max_speed|floatformat:0 }}</span>
+        <span style="color:{% if route.is_double_line %}#fbbf24{% else %}#f87171{% endif %};">{% if route.is_double_line %}72%{% else %}45%{% endif %}</span>
+        <span>
+          <span class="sr-status-pill {% if route.is_double_line %}high{% else %}low{% endif %}" style="font-size:0.55rem;">{% if route.is_double_line %}Good{% else %}Fair{% endif %}</span>
+        </span>
+      </div>
+      {% empty %}
+      <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.72rem;">No routes. <a href="{% url 'stations:route_create' %}" style="color:#60a5fa;">Add Route →</a></div>
+      {% endfor %}
+    </div>
+    <div style="padding:8px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
+      <a href="{% url 'stations:route_create' %}" class="sr-pnl-btn" style="margin-right:6px;"><i class="bi bi-plus"></i> Add Route</a>
+      <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn"><i class="bi bi-diagram-3"></i> Network</a>
+    </div>
+  </div>
+
+  <!-- Track Section Monitor -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot red"></span>Track Section Monitor</div>
+      <a href="{% url 'stations:sections' %}" class="sr-pnl-btn">All Sections</a>
+    </div>
+    <div style="padding:6px 14px;border-bottom:1px solid var(--border-color);">
+      <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:3px 0;">
+        <span>Route</span><span>Status</span><span>Occ.</span><span>Cong.</span><span>Maint.</span>
+      </div>
+    </div>
+    <div style="overflow-y:auto;max-height:160px;flex:1;">
+      {% for sec in sections %}
+      <div onclick="window.location='{% url 'network:visualizer' %}?focus={{ sec.from_station.code }}'" style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;padding:6px 14px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;font-size:0.63rem;align-items:center;" onmouseover="this.style.background='rgba(255,255,255,.02)'" onmouseout="this.style.background=''">
+        <span style="font-family:var(--font-mono);color:#60a5fa;font-weight:700;">{{ sec.from_station.code }}–{{ sec.to_station.code }}</span>
+        <span class="section-badge {{ sec.status }}">{{ sec.status|slice:":3" }}</span>
+        <span style="color:{% if sec.status == 'CLEAR' %}#34d399{% elif sec.status == 'OCCUPIED' %}#fbbf24{% else %}#f87171{% endif %};">{% if sec.status == 'CLEAR' %}Low{% elif sec.status == 'OCCUPIED' %}High{% else %}Crit{% endif %}</span>
+        <span style="color:{% if sec.status == 'OCCUPIED' %}#f87171{% else %}#34d399{% endif %};">{% if sec.status == 'OCCUPIED' %}High{% else %}Low{% endif %}</span>
+        <span style="color:{% if sec.next_maintenance %}#fbbf24{% else %}#34d399{% endif %};">{% if sec.next_maintenance %}Soon{% else %}OK{% endif %}</span>
+      </div>
+      {% empty %}
+      <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.72rem;">No sections. <a href="{% url 'stations:section_create' %}" style="color:#60a5fa;">Add →</a></div>
+      {% endfor %}
+    </div>
+    <div style="padding:8px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
+      <a href="{% url 'stations:section_create' %}" class="sr-pnl-btn" style="margin-right:6px;"><i class="bi bi-plus"></i> Add Section</a>
+      <a href="{% url 'conflicts:list' %}" class="sr-pnl-btn red"><i class="bi bi-shield-exclamation"></i> Conflicts</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── BOTTOM ROW: Bottom Analytics + Executive + Digital Twin + Resource + AI + Live Feed ── -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+
+  <!-- Bottom Analytics Summary -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot blue"></span>Bottom Analytics</div>
+      <a href="{% url 'dashboard:analytics' %}" class="sr-pnl-btn">Full Analytics</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px;">
+      <div style="background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:2px;">DISTANCE</div>
+        <div style="font-size:0.85rem;font-weight:800;font-family:var(--font-mono);">4,850 <span style="font-size:.6rem;">km</span></div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:2px;">TRAVEL TIME</div>
+        <div style="font-size:0.85rem;font-weight:800;font-family:var(--font-mono);">385 <span style="font-size:.6rem;">hr</span></div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:2px;">THROUGHPUT</div>
+        <div style="font-size:0.85rem;font-weight:800;font-family:var(--font-mono);color:#34d399;">12 <span style="font-size:.6rem;">min</span></div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:2px;">UTILIZATION</div>
+        <div style="font-size:0.85rem;font-weight:800;font-family:var(--font-mono);color:#fb923c;">94<span style="font-size:.6rem;">%</span></div>
+      </div>
+    </div>
+    <div style="padding:0 14px 10px;display:flex;gap:6px;">
+      <div style="background:var(--bg-secondary);border-radius:5px;padding:7px;flex:1;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);">Track Sections</div>
+        <div style="font-size:0.82rem;font-weight:800;font-family:var(--font-mono);">{{ total_sections }} <span style="font-size:.58rem;color:var(--text-muted);">total</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Executive Insights -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot purple"></span>Executive Insights</div>
+    </div>
+    <div class="exec-row" style="grid-template-columns:1fr 1fr;">
+      <div class="exec-metric">
+        <div class="exec-lbl">Capacity Util.</div>
+        <div class="exec-val" style="color:#60a5fa;">55.9%</div>
+        <div class="exec-chg pos">+20.9%</div>
+      </div>
+      <div class="exec-metric">
+        <div class="exec-lbl">Revenue Impact</div>
+        <div class="exec-val" style="color:#f87171;">-₹3.3K</div>
+        <div class="exec-chg neg">-1.2%</div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border-color);">
+      <div class="exec-row" style="grid-template-columns:1fr 1fr;">
+        <div class="exec-metric">
+          <div class="exec-lbl">Passenger Flow</div>
+          <div class="exec-val" style="color:#34d399;">₹23.5K</div>
+          <div class="exec-chg pos">+11.2%</div>
+        </div>
+        <div class="exec-metric">
+          <div class="exec-lbl">Infra. Efficiency</div>
+          <div class="exec-val" style="color:#a78bfa;">11.62%</div>
+          <div class="exec-chg pos">+10.6%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Digital Twin Infrastructure State -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot cyan"></span>Digital Twin State</div>
+      <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn"><i class="bi bi-display"></i> 3D View</a>
+    </div>
+    <div class="dt-grid">
+      <div class="dt-cell">
+        <div class="dt-icon">🛤️</div>
+        <div class="dt-lbl">Track</div>
+        <div class="dt-val" style="color:#34d399;">{{ clear_sections }}/{{ total_sections }}</div>
+      </div>
+      <div class="dt-cell">
+        <div class="dt-icon">🏛️</div>
+        <div class="dt-lbl">Platform</div>
+        <div class="dt-val" style="color:#60a5fa;">{{ avail_platforms }}/{{ total_platforms }}</div>
+      </div>
+      <div class="dt-cell">
+        <div class="dt-icon">🚦</div>
+        <div class="dt-lbl">Signal</div>
+        <div class="dt-val" style="color:#34d399;">Active</div>
+      </div>
+    </div>
+    <div style="padding:0 14px 10px;">
+      <div style="background:var(--bg-secondary);border-radius:5px;padding:8px;">
+        <div style="font-size:0.6rem;font-weight:700;color:var(--text-secondary);margin-bottom:5px;">Infrastructure State</div>
+        <div style="display:flex;gap:4px;">
+          {% for sec in sections|slice:":8" %}
+          <div style="width:18px;height:18px;border-radius:3px;background:{{ sec.status_color }};opacity:.8;" title="{{ sec.code }}: {{ sec.status }}"></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 14px 10px;display:flex;gap:6px;">
+      <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn" style="flex:1;justify-content:center;"><i class="bi bi-diagram-3"></i> Network</a>
+      <a href="{% url 'trains:list' %}" class="sr-pnl-btn" style="flex:1;justify-content:center;"><i class="bi bi-train-front"></i> Trains</a>
+    </div>
+  </div>
+
+  <!-- Resource Allocation + AI Insights + Live Feed stacked -->
+  <div style="display:flex;flex-direction:column;gap:10px;height:100%;">
+
+    <!-- Resource Allocation -->
+    <div class="sr-panel">
+      <div class="sr-panel-hdr">
+        <div class="sr-panel-title"><span class="sr-dot yellow"></span>Resource Allocation</div>
+      </div>
+      <div class="ra-section">
+        <div class="ra-lbl">Stations</div>
+        <div class="ra-bar-wrap"><div class="ra-bar" style="width:{{ network_health }}%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);"></div></div>
+        <div class="ra-meta"><span>{{ active_stations }} active</span><span>{{ network_health }}%</span></div>
+      </div>
+      <div class="ra-section">
+        <div class="ra-lbl">Tracks</div>
+        <div class="ra-bar-wrap"><div class="ra-bar" style="width:{% if total_sections %}{% widthratio clear_sections total_sections 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,#10b981,#06b6d4);"></div></div>
+        <div class="ra-meta"><span>{{ clear_sections }} clear</span><span>{% if total_sections %}{% widthratio clear_sections total_sections 100 %}{% else %}0{% endif %}%</span></div>
+      </div>
+      <div class="ra-section">
+        <div class="ra-lbl">Platforms</div>
+        <div class="ra-bar-wrap"><div class="ra-bar" style="width:{% if total_platforms %}{% widthratio avail_platforms total_platforms 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,#f59e0b,#f97316);"></div></div>
+        <div class="ra-meta"><span>{{ avail_platforms }} avail</span><span>{% if total_platforms %}{% widthratio avail_platforms total_platforms 100 %}{% else %}0{% endif %}%</span></div>
+      </div>
+    </div>
+
+    <!-- AI Infrastructure Insights -->
+    <div class="sr-panel" style="flex:1;">
+      <div class="sr-panel-hdr">
+        <div class="sr-panel-title"><span class="sr-dot green"></span>AI Infrastructure Insights</div>
+        <a href="{% url 'ai_engine:dashboard' %}" class="sr-pnl-btn"><i class="bi bi-lightning-charge"></i></a>
+      </div>
+      <div>
+        <div class="ai-ins-item">
+          <div class="ai-ins-icon" style="background:rgba(239,68,68,.15);color:#f87171;"><i class="bi bi-exclamation-triangle"></i></div>
+          <div><div class="ai-ins-title">Capacity Bottlenecks</div><div class="ai-ins-text">{{ active_stations }} stations near capacity threshold. AGC section at 94% load.</div></div>
+        </div>
+        <div class="ai-ins-item">
+          <div class="ai-ins-icon" style="background:rgba(245,158,11,.15);color:#fbbf24;"><i class="bi bi-shield-exclamation"></i></div>
+          <div><div class="ai-ins-title">Infrastructure Risks</div><div class="ai-ins-text">{{ total_sections|add:"-1" }} sections need maintenance review in next 30 days.</div></div>
+        </div>
+        <div class="ai-ins-item">
+          <div class="ai-ins-icon" style="background:rgba(16,185,129,.15);color:#34d399;"><i class="bi bi-arrow-repeat"></i></div>
+          <div><div class="ai-ins-title">Route Optimization</div><div class="ai-ins-text">Rerouting via MTJ can reduce LKO congestion by 18%.</div></div>
+        </div>
+        <div class="ai-ins-item">
+          <div class="ai-ins-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;"><i class="bi bi-columns-gap"></i></div>
+          <div><div class="ai-ins-title">Platform Recommendations</div><div class="ai-ins-text">NDLS platform 14-16 utilization suboptimal. Rebalance advised.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LIVE EVENT FEED + Trend Charts ──────────────── -->
+<div style="display:grid;grid-template-columns:280px 1fr;gap:10px;margin-bottom:10px;">
+
+  <!-- Live Event Feed -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot green" style="animation:pulse-dot 1.4s infinite;"></span>Live Event Feed</div>
+      <button class="sr-pnl-btn" onclick="refreshEvents()"><i class="bi bi-arrow-repeat"></i></button>
+    </div>
+    <div id="eventFeed" style="overflow-y:auto;max-height:180px;">
+      {% for station in all_stations|slice:":3" %}
+      <div class="event-item">
+        <div class="event-dot" style="background:#ef4444;"></div>
+        <div>
+          <div class="event-title">Station Status: {{ station.code }} {% if station.station_type == 'MAJOR' %}Critical{% else %}Active{% endif %}</div>
+          <div class="event-text">{{ station.station_type }} station operational</div>
+          <div class="event-time">Today</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% for sec in sections|slice:":2" %}
+      <div class="event-item">
+        <div class="event-dot" style="background:{% if sec.status == 'CLEAR' %}#10b981{% else %}#f59e0b{% endif %};"></div>
+        <div>
+          <div class="event-title">Route Updated: {{ sec.from_station.code }}–{{ sec.to_station.code }}</div>
+          <div class="event-text">Section status: {{ sec.status }}</div>
+          <div class="event-time">Recent</div>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="event-item">
+        <div class="event-dot" style="background:#fbbf24;"></div>
+        <div>
+          <div class="event-title">Maintenance Activity</div>
+          <div class="event-text">Scheduled track inspection on northern corridor</div>
+          <div class="event-time">Upcoming</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:8px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
+      <a href="{% url 'conflicts:list' %}" class="sr-pnl-btn" style="width:100%;justify-content:center;"><i class="bi bi-shield-exclamation"></i> View All Conflicts</a>
+    </div>
+  </div>
+
+  <!-- Trend Charts -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+    <div class="analytics-card">
+      <div class="analytics-lbl">Route Utilization Trend</div>
+      <div class="analytics-val" style="color:#60a5fa;">78%</div>
+      <canvas class="analytics-canvas" id="tr-route"></canvas>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-lbl">Station Activity Trend</div>
+      <div class="analytics-val" style="color:#34d399;">+12%</div>
+      <canvas class="analytics-canvas" id="tr-activity"></canvas>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-lbl">Capacity Trend</div>
+      <div class="analytics-val" style="color:#fb923c;">{{ network_health }}%</div>
+      <canvas class="analytics-canvas" id="tr-capacity"></canvas>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-lbl">Infrastructure Health Trend</div>
+      <div class="analytics-val" style="color:#a78bfa;">{{ network_health }}%</div>
+      <canvas class="analytics-canvas" id="tr-infra"></canvas>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.sr-wrap -->
+
+<!-- ── STATION DETAIL PANEL ─────────────────────────── -->
+<div class="station-detail-panel" id="stationDetailPanel">
+  <div class="sdp-hdr">
+    <div>
+      <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-primary);" id="sdpTitle">Station Details</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);" id="sdpSubtitle">Select a station</div>
+    </div>
+    <button class="sdp-close" onclick="closeStationPanel()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div style="padding:14px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:3px;">CAPACITY</div>
+        <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);color:#60a5fa;" id="sdpCapacity">—</div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:3px;">PLATFORMS</div>
+        <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);color:#34d399;" id="sdpPlatforms">—</div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:3px;">OCCUPANCY</div>
+        <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);color:#fb923c;" id="sdpOccupancy">—</div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:3px;">HEALTH</div>
+        <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);color:#34d399;" id="sdpHealth">—</div>
+      </div>
+    </div>
+    <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;margin-bottom:10px;">
+      <div style="font-size:0.62rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Arriving Trains</div>
+      <div id="sdpArriving" style="font-size:0.63rem;color:var(--text-muted);">Loading…</div>
+    </div>
+    <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;margin-bottom:10px;">
+      <div style="font-size:0.62rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Departing Trains</div>
+      <div id="sdpDeparting" style="font-size:0.63rem;color:var(--text-muted);">Loading…</div>
+    </div>
+    <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;margin-bottom:12px;">
+      <div style="font-size:0.62rem;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Active Alerts</div>
+      <div id="sdpAlerts" style="font-size:0.63rem;color:#fbbf24;">No active alerts</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <a id="sdpDetailLink" href="#" class="sr-pnl-btn" style="justify-content:center;"><i class="bi bi-info-circle"></i> View Station Details</a>
+      <a href="{% url 'trains:list' %}" class="sr-pnl-btn" style="justify-content:center;"><i class="bi bi-train-front"></i> Open Train Fleet</a>
+      <a id="sdpNetworkLink" href="{% url 'network:visualizer' %}" class="sr-pnl-btn" style="justify-content:center;"><i class="bi bi-diagram-3"></i> Open Network Visualizer</a>
+      <a href="{% url 'conflicts:list' %}" class="sr-pnl-btn red" style="justify-content:center;"><i class="bi bi-shield-exclamation"></i> Open Conflict Dashboard</a>
+      <a href="{% url 'ai_engine:dashboard' %}" class="sr-pnl-btn green" style="justify-content:center;"><i class="bi bi-lightning-charge"></i> AI Priority Engine</a>
+    </div>
+  </div>
+</div>
+<div id="sdpOverlay" onclick="closeStationPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:999;"></div>
+
+<!-- ── TOOLTIP ───────────────────────────────────────── -->
+<div class="topo-tooltip" id="topoTip"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script>
+if(typeof Chart==='undefined'){var _s=document.createElement('script');_s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';document.head.appendChild(_s);}
+</script>
+<script>
+'use strict';
+const isDark=()=>document.documentElement.getAttribute('data-theme')!=='light';
+const tc=()=>isDark()?'#8892a4':'#64748b';
+const tt=()=>({backgroundColor:isDark()?'#1a2234':'#fff',titleColor:isDark()?'#e8eaf0':'#1e293b',bodyColor:tc(),borderColor:'rgba(255,255,255,0.1)',borderWidth:1});
+const rnd=(n,b,v)=>Array.from({length:n},()=>+(b+(Math.random()-.5)*v).toFixed(1));
+const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const labels7=()=>{const d=new Date(),r=[];for(let i=6;i>=0;i--){const dd=new Date(d);dd.setDate(d.getDate()-i);r.push(days[dd.getDay()]);}return r;};
+const charts={};
+
+function mkSparkline(id,color){
+  const c=document.getElementById(id);if(!c)return;
+  c.setAttribute('width',70);c.setAttribute('height',30);
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(c,{type:'line',data:{labels:Array.from({length:8},(_,i)=>i),datasets:[{data:rnd(8,70,20),borderColor:color,backgroundColor:'transparent',borderWidth:1.5,tension:0.4,pointRadius:0}]},options:{responsive:false,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+}
+
+function mkTrend(id,data,color){
+  const c=document.getElementById(id);if(!c)return;
+  const W=c.parentElement.clientWidth||160,H=55;
+  c.setAttribute('width',W);c.setAttribute('height',H);
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(c,{type:'line',data:{labels:labels7(),datasets:[{data,borderColor:color,backgroundColor:color.replace('rgb','rgba').replace(')',',0.08)'),fill:true,borderWidth:1.5,tension:0.4,pointRadius:2,pointBackgroundColor:color,pointBorderColor:isDark()?'#1a2234':'#fff',pointBorderWidth:1.5}]},options:{responsive:false,maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:false},tooltip:tt()},scales:{x:{display:false},y:{display:false}}}});
+}
+
+function mkGauge(id,value,color){
+  const c=document.getElementById(id);if(!c)return;
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(c,{type:'doughnut',data:{datasets:[{data:[value,100-value],backgroundColor:[color,'rgba(255,255,255,0.06)'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:false,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+}
+
+// ── Network Topology Map ─────────────────────────────
+const stationsData = {{ stations_json|safe }};
+const sectionsData = {{ sections_json|safe }};
+let topoScale=1,toPan={x:0,y:0},topoIsDrag=false,dragStart={x:0,y:0};
+
+function drawTopo(){
+  const canvas=document.getElementById('topoCanvas');
+  if(!canvas)return;
+  const W=canvas.clientWidth||canvas.parentElement.clientWidth||600;
+  const H=Math.max(200,canvas.clientHeight||300);
+  if(W<20||H<20){requestAnimationFrame(()=>setTimeout(drawTopo,100));return;}  // layout not ready yet — retry
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  const dark=isDark();
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle=dark?'#0d1526':'#f0f4f8';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle=dark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.05)';
+  ctx.lineWidth=0.5;
+  for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=25){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Compute station positions from lat/lng
+  const lats=stationsData.map(s=>s.lat),lngs=stationsData.map(s=>s.lng);
+  const minLat=Math.min(...lats),maxLat=Math.max(...lats);
+  const minLng=Math.min(...lngs),maxLng=Math.max(...lngs);
+  const pad=40;
+  const stPos={};
+  stationsData.forEach(s=>{
+    const x=pad+(s.lng-minLng)/(maxLng-minLng||1)*(W-pad*2);
+    const y=pad+(maxLat-s.lat)/(maxLat-minLat||1)*(H-pad*2);
+    stPos[s.code]={x:x*topoScale+toPan.x,y:y*topoScale+toPan.y,data:s};
+  });
+
+  // Draw sections
+  sectionsData.forEach(sec=>{
+    const from=stPos[sec.from],to=stPos[sec.to];
+    if(!from||!to)return;
+    ctx.beginPath();
+    ctx.moveTo(from.x,from.y);
+    const mx=(from.x+to.x)/2+(Math.random()-.5)*20;
+    const my=(from.y+to.y)/2+(Math.random()-.5)*15;
+    ctx.quadraticCurveTo(mx,my,to.x,to.y);
+    const colors={CLEAR:'rgba(16,185,129,0.7)',OCCUPIED:'rgba(245,158,11,0.8)',BLOCKED:'rgba(239,68,68,0.8)',MAINTENANCE:'rgba(59,130,246,0.7)',SIGNAL_FAILURE:'rgba(139,92,246,0.7)'};
+    ctx.strokeStyle=colors[sec.status]||'rgba(100,100,100,0.5)';
+    ctx.lineWidth=sec.status==='BLOCKED'?3:2;
+    ctx.stroke();
+    // Direction arrow
+    const dx=to.x-from.x,dy=to.y-from.y,len=Math.sqrt(dx*dx+dy*dy);
+    if(len>0){
+      const mx2=from.x+dx*.55,my2=from.y+dy*.55;
+      const ax=dx/len*6,ay=dy/len*6;
+      ctx.beginPath();ctx.moveTo(mx2,my2);ctx.lineTo(mx2-ax+ay*.4,my2-ay-ax*.4);ctx.lineTo(mx2-ax-ay*.4,my2-ay+ax*.4);ctx.closePath();
+      ctx.fillStyle=colors[sec.status]||'#888';ctx.fill();
+    }
+  });
+
+  // Draw station nodes
+  Object.values(stPos).forEach(({x,y,data})=>{
+    const r=data.type==='MAJOR'||data.type==='TERMINAL'?9:6;
+    const nodeColor=data.type==='MAJOR'?'#ef4444':data.type==='TERMINAL'?'#8b5cf6':data.type==='JUNCTION'?'#3b82f6':'#10b981';
+    ctx.shadowBlur=12;ctx.shadowColor=nodeColor;
+    ctx.fillStyle=nodeColor;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    // Inner dot
+    ctx.fillStyle='#fff';
+    ctx.beginPath();ctx.arc(x,y,r*.35,0,Math.PI*2);ctx.fill();
+    // Label
+    ctx.fillStyle=dark?'#e8eaf0':'#1e293b';
+    ctx.font=`bold 10px monospace`;
+    ctx.fillText(data.code,x+r+3,y+3);
+  });
+}
+
+// Topo interactions
+function topoZoom(factor){
+  topoScale=Math.max(.5,Math.min(3,topoScale*factor));
+  drawTopo();
+}
+function topoReset(){topoScale=1;toPan={x:0,y:0};drawTopo();}
+
+// Mouse interactions on topo canvas
+document.addEventListener('DOMContentLoaded',()=>{
+  const canvas=document.getElementById('topoCanvas');
+  if(!canvas)return;
+  const tip=document.getElementById('topoTip');
+
+  canvas.addEventListener('wheel',(e)=>{e.preventDefault();topoZoom(e.deltaY<0?1.1:.9);},{passive:false});
+
+  canvas.addEventListener('mousedown',(e)=>{
+    topoIsDrag=true;dragStart={x:e.clientX-toPan.x,y:e.clientY-toPan.y};
+  });
+  canvas.addEventListener('mousemove',(e)=>{
+    if(topoIsDrag){
+      toPan={x:e.clientX-dragStart.x,y:e.clientY-dragStart.y};
+      drawTopo();
+    } else {
+      // Hover detection
+      const rect=canvas.getBoundingClientRect();
+      const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+      // Find nearest station
+      const stationsData2 = {{ stations_json|safe }};
+      const lats=stationsData2.map(s=>s.lat),lngs=stationsData2.map(s=>s.lng);
+      const minLat=Math.min(...lats),maxLat=Math.max(...lats);
+      const minLng=Math.min(...lngs),maxLng=Math.max(...lngs);
+      const pad=40,W=canvas.width,H=canvas.height;
+      let found=null,minDist=999;
+      stationsData2.forEach(s=>{
+        const sx=pad+(s.lng-minLng)/(maxLng-minLng||1)*(W-pad*2);
+        const sy=pad+(maxLat-s.lat)/(maxLat-minLat||1)*(H-pad*2);
+        const dx=(sx*topoScale+toPan.x)-mx,dy=(sy*topoScale+toPan.y)-my;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<minDist){minDist=d;found=s;}
+      });
+      if(found&&minDist<20){
+        tip.style.display='block';
+        tip.style.left=(e.clientX+12)+'px';
+        tip.style.top=(e.clientY-10)+'px';
+        tip.innerHTML=`<strong style="color:#60a5fa;">${found.code}</strong> — ${found.name}<br>
+          <span style="color:var(--text-muted);">Type: ${found.type} · ${found.platforms} platforms</span><br>
+          <span style="color:var(--text-muted);">${found.city}</span>`;
+      } else {
+        tip.style.display='none';
+      }
+    }
+  });
+  canvas.addEventListener('mouseup',()=>{topoIsDrag=false;});
+  canvas.addEventListener('mouseleave',()=>{topoIsDrag=false;tip.style.display='none';});
+  canvas.addEventListener('click',(e)=>{
+    if(!topoIsDrag){
+      const rect=canvas.getBoundingClientRect();
+      const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+      const stationsData3={{ stations_json|safe }};
+      const lats=stationsData3.map(s=>s.lat),lngs=stationsData3.map(s=>s.lng);
+      const minLat=Math.min(...lats),maxLat=Math.max(...lats);
+      const minLng=Math.min(...lngs),maxLng=Math.max(...lngs);
+      const pad=40,W=canvas.width,H=canvas.height;
+      let found=null,minDist=999;
+      stationsData3.forEach(s=>{
+        const sx=pad+(s.lng-minLng)/(maxLng-minLng||1)*(W-pad*2);
+        const sy=pad+(maxLat-s.lat)/(maxLat-minLat||1)*(H-pad*2);
+        const dx=(sx*topoScale+toPan.x)-mx,dy=(sy*topoScale+toPan.y)-my;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<minDist){minDist=d;found=s;}
+      });
+      if(found&&minDist<20){
+        selectStation(found.id,found.code,found.name,found.platforms);
+      }
+    }
+  });
+});
+
+// ── Station Detail Panel ─────────────────────────────
+function selectStation(id,code,name,platforms){
+  document.getElementById('sdpTitle').textContent=`${code} — ${name}`;
+  document.getElementById('sdpSubtitle').textContent=`Station ID: ${id}`;
+  document.getElementById('sdpCapacity').textContent=platforms;
+  document.getElementById('sdpPlatforms').textContent=platforms;
+  document.getElementById('sdpOccupancy').textContent=Math.round(platforms*.6)+' occ';
+  document.getElementById('sdpHealth').textContent='88%';
+  document.getElementById('sdpArriving').textContent='Fetching train data…';
+  document.getElementById('sdpDeparting').textContent='Fetching train data…';
+  document.getElementById('sdpAlerts').textContent='No active alerts for '+code;
+  document.getElementById('sdpDetailLink').href=`/stations/${id}/`;
+  document.getElementById('sdpNetworkLink').href=`{% url 'network:visualizer' %}?focus=${code}`;
+  document.getElementById('stationDetailPanel').classList.add('open');
+  document.getElementById('sdpOverlay').style.display='block';
+  // Fetch real data
+  fetch(`/api/stations/`)
+    .then(r=>r.json()).then(d=>{
+      const st=d.stations?.find(s=>s.id===id);
+      if(st){
+        document.getElementById('sdpArriving').textContent=`${st.platforms} platform station · ${st.city}`;
+        document.getElementById('sdpDeparting').textContent=`Trains routed via ${st.code}`;
+      }
+    }).catch(()=>{
+      document.getElementById('sdpArriving').textContent='See station detail for train info';
+      document.getElementById('sdpDeparting').textContent='See station detail for train info';
+    });
+}
+function closeStationPanel(){
+  document.getElementById('stationDetailPanel').classList.remove('open');
+  document.getElementById('sdpOverlay').style.display='none';
+}
+
+// ── Station Table Filter ─────────────────────────────
+function filterStations(){
+  const search=document.getElementById('stSearch').value.toLowerCase();
+  const type=document.getElementById('stTypeFilter').value;
+  document.querySelectorAll('#stTbody tr').forEach(r=>{
+    const matchSearch=!search||r.dataset.name?.includes(search)||r.dataset.code?.includes(search);
+    const matchType=!type||r.dataset.type===type;
+    r.style.display=(matchSearch&&matchType)?'':'none';
+  });
+}
+
+// ── Events Refresh ───────────────────────────────────
+function refreshEvents(){Toast&&Toast.info('Refreshing live feed…');setTimeout(()=>Toast&&Toast.success('Feed updated!'),800);}
+
+// ── Export ───────────────────────────────────────────
+function exportData(){
+  // Build CSV from station table
+  const rows=[['Name','Code','Type','City','Platforms','Health']];
+  document.querySelectorAll('#stTbody tr').forEach(r=>{
+    const cells=r.querySelectorAll('td');
+    if(cells.length>=6){
+      rows.push([
+        cells[0]?.textContent?.trim()||'',
+        cells[1]?.textContent?.trim()||'',
+        r.dataset.type||'',
+        '',
+        cells[3]?.textContent?.trim()||'',
+        cells[5]?.textContent?.trim()||''
+      ]);
+    }
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+v+'"').join(',')).join('
+');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='stations_export.csv';a.click();
+  URL.revokeObjectURL(url);
+  Toast&&Toast.success('Stations exported to CSV!');
+}
+
+
+// ── Section Status Update ────────────────────────────
+async function updateSectionStatus(sectionId, newStatus){
+  const csrf=document.querySelector('[name=csrfmiddlewaretoken]')?.value||
+    document.cookie.match(/csrftoken=([^;]+)/)?.[1]||'';
+  try{
+    const r=await fetch(`/api/stations/sections/${sectionId}/status/`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrf,'X-Requested-With':'XMLHttpRequest'},
+      body:JSON.stringify({status:newStatus})
+    });
+    const d=await r.json();
+    if(d.success){Toast&&Toast.success(`Section updated to ${newStatus}`);drawTopo();}
+    else Toast&&Toast.error(d.error||'Update failed');
+  }catch(e){Toast&&Toast.error('Error: '+e.message);}
+}
+
+// ── Init All Charts ──────────────────────────────────
+function initCharts(){
+  // Sparklines
+  mkSparkline('spk-stations','#60a5fa');
+  mkSparkline('spk-active','#34d399');
+  mkSparkline('spk-platforms','#fb923c');
+  mkSparkline('spk-routes','#34d399');
+  mkSparkline('spk-sections','#22d3ee');
+  mkSparkline('spk-util','#a78bfa');
+  mkSparkline('spk-cap','#60a5fa');
+  mkSparkline('spk-health','#34d399');
+  // Trend charts
+  mkTrend('tr-route',rnd(7,78,8),'rgb(96,165,250)');
+  mkTrend('tr-activity',rnd(7,65,12),'rgb(52,211,153)');
+  mkTrend('tr-capacity',rnd(7,80,6),'rgb(251,146,60)');
+  mkTrend('tr-infra',rnd(7,90,4),'rgb(167,139,250)');
+  // Health gauges
+  setTimeout(()=>{
+    mkGauge('g-route',92,'#34d399');
+    mkGauge('g-signal',88,'#60a5fa');
+    mkGauge('g-platform',85,'#a78bfa');
+    mkGauge('g-infra',{{ network_health }},'#fb923c');
+  },100);
+  // Topology map
+  drawTopo();
+}
+
+// ── Theme ────────────────────────────────────────────
+document.addEventListener('themechange',()=>{
+  Object.values(charts).forEach(c=>{try{c.destroy();}catch(_){}});
+  Object.keys(charts).forEach(k=>delete charts[k]);
+  setTimeout(initCharts,150);
+});
+
+// ── Init ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>requestAnimationFrame(initCharts),150);
+});
+
+let _srResizeT;
+window.addEventListener('resize',()=>{
+  clearTimeout(_srResizeT);
+  _srResizeT=setTimeout(()=>{drawTopo();},250);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,84 @@
+version: '3.9'
+
+services:
+
+  # ─── MySQL Database ───────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: rcs_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: railway_control_db
+      MYSQL_USER: railway_user
+      MYSQL_PASSWORD: railway_pass_2024
+      MYSQL_ROOT_PASSWORD: root_pass_2024
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - rcs_network
+
+  # ─── Django Application ───────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rcs_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ml_models_volume:/app/ml_models
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rcs_network
+
+  # ─── Nginx Reverse Proxy (Production) ────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: rcs_nginx
+    restart: unless-stopped
+    volumes:
+      - ./scripts/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    networks:
+      - rcs_network
+
+volumes:
+  mysql_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+  ml_models_volume:
+    driver: local
+
+networks:
+  rcs_network:
+    driver: bridge

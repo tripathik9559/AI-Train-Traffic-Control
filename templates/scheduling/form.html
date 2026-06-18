@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">{% if action == 'create' %}➕ Add Schedule Entry{% else %}✏️ Edit Schedule{% endif %}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'scheduling:list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+<div style="max-width:700px;">
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Train *</label>{{ form.train }}{% if form.train.errors %}<div class="invalid-feedback" style="display:block">{{ form.train.errors.0 }}</div>{% endif %}</div>
+        <div class="form-group"><label class="form-label">Station *</label>{{ form.station }}{% if form.station.errors %}<div class="invalid-feedback" style="display:block">{{ form.station.errors.0 }}</div>{% endif %}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Platform</label>{{ form.platform }}</div>
+        <div class="form-group"><label class="form-label">Track Section</label>{{ form.track_section }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Date *</label>{{ form.scheduled_date }}</div>
+        <div class="form-group"><label class="form-label">Stop Sequence</label>{{ form.stop_sequence }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Scheduled Arrival</label>{{ form.scheduled_arrival }}</div>
+        <div class="form-group"><label class="form-label">Scheduled Departure</label>{{ form.scheduled_departure }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Halt (min)</label>{{ form.halt_duration }}</div>
+        <div class="form-group"><label class="form-label">Status</label>{{ form.status }}</div>
+      </div>
+      <div style="display:flex;gap:16px;margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-secondary);">{{ form.is_originating }} Originating Station</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-secondary);">{{ form.is_terminating }} Terminating Station</label>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label>{{ form.notes }}</div>
+      <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary">
+          {% if action == 'create' %}<i class="bi bi-plus-circle"></i> Create{% else %}<i class="bi bi-check"></i> Save{% endif %}
+        </button>
+        <a href="{% url 'scheduling:list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

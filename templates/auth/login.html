@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Railway Control System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .auth-wrapper { display: flex; width: 100%; max-width: 900px; min-height: 540px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-lg); }
+    .auth-brand { width: 380px; background: linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #0f172a 100%); position: relative; overflow: hidden; display: flex; flex-direction: column; padding: 40px; }
+    .auth-brand::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 70%); animation: rotateBg 20s linear infinite; }
+    @keyframes rotateBg { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .auth-brand-logo { position: relative; z-index: 1; font-size: 3rem; margin-bottom: 12px; }
+    .auth-brand-name { position: relative; z-index: 1; font-size: 1.4rem; font-weight: 800; color: white; }
+    .auth-brand-sub { position: relative; z-index: 1; font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 40px; }
+    .auth-brand-features { position: relative; z-index: 1; list-style: none; }
+    .auth-brand-features li { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: rgba(255,255,255,0.6); margin-bottom: 12px; }
+    .auth-brand-features li::before { content: '✓'; color: var(--accent-green); font-weight: 700; }
+    .auth-form-panel { flex: 1; padding: 48px 40px; display: flex; flex-direction: column; justify-content: center; }
+    .auth-title { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
+    .auth-subtitle { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 32px; }
+    .input-wrapper { position: relative; }
+    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem; }
+    .input-wrapper .form-control { padding-left: 38px; }
+    @media (max-width: 720px) { .auth-brand { display: none; } .auth-form-panel { padding: 32px 24px; } .auth-wrapper { max-width: 440px; } }
+  </style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="train-icon">🚂</div>
+  <div style="color:var(--text-primary);font-weight:600;margin-bottom:10px;">Railway Control System</div>
+  <div class="loading-bar"></div>
+</div>
+
+<div class="auth-wrapper">
+  <!-- Brand Panel -->
+  <div class="auth-brand">
+    <div class="auth-brand-logo">🚆</div>
+    <div class="auth-brand-name">RailControl AI</div>
+    <div class="auth-brand-sub">Train Traffic Management System</div>
+    <ul class="auth-brand-features">
+      <li>AI-Assisted Priority Engine</li>
+      <li>Real-time Conflict Detection</li>
+      <li>ML Delay Prediction</li>
+      <li>Interactive Network Visualizer</li>
+      <li>Scenario Simulation Engine</li>
+      <li>Automated Reporting</li>
+    </ul>
+    <div style="position:relative;z-index:1;margin-top:auto;font-size:0.72rem;color:rgba(255,255,255,0.3);">
+      Final Year B.Tech Project — Computer Science<br />
+      BBDNIIT Lucknow · 2024–2025
+    </div>
+  </div>
+
+  <!-- Form Panel -->
+  <div class="auth-form-panel">
+    <div class="auth-title">Welcome back 👋</div>
+    <div class="auth-subtitle">Sign in to your control centre account</div>
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-circle"></i>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'auth:login' %}">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="id_username">Username</label>
+        <div class="input-wrapper">
+          <i class="bi bi-person input-icon"></i>
+          {{ form.username }}
+        </div>
+        {% if form.username.errors %}
+          <div class="invalid-feedback" style="display:block;">{{ form.username.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="id_password">Password</label>
+        <div class="input-wrapper">
+          <i class="bi bi-lock input-icon"></i>
+          {{ form.password }}
+        </div>
+        {% if form.password.errors %}
+          <div class="invalid-feedback" style="display:block;">{{ form.password.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text-secondary);">
+          {{ form.remember_me }} Remember me
+        </label>
+        <a href="{% url 'auth:forgot_password' %}" style="font-size:0.85rem;color:var(--accent-blue);text-decoration:none;">
+          Forgot password?
+        </a>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In
+      </button>
+    </form>
+
+    <div style="margin-top:24px;padding:16px;background:rgba(59,130,246,0.08);border-radius:var(--radius-md);border:1px solid rgba(59,130,246,0.2);">
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;">Demo Credentials</div>
+      <div style="font-size:0.82rem;color:var(--text-secondary);">
+        Admin: <code style="color:var(--accent-blue);">admin</code> / <code style="color:var(--accent-blue);">Admin@2024</code><br />
+        Controller: <code style="color:var(--accent-green);">controller1</code> / <code style="color:var(--accent-green);">Pass@2024</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

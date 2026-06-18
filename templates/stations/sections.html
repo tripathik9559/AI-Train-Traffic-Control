@@ -1,0 +1,57 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-diagram-2"></i> Track Sections</div>
+    <div class="page-subtitle">{{ sections.count }} sections configured</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'stations:section_create' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Add Section</a>
+  </div>
+</div>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead><tr><th>Code</th><th>Section</th><th>From → To</th><th>Length</th><th>Lines</th><th>Max Speed</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in sections %}
+        <tr>
+          <td style="font-family:var(--font-mono);color:var(--text-muted);">{{ s.code }}</td>
+          <td style="font-weight:600;">{{ s.name }}</td>
+          <td>
+            <span style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);">{{ s.from_station.code }}</span>
+            <span style="color:var(--text-muted);"> → </span>
+            <span style="font-family:var(--font-mono);font-weight:700;color:var(--accent-purple);">{{ s.to_station.code }}</span>
+          </td>
+          <td style="font-family:var(--font-mono);">{{ s.length }} km</td>
+          <td>
+            {% for i in "12" %}{% if forloop.counter <= s.number_of_lines %}<span style="color:var(--accent-blue);">━</span>{% else %}<span style="color:var(--border-color);">━</span>{% endif %}{% endfor %}
+            {{ s.number_of_lines }}
+          </td>
+          <td style="font-family:var(--font-mono);">{{ s.max_speed }} km/h</td>
+          <td>
+            <span class="badge badge-{% if s.status == 'CLEAR' %}running{% elif s.status == 'OCCUPIED' %}delayed{% elif s.status == 'BLOCKED' %}cancelled{% else %}held{% endif %}">
+              {{ s.status }}
+            </span>
+          </td>
+          <td>
+            <select onchange="updateSectionStatus({{ s.id }}, this.value)" class="form-select" style="width:130px;padding:4px 8px;font-size:0.78rem;">
+              {% for v,l in status_choices %}<option value="{{ v }}" {% if s.status==v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">No track sections configured.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}<script>
+async function updateSectionStatus(id, status) {
+  const data = await apiPost(`/api/stations/sections/${id}/status/`, {status});
+  if (data.success) Toast.success(`Section status → ${status}`);
+  else Toast.error('Failed to update.');
+}
+</script>{% endblock %}

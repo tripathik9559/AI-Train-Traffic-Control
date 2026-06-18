@@ -1,0 +1,1183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Network Visualizer — Railway Control Command Center{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/network.css' %}" />
+{% endblock %}
+
+{% block page_header_title %}Network Visualizer{% endblock %}
+
+{% block content %}
+<div class="nv-page">
+
+<!-- ══════════════════════════════════════════
+     COMMAND SUB-BAR
+     ══════════════════════════════════════════ -->
+<div class="nv-cmd-bar">
+  <div class="nv-search">
+    <i class="bi bi-search" style="color:var(--text-muted);font-size:.85rem;"></i>
+    <input type="text" id="nvSearch" placeholder="Search stations, sections, trains…" autocomplete="off" />
+  </div>
+
+  <button class="nv-cmd-btn" id="btnLayers">
+    <i class="bi bi-layers"></i> Layers
+  </button>
+  <button class="nv-cmd-btn" onclick="nvResetView()">
+    <i class="bi bi-arrows-fullscreen"></i> Reset View
+  </button>
+  <button class="nv-cmd-btn" onclick="nvRefresh()">
+    <i class="bi bi-arrow-clockwise"></i> Refresh
+  </button>
+  <button class="nv-cmd-btn" id="btnToggleLabels">
+    <i class="bi bi-tag"></i> Labels
+  </button>
+
+  <div class="nv-cmd-time" style="flex:1;">
+    <span style="font-size:.68rem;color:var(--text-muted);">RAILWAY CONTROL TIME:</span>
+    <span class="nv-time-val" id="nvClock">--:--:--</span>
+    <span style="font-size:.65rem;color:var(--text-muted);">IST</span>
+    <span class="nv-pill">● LIVE</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--text-muted);">
+    <i class="bi bi-activity" style="color:var(--accent-green);"></i>
+    <span>{{ stations|length }} stations</span>
+    <span style="color:var(--border-color-hover);">·</span>
+    <span>{{ sections|length }} sections</span>
+    <span style="color:var(--border-color-hover);">·</span>
+    <span>{{ trains|length }} trains</span>
+  </div>
+
+  <a href="{% url 'notifications:list' %}" class="nv-cmd-btn">
+    <i class="bi bi-bell"></i>
+    {% if unread_notification_count > 0 %}
+      <span style="background:var(--accent-red);color:#fff;font-size:.55rem;font-weight:700;padding:1px 5px;border-radius:9px;">{{ unread_notification_count }}</span>
+    {% endif %}
+  </a>
+</div>
+
+<!-- ══════════════════════════════════════════
+     BREADCRUMB + SECTION HEADER
+     ══════════════════════════════════════════ -->
+<div class="nv-breadcrumb">
+  <a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Home</a>
+  <span class="sep">›</span>
+  <span class="cur">Network Visualizer</span>
+</div>
+
+<div class="nv-section-header" style="margin-bottom:10px;">
+  <div class="nv-section-title">
+    <div class="bar"></div>
+    Railway Network — Operations Control
+  </div>
+  <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
+    <a href="{% url 'dashboard:analytics' %}" class="nv-cmd-btn">
+      <i class="bi bi-bar-chart-line"></i> Analytics
+    </a>
+    <a href="{% url 'ai_engine:dashboard' %}" class="nv-cmd-btn">
+      <i class="bi bi-robot"></i> AI Engine
+    </a>
+    <a href="{% url 'simulation:index' %}" class="nv-cmd-btn">
+      <i class="bi bi-play-circle"></i> Simulation
+    </a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     KPI ROW
+     ══════════════════════════════════════════ -->
+<div class="nv-kpi-grid">
+
+  <a class="nv-kpi blue" href="{% url 'trains:list' %}">
+    <div class="nv-kpi-top">
+      <div class="nv-kpi-label">Active Trains</div>
+      <div class="nv-kpi-icon blue"><i class="bi bi-train-front"></i></div>
+    </div>
+    <div class="nv-kpi-value" data-counter="{{ trains|length }}">{{ trains|length }}</div>
+    <div class="nv-kpi-foot">
+      <div class="nv-kpi-trend up"><i class="bi bi-arrow-up"></i> Live</div>
+      <div class="nv-kpi-sub">on network</div>
+    </div>
+  </a>
+
+  <a class="nv-kpi yellow" href="{% url 'stations:sections' %}">
+    <div class="nv-kpi-top">
+      <div class="nv-kpi-label">Occupied</div>
+      <div class="nv-kpi-icon yellow"><i class="bi bi-grid-3x3"></i></div>
+    </div>
+    <div class="nv-kpi-value" id="nvOccupied">—</div>
+    <div class="nv-kpi-foot">
+      <div class="nv-kpi-trend flat"><i class="bi bi-dash"></i> sections</div>
+      <div class="nv-kpi-sub">of {{ sections|length }}</div>
+    </div>
+  </a>
+
+  <a class="nv-kpi red" href="{% url 'trains:list' %}?status=DELAYED">
+    <div class="nv-kpi-top">
+      <div class="nv-kpi-label">Delayed</div>
+      <div class="nv-kpi-icon red"><i class="bi bi-clock-history"></i></div>
+    </div>
+    <div class="nv-kpi-value" id="nvDelayed">—</div>
+    <div class="nv-kpi-foot">
+      <div class="nv-kpi-trend down"><i class="bi bi-exclamation-circle"></i> trains</div>
+      <div class="nv-kpi-sub">running late</div>
+    </div>
+  </a>
+
+  <a class="nv-kpi red" href="{% url 'conflicts:list' %}">
+    <div class="nv-kpi-top">
+      <div class="nv-kpi-label">Conflicts</div>
+      <div class="nv-kpi-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+    </div>
+    <div class="nv-kpi-value" id="nvConflicts">—</div>
+    <div class="nv-kpi-foot">
+      <div class="nv-kpi-trend down"><i class="bi bi-shield-x"></i> active</div>
+      <div class="nv-kpi-sub">need action</div>
+    </div>
+  </a>
+
+  <a class="nv-kpi green" href="{% url 'dashboard:analytics' %}">
+    <div class="nv-kpi-top">
+      <div class="nv-kpi-label">Throughput</div>
+      <div class="nv-kpi-icon green"><i class="bi bi-speedometer2"></i></div>
+    </div>
+    <div class="nv-kpi-value" id="nvThroughput">—<span class="unit">%</span></div>
+    <div class="nv-kpi-foot">
+      <div class="nv-kpi-trend up"><i class="bi bi-arrow-up"></i> network</div>
+      <div class="nv-kpi-sub">capacity used</div>
+    </div>
+  </a>
+
+  <a class="nv-kpi cyan" href="{% url 'dashboard:analytics' %}">
+    <div class="nv-kpi-top">
+      <div class="nv-kpi-label">Net Health</div>
+      <div class="nv-kpi-icon cyan"><i class="bi bi-heart-pulse"></i></div>
+    </div>
+    <div class="nv-kpi-value" id="nvHealth">—<span class="unit">%</span></div>
+    <div class="nv-kpi-foot">
+      <div class="nv-kpi-trend up"><i class="bi bi-check-circle"></i> good</div>
+      <div class="nv-kpi-sub">sections clear</div>
+    </div>
+  </a>
+
+  <a class="nv-kpi purple" href="{% url 'ai_engine:dashboard' %}">
+    <div class="nv-kpi-top">
+      <div class="nv-kpi-label">AI Accuracy</div>
+      <div class="nv-kpi-icon purple"><span style="font-size:.9rem;">🤖</span></div>
+    </div>
+    <div class="nv-kpi-value">94<span class="unit">%</span></div>
+    <div class="nv-kpi-foot">
+      <div class="nv-kpi-trend up"><i class="bi bi-cpu"></i> active</div>
+      <div class="nv-kpi-sub">route accuracy</div>
+    </div>
+  </a>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN GRID: MAP + RIGHT PANEL
+     ══════════════════════════════════════════ -->
+<div class="nv-main-grid">
+
+  <!-- ─── NETWORK MAP PANEL ─────────────────── -->
+  <div class="nv-map-panel" id="nvMapPanel">
+    <div class="nv-map-header">
+      <div class="nv-map-title">
+        <span class="nv-live-dot"></span>
+        Live Railway Network Map
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:.62rem;color:var(--text-muted);font-family:var(--font-mono);" id="nvMapStatus">COSE layout loading…</span>
+        <button class="nv-cmd-btn" style="padding:4px 8px;font-size:.65rem;" onclick="nvExportMap()">
+          <i class="bi bi-download"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="nv-map-body">
+
+      <!-- Layer panel -->
+      <div class="nv-layer-panel" id="nvLayerPanel">
+        <div class="nv-layer-title">Map Layers</div>
+        <div class="nv-layer-row">
+          <span class="nv-layer-label">🚂 Trains</span>
+          <div class="nv-layer-toggle" id="lyr-trains" onclick="nvToggleLayer('trains',this)"></div>
+        </div>
+        <div class="nv-layer-row">
+          <span class="nv-layer-label">🚦 Signals</span>
+          <div class="nv-layer-toggle" id="lyr-signals" onclick="nvToggleLayer('signals',this)"></div>
+        </div>
+        <div class="nv-layer-row">
+          <span class="nv-layer-label">🔥 Congestion</span>
+          <div class="nv-layer-toggle" id="lyr-congestion" onclick="nvToggleLayer('congestion',this)"></div>
+        </div>
+        <div class="nv-layer-row">
+          <span class="nv-layer-label">⚠️ Conflicts</span>
+          <div class="nv-layer-toggle" id="lyr-conflicts" onclick="nvToggleLayer('conflicts',this)"></div>
+        </div>
+        <div class="nv-layer-row">
+          <span class="nv-layer-label">🤖 AI Routes</span>
+          <div class="nv-layer-toggle" id="lyr-ai" onclick="nvToggleLayer('ai',this)"></div>
+        </div>
+        <div class="nv-layer-row">
+          <span class="nv-layer-label">🔧 Maintenance</span>
+          <div class="nv-layer-toggle off" id="lyr-maint" onclick="nvToggleLayer('maint',this)"></div>
+        </div>
+      </div>
+
+      <!-- Zoom controls -->
+      <div class="nv-map-zoom">
+        <button class="nv-map-ctrl-btn" onclick="nvZoom(1.25)" title="Zoom In"><i class="bi bi-plus-lg"></i></button>
+        <button class="nv-map-ctrl-btn" onclick="nvZoom(0.8)" title="Zoom Out"><i class="bi bi-dash-lg"></i></button>
+        <button class="nv-map-ctrl-btn" onclick="nvResetView()" title="Fit"><i class="bi bi-aspect-ratio"></i></button>
+        <button class="nv-map-ctrl-btn" onclick="nvCenterLayout()" title="Re-layout"><i class="bi bi-arrow-counterclockwise"></i></button>
+      </div>
+
+      <!-- Fullscreen button -->
+      <button class="nv-fullscreen-btn" id="nvFsBtn" onclick="nvToggleFullscreen()" title="Fullscreen">
+        <i class="bi bi-fullscreen"></i>
+      </button>
+
+      <!-- Cytoscape canvas -->
+      <div id="nv-cytoscape"></div>
+
+      <!-- Signal legend -->
+      <div class="nv-signal-legend">
+        <div class="nv-sig-item"><div class="nv-sig-dot green"></div>Clear</div>
+        <div class="nv-sig-item"><div class="nv-sig-dot yellow"></div>Occupied</div>
+        <div class="nv-sig-item"><div class="nv-sig-dot red"></div>Blocked</div>
+        <div class="nv-sig-item"><div class="nv-sig-dot blue"></div>Maintenance</div>
+        <div class="nv-sig-item"><div class="nv-sig-dot purple"></div>Signal Fault</div>
+      </div>
+
+      <!-- Cytoscape credit -->
+      <div class="nv-cy-attr">cytoscape.js</div>
+
+      <!-- Timeline slider -->
+      <div class="nv-timeline">
+        <button class="nv-tl-play" id="nvTlPlay" onclick="nvTimelineToggle()"><i class="bi bi-play-fill"></i></button>
+        <span class="nv-tl-label">08:00</span>
+        <input type="range" class="nv-tl-slider" id="nvTimeline" min="0" max="100" value="40"
+               oninput="nvTimelineUpdate(this.value)" style="--val:40%;" />
+        <span class="nv-tl-label">20:00</span>
+        <div class="nv-tl-times">
+          <span class="nv-tl-time-display" id="nvTlTime">14:24</span>
+        </div>
+      </div>
+
+    </div><!-- /nv-map-body -->
+
+    <!-- Active trains ticker -->
+    <div class="nv-train-ticker">
+      {% for train in trains|slice:":12" %}
+      <a class="nv-train-chip" href="{% url 'trains:detail' train.id %}">
+        <span class="tc-num" style="color:{{ train.type_color }};">{{ train.train_number }}</span>
+        <span class="tc-route">{{ train.source_station.code|default:"?" }}→{{ train.destination_station.code|default:"?" }}</span>
+        {% if train.current_delay > 0 %}
+          <span class="tc-delay">+{{ train.current_delay }}'</span>
+        {% else %}
+          <span class="tc-ok"><i class="bi bi-check-circle-fill"></i></span>
+        {% endif %}
+      </a>
+      {% empty %}
+      <span style="font-size:.72rem;color:var(--text-muted);">No active trains on network</span>
+      {% endfor %}
+      {% if trains|length > 12 %}
+        <a href="{% url 'trains:list' %}" class="nv-train-chip" style="border-style:dashed;">
+          <span style="font-size:.68rem;color:var(--text-muted);">+{{ trains|length|add:"-12" }} more</span>
+        </a>
+      {% endif %}
+    </div>
+
+  </div><!-- /nv-map-panel -->
+
+  <!-- ─── RIGHT PANEL ────────────────────────── -->
+  <div class="nv-right-col" style="height:100%;">
+
+    <!-- Ops Feed + AI Tabs -->
+    <div class="nv-panel" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+      <div class="nv-tabs" style="flex-shrink:0;">
+        <div class="nv-tab active" data-nvtab="nvOpsPane">⚡ Ops Feed</div>
+        <div class="nv-tab" data-nvtab="nvAiPane">🤖 AI Recs</div>
+        <div class="nv-tab" data-nvtab="nvConflictPane">⚠️ Conflicts</div>
+      </div>
+
+      <!-- Ops Feed pane -->
+      <div class="nv-pane active" id="nvOpsPane" style="flex:1;overflow-y:auto;">
+        <div id="nvFeedContainer">
+          {% for train in trains|slice:":4" %}
+          <a class="nv-feed-item" href="{% url 'trains:detail' train.id %}">
+            <div class="nv-feed-dot {% if train.current_delay > 0 %}yellow{% else %}green{% endif %}"></div>
+            <div class="nv-feed-content">
+              <div class="nv-feed-title">{{ train.train_number }} — {{ train.get_current_status_display|default:train.current_status }}</div>
+              <div class="nv-feed-sub">{{ train.source_station.code|default:"?" }} → {{ train.destination_station.code|default:"?" }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+              {% if train.current_delay > 0 %}
+                <span class="nv-feed-badge medium">+{{ train.current_delay }}m</span>
+              {% else %}
+                <span class="nv-feed-badge low">On time</span>
+              {% endif %}
+            </div>
+          </a>
+          {% empty %}
+          <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:.75rem;">
+            <i class="bi bi-broadcast" style="font-size:1.2rem;color:var(--accent-green);display:block;margin-bottom:6px;"></i>
+            All systems operational
+          </div>
+          {% endfor %}
+          {% for sec in sections|slice:":4" %}
+          {% if sec.status != 'CLEAR' %}
+          <a class="nv-feed-item" href="{% url 'stations:sections' %}">
+            <div class="nv-feed-dot {% if sec.status == 'BLOCKED' %}red{% else %}yellow{% endif %}"></div>
+            <div class="nv-feed-content">
+              <div class="nv-feed-title">Section {{ sec.from_station.code }}—{{ sec.to_station.code }}: {{ sec.status }}</div>
+              <div class="nv-feed-sub">{{ sec.length }} km · {{ sec.number_of_lines }} line(s)</div>
+            </div>
+            <span class="nv-feed-badge {% if sec.status == 'BLOCKED' %}high{% else %}medium{% endif %}">{{ sec.status }}</span>
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- AI Recs pane -->
+      <div class="nv-pane" id="nvAiPane" style="flex:1;overflow-y:auto;">
+        <div class="nv-ai-rec-num" style="padding:8px 12px 2px;font-size:.6rem;color:var(--text-muted);font-weight:700;">1. AI RECOMMENDATION</div>
+        <div class="nv-ai-rec-title" style="padding:0 12px 4px;">Reroute via alternate track to reduce congestion at junction</div>
+        <div class="nv-ai-score-row">
+          <span class="nv-score-pill conf">Conf. 88%</span>
+          <span class="nv-score-pill delay">Delay −35%</span>
+          <span class="nv-score-pill tp">TP +42%</span>
+          <span class="nv-score-pill risk">Risk 4.16</span>
+        </div>
+        <div class="nv-ai-impact">
+          <div class="nv-impact-cell">
+            <div class="nv-impact-label">Revenue</div>
+            <div class="nv-impact-val pos">+₹1.5L</div>
+          </div>
+          <div class="nv-impact-cell">
+            <div class="nv-impact-label">Passenger</div>
+            <div class="nv-impact-val pos">+4.2%</div>
+          </div>
+          <div class="nv-impact-cell">
+            <div class="nv-impact-label">On-Time</div>
+            <div class="nv-impact-val pos">+5.2%</div>
+          </div>
+        </div>
+        <div class="nv-ai-actions">
+          <a href="{% url 'ai_engine:dashboard' %}" class="nv-ai-btn accept"><i class="bi bi-check-lg"></i> Accept</a>
+          <a href="{% url 'conflicts:list' %}" class="nv-ai-btn reject"><i class="bi bi-x-lg"></i> Reject</a>
+          <a href="{% url 'simulation:index' %}" class="nv-ai-btn sim"><i class="bi bi-play"></i> Sim</a>
+        </div>
+        {% for train in trains|slice:":2" %}
+        <div class="nv-ai-suggested">
+          <div class="nv-ai-suggested__dot sug-dot {% if forloop.first %}green{% else %}orange{% endif %}" style="width:7px;height:7px;border-radius:50%;background:{% if forloop.first %}var(--accent-green){% else %}var(--accent-orange){% endif %};flex-shrink:0;"></div>
+          <div class="nv-ai-suggested__text sug-text">{{ train.train_number }}: {{ train.source_station.code|default:"SRC" }} → {{ train.destination_station.code|default:"DST" }}</div>
+        </div>
+        {% endfor %}
+        <div style="padding:8px 12px;">
+          <a href="{% url 'ai_engine:dashboard' %}" class="nv-mini-btn primary" style="display:flex;justify-content:center;padding:8px;">
+            <i class="bi bi-robot"></i>&nbsp; Full AI Dashboard
+          </a>
+        </div>
+      </div>
+
+      <!-- Conflict pane -->
+      <div class="nv-pane" id="nvConflictPane" style="flex:1;overflow-y:auto;">
+        <div class="nv-conflict-tabs">
+          <div class="nv-ctab active">Active</div>
+          <div class="nv-ctab">Predicted</div>
+          <div class="nv-ctab">Critical</div>
+          <div class="nv-ctab">Severity</div>
+        </div>
+        <div class="nv-conflict-row">
+          <div class="nv-conflict-label"><div class="cdot" style="width:6px;height:6px;border-radius:50%;background:var(--accent-yellow);"></div> Predicted</div>
+          <div class="nv-conflict-count" id="nvConflPred">2:10</div>
+          <div class="nv-conflict-note">Resolution level</div>
+        </div>
+        <div class="nv-conflict-row">
+          <div class="nv-conflict-label"><div class="cdot" style="width:6px;height:6px;border-radius:50%;background:var(--accent-red);"></div> Critical</div>
+          <div class="nv-conflict-count" id="nvConflCrit">7:10</div>
+          <div class="nv-conflict-note">Countdown: 10 min</div>
+        </div>
+        <div class="nv-conflict-row">
+          <div class="nv-conflict-label"><div class="cdot" style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);"></div> Resolved</div>
+          <div class="nv-conflict-count" id="nvConflRes">1:10</div>
+          <div class="nv-conflict-note">Delay Impact: —</div>
+        </div>
+        <div style="padding:8px 12px;">
+          <a href="{% url 'conflicts:list' %}" class="nv-mini-btn" style="display:flex;justify-content:center;padding:8px;">
+            <i class="bi bi-exclamation-triangle"></i>&nbsp; Conflict Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network Health Panel -->
+    <div class="nv-panel" style="flex:1;display:flex;flex-direction:column;">
+      <div class="nv-panel-hdr">
+        <div class="nv-panel-title"><div class="nv-panel-dot green"></div> Network Health</div>
+        <a href="{% url 'dashboard:analytics' %}" class="nv-mini-btn"><i class="bi bi-graph-up"></i></a>
+      </div>
+      <div class="nv-health-grid">
+        <div class="nv-health-item">
+          <div class="nv-health-gauge">
+            <svg width="52" height="52" viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--border-color)" stroke-width="4"/>
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--accent-green)" stroke-width="4"
+                stroke-dasharray="92 200" stroke-linecap="round"/>
+            </svg>
+            <div class="hg-val">92%</div>
+          </div>
+          <div class="nv-health-label">Signal</div>
+        </div>
+        <div class="nv-health-item">
+          <div class="nv-health-gauge">
+            <svg width="52" height="52" viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--border-color)" stroke-width="4"/>
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--accent-blue)" stroke-width="4"
+                stroke-dasharray="87 200" stroke-linecap="round"/>
+            </svg>
+            <div class="hg-val">87%</div>
+          </div>
+          <div class="nv-health-label">Track</div>
+        </div>
+        <div class="nv-health-item">
+          <div class="nv-health-gauge">
+            <svg width="52" height="52" viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--border-color)" stroke-width="4"/>
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--accent-yellow)" stroke-width="4"
+                stroke-dasharray="78 200" stroke-linecap="round"/>
+            </svg>
+            <div class="hg-val">78%</div>
+          </div>
+          <div class="nv-health-label">Platform</div>
+        </div>
+        <div class="nv-health-item">
+          <div class="nv-health-gauge">
+            <svg width="52" height="52" viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--border-color)" stroke-width="4"/>
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--accent-purple)" stroke-width="4"
+                stroke-dasharray="95 200" stroke-linecap="round"/>
+            </svg>
+            <div class="hg-val">95%</div>
+          </div>
+          <div class="nv-health-label">Infra</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Node info card (click-to-show) -->
+    <div class="nv-panel" id="nvNodeInfo" style="display:none;">
+      <div class="nv-panel-hdr">
+        <div class="nv-panel-title" id="nvInfoTitle"><div class="nv-panel-dot blue"></div> Station Details</div>
+        <button class="nv-mini-btn" onclick="document.getElementById('nvNodeInfo').style.display='none'">✕</button>
+      </div>
+      <div id="nvInfoBody" style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    </div>
+
+  </div><!-- /nv-right-col -->
+
+</div><!-- /nv-main-grid -->
+
+<!-- ══════════════════════════════════════════
+     BOTTOM GRID — 5 WIDGETS
+     ══════════════════════════════════════════ -->
+<div class="nv-bottom-grid">
+
+  <!-- 1. Delay Prediction -->
+  <a class="nv-widget" href="{% url 'ml_prediction:dashboard' %}">
+    <div class="nv-widget-hdr">
+      <div class="nv-widget-title"><div class="nv-panel-dot yellow"></div> Delay Prediction</div>
+      <span class="nv-mini-btn primary" style="pointer-events:none;"><i class="bi bi-cpu"></i></span>
+    </div>
+    <div class="nv-widget-body">
+      {% for train in trains|slice:":4" %}
+      {% if train.current_delay > 0 %}
+      <div class="nv-dl-row">
+        <div class="nv-dl-code">{{ train.train_number }}</div>
+        <div class="nv-dl-bar"><div class="nv-dl-fill" style="width:{% if train.current_delay > 60 %}100{% else %}{{ train.current_delay }}{% endif %}%;"></div></div>
+        <div class="nv-dl-val">+{{ train.current_delay }}'</div>
+      </div>
+      {% endif %}
+      {% empty %}
+      <div style="text-align:center;padding:10px;color:var(--text-muted);font-size:.72rem;">
+        <i class="bi bi-check2-all" style="color:var(--accent-green);font-size:1rem;display:block;"></i>All on schedule
+      </div>
+      {% endfor %}
+      <div style="border-top:1px solid var(--border-color);margin-top:6px;padding-top:6px;display:flex;gap:4px;align-items:center;">
+        <span style="font-size:.62rem;color:var(--text-muted);">🌦️ Weather Impact</span>
+        <span style="flex:1;"></span>
+        <span style="font-size:.62rem;color:var(--text-muted);">🚦 Traffic Density</span>
+      </div>
+    </div>
+    <span class="nv-widget-hint"><i class="bi bi-box-arrow-up-right"></i> ML Dashboard</span>
+  </a>
+
+  <!-- 2. Traffic Density Heatmap -->
+  <a class="nv-widget" href="{% url 'dashboard:analytics' %}">
+    <div class="nv-widget-hdr">
+      <div class="nv-widget-title"><div class="nv-panel-dot blue"></div> Traffic Density</div>
+      <span class="nv-mini-btn" style="pointer-events:none;font-size:.6rem;">Last 24 hrs</span>
+    </div>
+    <div class="nv-widget-body">
+      {% for sec in sections|slice:":4" %}
+      <div class="nv-hm-row">
+        <div class="nv-hm-label">{{ sec.from_station.code|default:"S" }}–{{ sec.to_station.code|default:"E" }}</div>
+        <div class="nv-hm-cells" id="hmrow{{ forloop.counter }}"></div>
+      </div>
+      {% empty %}
+      {% for i in "1234" %}
+      <div class="nv-hm-row">
+        <div class="nv-hm-label">Sec {{ forloop.counter }}</div>
+        <div class="nv-hm-cells" id="hmrow{{ forloop.counter }}"></div>
+      </div>
+      {% endfor %}
+      {% endfor %}
+      <div style="display:flex;align-items:center;gap:4px;margin-top:5px;border-top:1px solid var(--border-color);padding-top:5px;">
+        <span style="font-size:.58rem;color:var(--text-muted);">Low</span>
+        <div style="flex:1;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--accent-green),var(--accent-yellow),var(--accent-red));"></div>
+        <span style="font-size:.58rem;color:var(--text-muted);">High</span>
+      </div>
+    </div>
+    <span class="nv-widget-hint"><i class="bi bi-box-arrow-up-right"></i> Analytics</span>
+  </a>
+
+  <!-- 3. Conflict Timeline -->
+  <a class="nv-widget" href="{% url 'conflicts:list' %}">
+    <div class="nv-widget-hdr">
+      <div class="nv-widget-title"><div class="nv-panel-dot red"></div> Conflict Timeline</div>
+      <span class="nv-mini-btn" style="pointer-events:none;font-size:.6rem;">Past & Now</span>
+    </div>
+    <div class="nv-widget-body">
+      <div class="nv-ct-bar-group" id="nvConflBars"></div>
+      <div class="nv-ct-labels">
+        <span class="nv-ct-lbl">Past</span>
+        <span class="nv-ct-lbl">Past</span>
+        <span class="nv-ct-lbl">Now</span>
+        <span class="nv-ct-lbl">Pred</span>
+        <span class="nv-ct-lbl">Pred</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:5px;border-top:1px solid var(--border-color);padding-top:5px;">
+        <span style="font-size:.6rem;color:var(--text-muted);display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;background:rgba(59,130,246,.5);border-radius:2px;"></span>Past</span>
+        <span style="font-size:.6rem;color:var(--text-muted);display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;background:var(--accent-blue);border-radius:2px;"></span>Current</span>
+        <span style="font-size:.6rem;color:var(--text-muted);display:flex;align-items:center;gap:3px;"><span style="width:8px;height:8px;background:rgba(239,68,68,.5);border-radius:2px;"></span>Predicted</span>
+      </div>
+    </div>
+    <span class="nv-widget-hint"><i class="bi bi-box-arrow-up-right"></i> Conflicts</span>
+  </a>
+
+  <!-- 4. Simulation Widget -->
+  <a class="nv-widget" href="{% url 'simulation:index' %}">
+    <div class="nv-widget-hdr">
+      <div class="nv-widget-title"><div class="nv-panel-dot purple"></div> Simulation</div>
+      <span class="nv-mini-btn" style="pointer-events:none;font-size:.6rem;">What-If</span>
+    </div>
+    <div class="nv-widget-body">
+      <div class="nv-sim-row">
+        <div class="nv-sim-name"><span>🌧️</span> Heavy Rain</div>
+        <div class="nv-sim-val neg">−18%</div>
+      </div>
+      <div class="nv-sim-row">
+        <div class="nv-sim-name"><span>🚦</span> Signal Fail</div>
+        <div class="nv-sim-val neg">−12</div>
+      </div>
+      <div class="nv-sim-row">
+        <div class="nv-sim-name"><span>🏗️</span> Platform Close</div>
+        <div class="nv-sim-val warn">−7%</div>
+      </div>
+      <div class="nv-sim-row">
+        <div class="nv-sim-name"><span>🚋</span> Congestion</div>
+        <div class="nv-sim-val neg">−15%</div>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:4px;">
+        <span style="flex:1;text-align:center;padding:5px;border-radius:5px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:var(--accent-blue);font-size:.65rem;font-weight:700;">
+          <i class="bi bi-play-fill"></i> Simulate
+        </span>
+        <span style="padding:5px 8px;border-radius:5px;background:rgba(255,255,255,.04);border:1px solid var(--border-color);color:var(--text-muted);font-size:.65rem;">
+          <i class="bi bi-arrow-clockwise"></i>
+        </span>
+      </div>
+    </div>
+    <span class="nv-widget-hint"><i class="bi bi-box-arrow-up-right"></i> Simulation Lab</span>
+  </a>
+
+  <!-- 5. Analytics Snapshot -->
+  <a class="nv-widget" href="{% url 'dashboard:analytics' %}">
+    <div class="nv-widget-hdr">
+      <div class="nv-widget-title"><div class="nv-panel-dot green"></div> Analytics</div>
+      <span class="nv-mini-btn" style="pointer-events:none;font-size:.6rem;">Snapshot</span>
+    </div>
+    <div class="nv-widget-body">
+      <div class="nv-an-chart-row">
+        <div class="nv-an-mini">
+          <div class="am-label">Throughput</div>
+          <canvas id="nvAnT" style="display:block;height:36px;"></canvas>
+        </div>
+        <div class="nv-an-mini">
+          <div class="am-label">Delay</div>
+          <canvas id="nvAnD" style="display:block;height:36px;"></canvas>
+        </div>
+      </div>
+      <div class="nv-an-chart-row">
+        <div class="nv-an-mini">
+          <div class="am-label">Conflict</div>
+          <canvas id="nvAnC" style="display:block;height:36px;"></canvas>
+        </div>
+        <div class="nv-an-mini">
+          <div class="am-label">AI Optim.</div>
+          <canvas id="nvAnA" style="display:block;height:36px;"></canvas>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:4px;border-top:1px solid var(--border-color);padding-top:7px;">
+        <div style="text-align:center;">
+          <div style="font-size:.62rem;color:var(--text-muted);margin-bottom:2px;">Running</div>
+          <div style="font-size:.88rem;font-weight:800;color:var(--accent-green);font-family:var(--font-mono);" id="nvAnRunning">{{ trains|length }}</div>
+        </div>
+        <div style="text-align:center;border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);">
+          <div style="font-size:.62rem;color:var(--text-muted);margin-bottom:2px;">Avg Delay</div>
+          <div style="font-size:.88rem;font-weight:800;color:var(--accent-yellow);font-family:var(--font-mono);" id="nvAnDelay">—</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:.62rem;color:var(--text-muted);margin-bottom:2px;">Punctuality</div>
+          <div style="font-size:.88rem;font-weight:800;color:var(--accent-blue);font-family:var(--font-mono);" id="nvAnPunct">—%</div>
+        </div>
+      </div>
+    </div>
+    <span class="nv-widget-hint"><i class="bi bi-box-arrow-up-right"></i> Full Analytics</span>
+  </a>
+
+</div>
+
+</div><!-- /nv-page -->
+
+<!-- Hover intelligence tooltip -->
+<div id="nv-tooltip"></div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script>
+'use strict';
+
+/* ── Data from Django ───────────────────────────── */
+const nodesData = {{ nodes_json|safe }};
+const edgesData = {{ edges_json|safe }};
+// Trains context for node status coloring
+const trainCtx = [{% for t in trains %}{"src":"{{ t.source_station.code|default:'' }}","dst":"{{ t.destination_station.code|default:'' }}","delay":{{ t.current_delay }},"status":"{{ t.current_status }}","num":"{{ t.train_number }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+/* ── State ──────────────────────────────────────── */
+let cy = null;
+let showLabels = true;
+let tlPlaying = false;
+let tlTimer   = null;
+let layers = { trains:true, signals:true, congestion:true, conflicts:true, ai:true, maint:false };
+
+const STATUS_COLORS = {
+  CLEAR:'#10b981', OCCUPIED:'#f59e0b',
+  BLOCKED:'#ef4444', MAINTENANCE:'#3b82f6', SIGNAL_FAILURE:'#9b59b6'
+};
+
+/* ── Clock ──────────────────────────────────────── */
+function nvTick() {
+  const n=new Date(), pad=v=>String(v).padStart(2,'0');
+  document.getElementById('nvClock').textContent = `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+}
+setInterval(nvTick,1000); nvTick();
+
+/* ── Tabs ───────────────────────────────────────── */
+document.querySelectorAll('[data-nvtab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const pid = tab.dataset.nvtab;
+    document.querySelectorAll('[data-nvtab]').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nv-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const pane = document.getElementById(pid);
+    if (pane) pane.classList.add('active');
+  });
+});
+
+/* ── Layer controls ─────────────────────────────── */
+document.getElementById('btnLayers').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('nvLayerPanel').classList.toggle('open');
+});
+document.addEventListener('click', () => document.getElementById('nvLayerPanel').classList.remove('open'));
+document.getElementById('nvLayerPanel').addEventListener('click', e => e.stopPropagation());
+
+function nvToggleLayer(name, el) {
+  layers[name] = !layers[name];
+  el.classList.toggle('off', !layers[name]);
+  applyCyLayers();
+}
+function applyCyLayers() {
+  if (!cy) return;
+  // Trains (nodes with status running/delayed)
+  cy.nodes().forEach(n => {
+    const st = n.data('status');
+    if (['running','delayed','scheduled'].includes(st)) {
+      n.style('display', layers.trains ? 'element' : 'none');
+    }
+  });
+  // Conflict edges
+  cy.edges('[status="conflict"]').style('display', layers.conflicts ? 'element' : 'none');
+  // Maintenance edges
+  cy.edges('[status="MAINTENANCE"]').style('display', layers.maint ? 'element' : 'none');
+}
+
+/* ── Label toggle ───────────────────────────────── */
+document.getElementById('btnToggleLabels').addEventListener('click', () => {
+  showLabels = !showLabels;
+  if (cy) {
+    cy.style().selector('edge').style('label', showLabels ? 'data(label)' : '').update();
+    cy.style().selector('node').style('label', showLabels ? 'data(label)' : '').update();
+  }
+  document.getElementById('btnToggleLabels').classList.toggle('active', showLabels);
+});
+
+/* ── Search ─────────────────────────────────────── */
+document.getElementById('nvSearch').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!cy) return;
+  if (!q) { cy.nodes().style('opacity',1); cy.edges().style('opacity',1); return; }
+  cy.nodes().forEach(n => {
+    const match = n.data('label').toLowerCase().includes(q) || n.data('full_name').toLowerCase().includes(q);
+    n.style('opacity', match ? 1 : 0.15);
+  });
+  cy.edges().style('opacity', 0.15);
+});
+document.getElementById('nvSearch').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.target.value=''; if(cy){cy.nodes().style('opacity',1);cy.edges().style('opacity',1);} }
+});
+
+/* ── Tooltip ────────────────────────────────────── */
+const nvTip = document.getElementById('nv-tooltip');
+function showTip(html, x, y) {
+  nvTip.innerHTML = html; nvTip.style.display = 'block';
+  const tw = nvTip.offsetWidth, th = nvTip.offsetHeight;
+  nvTip.style.left = (x + 14 + tw > window.innerWidth ? x - tw - 10 : x + 14) + 'px';
+  nvTip.style.top  = (y + 14 + th > window.innerHeight ? y - th - 10 : y + 14) + 'px';
+}
+function hideTip() { nvTip.style.display = 'none'; }
+
+/* ── Build Cytoscape ────────────────────────────── */
+function buildCy() {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const labelCol   = isDark ? '#c8d0de' : '#1e293b';
+  const outlineCol = isDark ? '#0a0e1a' : '#f8fafc';
+  const edgeLabelBg= isDark ? 'rgba(10,14,26,.9)' : 'rgba(248,250,252,.92)';
+
+  // Build train-to-station index from context trains list
+  const trainsByStation = {};
+  trainCtx.forEach(t => {
+    if (t.src) trainsByStation[t.src] = trainsByStation[t.src] || [];
+    if (t.src) trainsByStation[t.src].push(t);
+    if (t.dst) trainsByStation[t.dst] = trainsByStation[t.dst] || [];
+  });
+
+  const elements = [];
+  nodesData.forEach(n => {
+    const trainsHere = trainsByStation[n.label] || [];
+    const hasDelayed  = trainsHere.some(t => t.delay > 0);
+    const hasConflict = trainsHere.some(t => t.status === 'CONFLICT');
+    const nodeStatus  = hasConflict ? 'conflict' : hasDelayed ? 'delayed' : trainsHere.length > 0 ? 'active' : 'clear';
+    elements.push({ group:'nodes', data:{ ...n, nodeStatus, trainCount: trainsHere.length } });
+  });
+  edgesData.forEach(e => elements.push({ group:'edges', data:{ ...e } }));
+
+  cy = cytoscape({
+    container: document.getElementById('nv-cytoscape'),
+    elements,
+    style: [
+      // Default station node
+      {
+        selector: 'node',
+        style: {
+          'background-color': isDark ? '#162032' : '#e2e8f0',
+          'border-width': 2,
+          'border-color': '#3b82f6',
+          'label': showLabels ? 'data(label)' : '',
+          'color': labelCol,
+          'font-size': '9px',
+          'font-family': '"JetBrains Mono","Courier New",monospace',
+          'font-weight': 700,
+          'text-valign': 'bottom',
+          'text-margin-y': 5,
+          'width': 18, 'height': 18,
+          'text-outline-color': outlineCol,
+          'text-outline-width': 2,
+        }
+      },
+      // Junction nodes — larger, brighter border
+      {
+        selector: 'node[is_junction = true]',
+        style: {
+          'background-color': isDark ? '#1e3a72' : '#bfdbfe',
+          'border-color': '#60a5fa',
+          'border-width': 3,
+          'width': 28, 'height': 28,
+          'font-size': '10px',
+        }
+      },
+      // Station with active trains → green glow
+      {
+        selector: 'node[nodeStatus = "active"]',
+        style: {
+          'background-color': '#064e3b',
+          'border-color': '#10b981',
+          'border-width': 2.5,
+          'width': 22, 'height': 22,
+        }
+      },
+      // Station with delayed trains → yellow
+      {
+        selector: 'node[nodeStatus = "delayed"]',
+        style: {
+          'background-color': '#451a03',
+          'border-color': '#f59e0b',
+          'border-width': 2.5,
+          'width': 22, 'height': 22,
+        }
+      },
+      // Station with conflict → red
+      {
+        selector: 'node[nodeStatus = "conflict"]',
+        style: {
+          'background-color': '#450a0a',
+          'border-color': '#ef4444',
+          'border-width': 3,
+          'width': 26, 'height': 26,
+        }
+      },
+      // Edges — use backend status_color
+      {
+        selector: 'edge',
+        style: {
+          'width': 2,
+          'line-color': 'data(color)',
+          'curve-style': 'bezier',
+          'label': showLabels ? 'data(label)' : '',
+          'font-size': '8px',
+          'color': isDark ? '#6b7a8e' : '#64748b',
+          'text-background-color': edgeLabelBg,
+          'text-background-opacity': 0.9,
+          'text-background-padding': '2px',
+          'text-rotation': 'autorotate',
+          'font-family': 'Inter,sans-serif',
+          'opacity': 0.8,
+        }
+      },
+      // Wider edges for double-track
+      {
+        selector: 'edge[lines > 1]',
+        style: { 'width': 3.5, 'opacity': 0.9 }
+      },
+      // CLEAR sections — green glow
+      {
+        selector: 'edge[status = "CLEAR"]',
+        style: { 'line-color': '#10b981', 'opacity': 0.85 }
+      },
+      // OCCUPIED — yellow
+      {
+        selector: 'edge[status = "OCCUPIED"]',
+        style: { 'line-color': '#f59e0b', 'opacity': 0.9, 'width': 2.5 }
+      },
+      // BLOCKED — red dashed
+      {
+        selector: 'edge[status = "BLOCKED"]',
+        style: { 'line-style':'dashed', 'line-dash-pattern':[7,3], 'line-color':'#ef4444', 'width':2.5, 'opacity':1 }
+      },
+      // MAINTENANCE — blue dotted
+      {
+        selector: 'edge[status = "MAINTENANCE"]',
+        style: { 'line-style':'dotted', 'line-color':'#3b82f6', 'width':2 }
+      },
+      // SIGNAL_FAILURE — purple
+      {
+        selector: 'edge[status = "SIGNAL_FAILURE"]',
+        style: { 'line-style':'dashed', 'line-dash-pattern':[4,4], 'line-color':'#9b59b6', 'width':2 }
+      },
+      // Selected
+      {
+        selector: ':selected',
+        style: { 'background-color':'#f59e0b', 'border-color':'#fbbf24', 'line-color':'#fbbf24', 'border-width':4 }
+      }
+    ],
+    layout: {
+      name: 'cose', padding: 55, nodeRepulsion: 10000,
+      idealEdgeLength: 140, gravity: 0.35,
+      animate: true, animationDuration: 1000,
+    },
+    wheelSensitivity: 0.3,
+    minZoom: 0.25, maxZoom: 4,
+  });
+
+  // Node hover
+  cy.on('mouseover', 'node', evt => {
+    const n = evt.target.data();
+    const pos = evt.originalEvent;
+    showTip(`
+      <div class="tt-title">🏛️ ${n.full_name || n.label}</div>
+      <div class="tt-row"><span class="tt-key">Code</span><span class="tt-val" style="color:var(--accent-blue);">${n.label}</span></div>
+      <div class="tt-row"><span class="tt-key">Type</span><span class="tt-val">${n.type || '—'}</span></div>
+      <div class="tt-row"><span class="tt-key">Platforms</span><span class="tt-val">${n.platforms || '—'}</span></div>
+      <div class="tt-row"><span class="tt-key">Junction</span><span class="tt-val" style="color:${n.is_junction?'var(--accent-green)':'var(--text-muted)'}">${n.is_junction ? '✓ Yes' : 'No'}</span></div>
+    `, pos.clientX, pos.clientY);
+  });
+  cy.on('mouseout', 'node', hideTip);
+
+  // Edge hover
+  cy.on('mouseover', 'edge', evt => {
+    const e = evt.target.data();
+    const col = STATUS_COLORS[e.status] || '#95a5a6';
+    const pos = evt.originalEvent;
+    showTip(`
+      <div class="tt-title">🛤️ ${e.label || 'Section'}</div>
+      <div class="tt-row"><span class="tt-key">Length</span><span class="tt-val">${e.length} km</span></div>
+      <div class="tt-row"><span class="tt-key">Status</span><span class="tt-val" style="color:${col};">${e.status}</span></div>
+      <div class="tt-row"><span class="tt-key">Lines</span><span class="tt-val">${e.lines}</span></div>
+    `, pos.clientX, pos.clientY);
+  });
+  cy.on('mouseout', 'edge', hideTip);
+
+  // Node tap → info panel
+  cy.on('tap', 'node', evt => {
+    const n = evt.target.data();
+    document.getElementById('nvInfoTitle').innerHTML = `<div class="nv-panel-dot blue"></div> ${n.full_name || n.label} (${n.label})`;
+    document.getElementById('nvInfoBody').innerHTML = `
+      <div><div style="font-size:.62rem;color:var(--text-muted);">Station Code</div><div style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);font-size:.82rem;">${n.label}</div></div>
+      <div><div style="font-size:.62rem;color:var(--text-muted);">Type</div><div style="font-weight:600;font-size:.78rem;">${n.type || '—'}</div></div>
+      <div><div style="font-size:.62rem;color:var(--text-muted);">Platforms</div><div style="font-family:var(--font-mono);font-weight:700;font-size:.82rem;">${n.platforms || '—'}</div></div>
+      <div><div style="font-size:.62rem;color:var(--text-muted);">Junction</div><div style="font-weight:600;color:${n.is_junction?'var(--accent-green)':'var(--text-muted)'};">${n.is_junction ? '✓ Yes' : 'No'}</div></div>
+    `;
+    document.getElementById('nvNodeInfo').style.display = 'block';
+  });
+
+  // Edge tap
+  cy.on('tap', 'edge', evt => {
+    const e = evt.target.data();
+    const col = STATUS_COLORS[e.status] || '#95a5a6';
+    document.getElementById('nvInfoTitle').innerHTML = `<div class="nv-panel-dot yellow"></div> Section: ${e.label || '—'}`;
+    document.getElementById('nvInfoBody').innerHTML = `
+      <div><div style="font-size:.62rem;color:var(--text-muted);">Length</div><div style="font-family:var(--font-mono);font-weight:700;font-size:.82rem;">${e.length} km</div></div>
+      <div><div style="font-size:.62rem;color:var(--text-muted);">Status</div><div style="font-weight:700;color:${col};font-size:.82rem;">${e.status}</div></div>
+      <div><div style="font-size:.62rem;color:var(--text-muted);">Lines</div><div style="font-family:var(--font-mono);font-size:.8rem;">${e.lines}</div></div>
+    `;
+    document.getElementById('nvNodeInfo').style.display = 'block';
+  });
+
+  // Layout done
+  cy.one('layoutstop', () => {
+    document.getElementById('nvMapStatus').textContent = `${nodesData.length} nodes · ${edgesData.length} edges`;
+    cy.fit(null, 50);
+    cy.center();
+  });
+
+  // Animate trains
+  setTimeout(nvAnimateTrains, 1800);
+}
+
+/* ── Train animation ────────────────────────────── */
+function nvAnimateTrains() {
+  if (!cy || !layers.trains) return;
+  const edges = cy.edges();
+  if (!edges.length) return;
+  let idx = 0;
+  function flash() {
+    if (!cy) return;
+    const e = edges[idx % edges.length];
+    if (e && e.data('status') !== 'BLOCKED') {
+      e.animate({ style:{'line-color':'#60a5fa','width':4,'opacity':1} }, { duration:300,
+        complete: () => e.animate({ style:{'line-color':e.data('color'),'width':e.data('lines'),'opacity':.85} }, { duration:500 })
+      });
+    }
+    idx++;
+    setTimeout(flash, 1200 + Math.random() * 800);
+  }
+  flash();
+}
+
+/* ── Controls ───────────────────────────────────── */
+function nvZoom(factor) {
+  if (!cy) return;
+  cy.zoom({ level: cy.zoom() * factor, renderedPosition: { x: cy.width()/2, y: cy.height()/2 } });
+}
+function nvResetView() { if (cy) { cy.fit(null, 40); cy.center(); } }
+function nvCenterLayout() {
+  if (!cy) return;
+  cy.layout({ name:'cose', padding:50, nodeRepulsion:9000, idealEdgeLength:130, gravity:0.4, animate:true, animationDuration:800 }).run();
+}
+async function nvRefresh() {
+  try {
+    const data = await apiGet('/api/stations/sections/');
+    if (data && data.sections) {
+      data.sections.forEach(s => {
+        const edge = cy && cy.getElementById(s.code);
+        if (edge && edge.length) {
+          edge.data('status', s.status);
+          edge.data('color', s.color);
+          edge.style('line-color', s.color);
+        }
+      });
+      Toast.success('Network refreshed.');
+    }
+  } catch(err) { Toast.error('Refresh failed.'); }
+}
+
+/* ── Fullscreen ─────────────────────────────────── */
+function nvToggleFullscreen() {
+  const panel = document.getElementById('nvMapPanel');
+  const btn   = document.getElementById('nvFsBtn');
+  const isFs  = panel.classList.toggle('fullscreen');
+  btn.innerHTML = isFs ? '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-fullscreen"></i>';
+  btn.title = isFs ? 'Exit Fullscreen' : 'Fullscreen';
+  if (isFs) document.body.style.overflow = 'hidden';
+  else document.body.style.overflow = '';
+  setTimeout(() => { if (cy) cy.fit(null,30); }, 300);
+}
+
+/* ── Export map as PNG ──────────────────────────── */
+function nvExportMap() {
+  if (!cy) return;
+  const png = cy.png({ scale:2, full:true, bg:'#0a0e1a' });
+  const a = document.createElement('a'); a.href = png; a.download = 'railway-network.png'; a.click();
+}
+
+/* ── Timeline ───────────────────────────────────── */
+const TIMES = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+function nvTimelineUpdate(val) {
+  const pct = Math.round(val);
+  const timeIdx = Math.floor((pct / 100) * (TIMES.length - 1));
+  document.getElementById('nvTlTime').textContent = TIMES[timeIdx] || '14:00';
+  const slider = document.getElementById('nvTimeline');
+  slider.style.setProperty('--val', pct + '%');
+}
+function nvTimelineToggle() {
+  tlPlaying = !tlPlaying;
+  document.getElementById('nvTlPlay').innerHTML = tlPlaying ? '<i class="bi bi-pause-fill"></i>' : '<i class="bi bi-play-fill"></i>';
+  if (tlPlaying) {
+    tlTimer = setInterval(() => {
+      const sl = document.getElementById('nvTimeline');
+      const newVal = Math.min(100, parseInt(sl.value) + 1);
+      sl.value = newVal;
+      nvTimelineUpdate(newVal);
+      if (newVal >= 100) { clearInterval(tlTimer); tlPlaying = false; document.getElementById('nvTlPlay').innerHTML = '<i class="bi bi-play-fill"></i>'; }
+    }, 300);
+  } else clearInterval(tlTimer);
+}
+
+/* ── KPI fetch & populate ───────────────────────── */
+async function nvLoadKPIs() {
+  try {
+    const kpis = await apiGet('/api/analytics/kpis/');
+    if (!kpis) return;
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('nvDelayed',   kpis.delayed_trains ?? '—');
+    setEl('nvConflicts', kpis.active_conflicts ?? '—');
+    setEl('nvThroughput', (kpis.section_availability ?? '—') + (kpis.section_availability !== undefined ? '%' : ''));
+    setEl('nvHealth',    (kpis.section_availability ?? '—') + (kpis.section_availability !== undefined ? '%' : ''));
+    // Occupied sections estimate
+    const occ = Math.round(((100 - (kpis.section_availability || 0)) / 100) * ({{ sections|length }} || 10));
+    setEl('nvOccupied', occ);
+    // Analytics widget stats
+    setEl('nvAnRunning', kpis.active_trains ?? trainCtx.length);
+    setEl('nvAnDelay',   kpis.avg_delay !== undefined ? kpis.avg_delay.toFixed(1) : '—');
+    const punct = kpis.on_time_percentage ?? kpis.section_availability;
+    setEl('nvAnPunct',   punct !== undefined ? Math.round(punct) + '%' : '—%');
+  } catch(e) {}
+}
+
+/* ── Heatmap ────────────────────────────────────── */
+function buildHeatmap() {
+  const hc = v => v < .4 ? `rgba(16,185,129,${.5+v})` : v < .7 ? `rgba(245,158,11,${.45+v*.5})` : `rgba(239,68,68,${.45+v*.4})`;
+  for (let r = 1; r <= 4; r++) {
+    const el = document.getElementById(`hmrow${r}`);
+    if (!el) continue;
+    el.innerHTML = '';
+    for (let c = 0; c < 6; c++) {
+      const v = Math.random();
+      const cell = document.createElement('div');
+      cell.className = 'nv-hm-cell';
+      cell.style.background = hc(v);
+      cell.title = `${Math.round(v*100)}% utilization`;
+      el.appendChild(cell);
+    }
+  }
+}
+
+/* ── Conflict bar chart ─────────────────────────── */
+function buildConflictBars() {
+  const container = document.getElementById('nvConflBars');
+  if (!container) return;
+  const vals = [8, 5, 12, 4, 6]; // past×2, current, pred×2
+  const types = ['past','past','current','pred','pred'];
+  container.innerHTML = '';
+  vals.forEach((v, i) => {
+    const bar = document.createElement('div');
+    bar.className = `nv-ct-bar ${types[i]}`;
+    bar.style.height = `${(v / 15) * 100}%`;
+    bar.title = `${v} conflicts`;
+    container.appendChild(bar);
+  });
+}
+
+/* ── Mini sparklines (Chart.js) ─────────────────── */
+function mkMini(id, color, vals) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels: vals.map((_,i) => i),
+      datasets: [{ data: vals, borderColor: color, borderWidth: 1.5,
+        pointRadius: 0, fill: true, tension: 0.4,
+        backgroundColor: color + '22' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 600 },
+      plugins: { legend:{ display:false }, tooltip:{ enabled:false } },
+      scales: { x:{ display:false }, y:{ display:false } }
+    }
+  });
+}
+
+/* ── Theme change sync ──────────────────────────── */
+document.addEventListener('themechange', () => {
+  if (!cy) return;
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const labelCol   = isDark ? '#c8d0de' : '#1e293b';
+  const outlineCol = isDark ? '#0a0e1a' : '#f8fafc';
+  const edgeLabelBg= isDark ? 'rgba(10,14,26,.9)' : 'rgba(248,250,252,.92)';
+  cy.style()
+    .selector('node')
+    .style({ 'background-color': isDark ? '#162032' : '#e2e8f0', 'color': labelCol, 'text-outline-color': outlineCol })
+    .selector('node[is_junction = true]')
+    .style({ 'background-color': isDark ? '#1e3a72' : '#bfdbfe' })
+    .selector('edge')
+    .style({ 'color': isDark ? '#6b7a8e' : '#64748b', 'text-background-color': edgeLabelBg })
+    .update();
+});
+
+/* ── Init ───────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  buildCy();
+  buildHeatmap();
+  buildConflictBars();
+  nvLoadKPIs();
+
+  mkMini('nvAnT', '#10b981', [4,6,5,8,7,9,8,11,9,12,10,13]);
+  mkMini('nvAnD', '#f59e0b', [12,10,14,9,12,8,11,7,10,8,9,6]);
+  mkMini('nvAnC', '#ef4444', [3,2,4,1,3,5,2,4,1,2,3,1]);
+  mkMini('nvAnA', '#8b5cf6', [85,87,88,86,90,89,91,88,92,90,93,94]);
+
+  setInterval(nvLoadKPIs, 45000);
+  setInterval(buildHeatmap, 30000);
+});
+</script>
+{% endblock %}

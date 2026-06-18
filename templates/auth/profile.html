@@ -1,0 +1,60 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-person-circle"></i> My Profile</div>
+    <div class="page-subtitle">{{ user.get_role_display }} · {{ user.section_assigned|default:"No section assigned" }}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'auth:password_change' %}" class="btn btn-secondary"><i class="bi bi-shield-lock"></i> Change Password</a>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;">
+  <!-- Avatar Card -->
+  <div class="card" style="text-align:center;">
+    <div style="width:80px;height:80px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:white;margin:0 auto 16px;">{{ user.display_name|first|upper }}</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">{{ user.display_name }}</div>
+    <div style="font-size:0.82rem;color:var(--text-muted);">{{ user.email }}</div>
+    <div style="margin-top:12px;"><span class="badge badge-scheduled">{{ user.get_role_display }}</span></div>
+    <div style="margin-top:8px;font-size:0.78rem;color:var(--text-muted);">Employee ID: {{ user.employee_id|default:"Not set" }}</div>
+    <div style="margin-top:4px;font-size:0.78rem;color:var(--text-muted);">Dept: {{ user.department|default:"—" }}</div>
+    <div style="margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <div class="status-dot {% if user.is_on_duty %}green pulse{% else %}red{% endif %}"></div>
+      <span style="font-size:0.78rem;color:{% if user.is_on_duty %}var(--accent-green){% else %}var(--text-muted){% endif %};">{% if user.is_on_duty %}On Duty{% else %}Off Duty{% endif %}</span>
+    </div>
+  </div>
+  <!-- Edit Form -->
+  <div class="card">
+    <div class="card-header"><div class="card-title"><i class="bi bi-pencil"></i> Edit Profile</div></div>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name</label>{{ form.first_name }}</div>
+        <div class="form-group"><label class="form-label">Last Name</label>{{ form.last_name }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Email</label>{{ form.email }}</div>
+        <div class="form-group"><label class="form-label">Phone</label>{{ form.phone }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Department</label>{{ form.department }}</div>
+        <div class="form-group"><label class="form-label">Section Assigned</label>{{ form.section_assigned }}</div>
+      </div>
+      <div class="form-group"><label class="form-label">Profile Avatar</label>{{ form.avatar }}</div>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Save Changes</button>
+    </form>
+  </div>
+</div>
+<!-- Activity Log -->
+<div class="card" style="margin-top:20px;">
+  <div class="card-header"><div class="card-title"><i class="bi bi-clock-history" style="color:var(--accent-purple)"></i> Recent Activity</div></div>
+  {% for activity in activities %}
+  <div style="padding:8px 0;border-bottom:1px solid var(--border-color);display:flex;gap:10px;align-items:center;">
+    <div style="font-size:0.8rem;color:var(--accent-blue);font-weight:600;">{{ activity.action }}</div>
+    <div style="font-size:0.78rem;color:var(--text-secondary);flex:1;">{{ activity.description }}</div>
+    <div style="font-size:0.72rem;color:var(--text-muted);">{{ activity.timestamp|timesince }} ago</div>
+  </div>
+  {% empty %}
+  <div style="text-align:center;padding:24px;color:var(--text-muted);">No recent activity logged.</div>
+  {% endfor %}
+</div>
+{% endblock %}

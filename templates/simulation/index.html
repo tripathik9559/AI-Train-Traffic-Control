@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-play-circle"></i> Scenario Simulation Engine</div>
+    <div class="page-subtitle">{{ total_simulations }} simulations run · {{ completed_count }} completed</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'simulation:realtime' %}" class="btn btn-secondary">
+      <i class="bi bi-broadcast"></i> Real-Time Simulator
+    </a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+
+  <!-- New Simulation Form -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-gear" style="color:var(--accent-blue)"></i> Configure Scenario</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Simulation Name</label>
+      <input type="text" id="sim-name" class="form-control"
+             placeholder="e.g. Monsoon Delay Cascade - Jun 2025" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Scenario Type</label>
+      <select id="sim-type" class="form-select" onchange="updateScenarioInfo()">
+        {% for val, label in scenario_types %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Scenario Info Banner -->
+    <div id="scenario-info" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius-md);padding:12px;margin-bottom:16px;">
+      <div style="font-size:0.78rem;color:var(--accent-blue);font-weight:700;" id="scenario-title">Train Delay Simulation</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;" id="scenario-desc">Simulates cascading delays when a train is held for a specified duration.</div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Base Delay (minutes)</label>
+        <input type="number" id="sim-delay" class="form-control" value="30" min="5" max="300" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scenario Duration (hours)</label>
+        <input type="number" id="sim-duration" class="form-control" value="2" min="0.5" max="12" step="0.5" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Affected Trains (optional — leave empty for auto)</label>
+      <select id="sim-trains" class="form-select" multiple style="height:110px;">
+        {% for t in trains %}
+          <option value="{{ t.id }}">{{ t.train_number }} — {{ t.train_name }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">Hold Ctrl/Cmd to select multiple. Leave empty to simulate all active trains.</div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;" onclick="runSimulation()">
+      <i class="bi bi-play-fill"></i> Run Simulation
+    </button>
+  </div>
+
+  <!-- Results Panel -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-bar-chart-line" style="color:var(--accent-green)"></i> Simulation Results</div>
+    </div>
+    <div id="sim-results" style="min-height:300px;display:flex;align-items:center;justify-content:center;">
+      <div style="text-align:center;color:var(--text-muted);">
+        <i class="bi bi-play-circle" style="font-size:3rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
+        Configure and run a scenario to see results
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Past Simulations -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-clock-history" style="color:var(--accent-purple)"></i> Simulation History</div>
+  </div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th><th>Scenario</th><th>Throughput Impact</th>
+          <th>Trains Affected</th><th>Recovery Time</th><th>Status</th><th>Run At</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sim in simulations %}
+        <tr>
+          <td style="font-weight:600;">{{ sim.name }}</td>
+          <td><span class="badge badge-scheduled">{{ sim.get_scenario_type_display }}</span></td>
+          <td>
+            {% if sim.throughput_impact %}
+              <span style="font-weight:700;{% if sim.throughput_impact > 50 %}color:var(--accent-red){% elif sim.throughput_impact > 25 %}color:var(--accent-yellow){% else %}color:var(--accent-green){% endif %}">
+                -{{ sim.throughput_impact }}%
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-family:var(--font-mono);font-weight:700;">{{ sim.trains_affected_count|default:"—" }}</td>
+          <td>{% if sim.estimated_recovery_time %}<span style="font-family:var(--font-mono);">{{ sim.estimated_recovery_time }} min</span>{% else %}—{% endif %}</td>
+          <td>
+            <span class="badge badge-{% if sim.status == 'COMPLETED' %}running{% elif sim.status == 'RUNNING' %}delayed{% elif sim.status == 'FAILED' %}cancelled{% else %}held{% endif %}">
+              {{ sim.status }}
+            </span>
+          </td>
+          <td style="font-size:0.78rem;color:var(--text-muted);">{{ sim.created_at|timesince }} ago</td>
+          <td>
+            <a href="{% url 'simulation:detail' sim.id %}" class="btn btn-ghost btn-sm btn-icon" title="View Detail">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:48px;color:var(--text-muted);">
+            No simulations run yet. Configure one above.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const scenarioInfo = {
+  'TRAIN_DELAY':       {title:'Train Delay Simulation',     desc:'Simulates cascading delays when a primary train is held.', color:'#f59e0b'},
+  'PLATFORM_FAILURE':  {title:'Platform Failure',           desc:'One or more platforms become unavailable, forcing reassignments.', color:'#ef4444'},
+  'MAINTENANCE_BLOCK': {title:'Maintenance Block',          desc:'A track section is blocked for maintenance, rerouting required.', color:'#3b82f6'},
+  'SIGNAL_FAILURE':    {title:'Signal Failure',             desc:'Signal systems fail — trains operate under manual block working.', color:'#9b59b6'},
+  'HEAVY_RAIN':        {title:'Heavy Rain / Flooding',      desc:'Speed restrictions imposed on flood-prone sections.', color:'#06b6d4'},
+  'ROUTE_CONGESTION':  {title:'Route Congestion',           desc:'High traffic density creates cumulative delays across section.', color:'#f97316'},
+  'MASS_DELAY':        {title:'Mass Delay Cascade',         desc:'Severe multi-train delay cascade — worst-case operational scenario.', color:'#e74c3c'},
+  'CUSTOM':            {title:'Custom Scenario',            desc:'Define your own disruption parameters.', color:'#8b5cf6'},
+};
+
+function updateScenarioInfo() {
+  const type = document.getElementById('sim-type').value;
+  const info = scenarioInfo[type] || scenarioInfo['CUSTOM'];
+  document.getElementById('scenario-title').textContent = info.title;
+  document.getElementById('scenario-desc').textContent = info.desc;
+  document.getElementById('scenario-info').style.borderColor = info.color + '44';
+  document.getElementById('scenario-info').style.background = info.color + '0f';
+  document.getElementById('scenario-title').style.color = info.color;
+}
+
+updateScenarioInfo();
+
+async function runSimulation() {
+  const name = document.getElementById('sim-name').value || `Simulation ${new Date().toLocaleTimeString()}`;
+  const scenario_type = document.getElementById('sim-type').value;
+  const delay_minutes = parseInt(document.getElementById('sim-delay').value) || 30;
+  const duration_hours = parseFloat(document.getElementById('sim-duration').value) || 2.0;
+  const trainSelect = document.getElementById('sim-trains');
+  const train_ids = Array.from(trainSelect.selectedOptions).map(o => parseInt(o.value));
+
+  const btn = document.querySelector('[onclick="runSimulation()"]');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Running Simulation…';
+
+  const resultsDiv = document.getElementById('sim-results');
+  resultsDiv.innerHTML = `
+    <div style="text-align:center;">
+      <div style="font-size:2rem;animation:trainBounce 1s infinite;">🚂</div>
+      <div style="color:var(--text-muted);margin-top:8px;">Simulating scenario…</div>
+    </div>`;
+
+  const data = await apiPost('/api/simulation/run/', {name, scenario_type, delay_minutes, duration_hours, train_ids});
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-play-fill"></i> Run Simulation';
+
+  if (!data.success) {
+    Toast.error(data.error || 'Simulation failed.');
+    resultsDiv.innerHTML = `<div style="text-align:center;color:var(--accent-red);">❌ Simulation failed: ${data.error || 'Unknown error'}</div>`;
+    return;
+  }
+
+  const info = scenarioInfo[scenario_type] || scenarioInfo['CUSTOM'];
+  const tpColor = data.throughput_impact > 50 ? '#ef4444' : data.throughput_impact > 25 ? '#f59e0b' : '#10b981';
+
+  let resultsHtml = `
+    <div style="animation:fadeIn 0.4s ease;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+        <div style="text-align:center;background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-mono);color:${tpColor};">-${data.throughput_impact}%</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Throughput Reduction</div>
+        </div>
+        <div style="text-align:center;background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-mono);color:var(--accent-red);">${data.trains_affected}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Trains Affected</div>
+        </div>
+        <div style="text-align:center;background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-mono);color:var(--accent-blue);">${data.recovery_time}'</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Recovery (min)</div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px;margin-bottom:12px;border-left:4px solid ${info.color};">
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Top Impacts</div>`;
+
+  (data.results || []).slice(0, 4).forEach(r => {
+    resultsHtml += `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent-blue);">${r.train_number}</span>
+        <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent-red);">+${r.simulated_delay}'</span>
+        ${r.platform_conflict ? '<span style="font-size:0.68rem;color:var(--accent-orange);">PF CONFLICT</span>' : ''}
+      </div>`;
+  });
+
+  resultsHtml += `</div>
+      <div style="display:flex;gap:8px;">
+        <a href="/simulation/${data.simulation_id}/" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
+          <i class="bi bi-eye"></i> Full Detail
+        </a>
+        <button onclick="location.reload()" class="btn btn-secondary btn-sm">
+          <i class="bi bi-arrow-clockwise"></i> New Sim
+        </button>
+      </div>
+    </div>`;
+
+  resultsDiv.innerHTML = resultsHtml;
+  Toast.success(`Simulation complete — ${data.throughput_impact}% throughput reduction`);
+}
+</script>
+{% endblock %}

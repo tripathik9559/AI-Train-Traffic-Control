@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">{% if action == 'create' %}➕ Add New Train{% else %}✏️ Edit Train — {{ train.train_number }}{% endif %}</div>
+    <div class="page-subtitle">{% if action == 'create' %}Register a new train in the system{% else %}Update train details and parameters{% endif %}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'trains:list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<div style="max-width:860px;">
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Basic Information -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-info-circle" style="color:var(--accent-blue)"></i> Basic Information</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Train Number *</label>
+          {{ form.train_number }}
+          {% if form.train_number.errors %}<div class="invalid-feedback" style="display:block">{{ form.train_number.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Train Name *</label>
+          {{ form.train_name }}
+          {% if form.train_name.errors %}<div class="invalid-feedback" style="display:block">{{ form.train_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Train Type *</label>
+          {{ form.train_type }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Status</label>
+          {{ form.current_status }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Maximum Speed (km/h)</label>
+          {{ form.speed }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority Level (1–5)</label>
+          {{ form.priority_level }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Total Coaches</label>
+          {{ form.total_coaches }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rake Composition</label>
+          {{ form.rake_composition }}
+          <div class="form-text">e.g. 3AC+SL+GEN</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Route Information -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-map" style="color:var(--accent-green)"></i> Route Information</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Source Station</label>
+          {{ form.source_station }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination Station</label>
+          {{ form.destination_station }}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Via Route (Intermediate Stations)</label>
+        {{ form.via_route }}
+        <div class="form-text">Comma-separated station codes, e.g. CNB,ALD,MGS</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Scheduled Departure</label>
+          {{ form.scheduled_departure }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Scheduled Arrival</label>
+          {{ form.scheduled_arrival }}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Days of Operation</label>
+        {{ form.days_of_operation }}
+        <div class="form-text">e.g. Daily, Mon,Wed,Fri</div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-sticky" style="color:var(--accent-yellow)"></i> Notes</div>
+      </div>
+      <div class="form-group mb-0">
+        {{ form.notes }}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i>
+        {% if action == 'create' %}Create Train{% else %}Save Changes{% endif %}
+      </button>
+      <a href="{% url 'trains:list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

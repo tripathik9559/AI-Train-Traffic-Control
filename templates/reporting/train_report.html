@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">🚂 Train Performance Report</div>
+    <div class="page-subtitle">{{ total_trains }} active trains · Generated {{ generated_at|date:"H:i" }}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="?format=csv" class="btn btn-secondary"><i class="bi bi-filetype-csv"></i> CSV</a>
+    <a href="{% url 'reporting:index' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead><tr><th>Train No.</th><th>Name</th><th>Type</th><th>Route</th><th>Status</th><th>Delay</th><th>Priority</th><th>Speed</th></tr></thead>
+      <tbody>
+        {% for t in trains %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);">{{ t.train_number }}</td>
+          <td style="font-weight:600;">{{ t.train_name }}</td>
+          <td><span class="train-type-badge" style="background:{{ t.type_color }}22;color:{{ t.type_color }};border:1px solid {{ t.type_color }}44;font-size:0.68rem;">{{ t.get_train_type_display }}</span></td>
+          <td style="font-family:var(--font-mono);font-size:0.82rem;">{{ t.source_station.code|default:"—" }} → {{ t.destination_station.code|default:"—" }}</td>
+          <td><span class="badge badge-{{ t.current_status|lower }}">{{ t.current_status }}</span></td>
+          <td style="font-family:var(--font-mono);{% if t.current_delay > 0 %}color:var(--accent-red){% else %}color:var(--accent-green){% endif %};font-weight:700;">{% if t.current_delay > 0 %}+{% endif %}{{ t.current_delay }}'</td>
+          <td>{{ t.priority_level }}/5</td>
+          <td style="font-family:var(--font-mono);">{{ t.speed }} km/h</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

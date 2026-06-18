@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">{% if action == 'create' %}➕ Add Station{% else %}✏️ Edit — {{ station.code }}{% endif %}</div>
+  </div>
+  <div class="page-header-actions"><a href="{% url 'stations:list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a></div>
+</div>
+<div style="max-width:800px;">
+  <form method="post">{% csrf_token %}
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Station Name *</label>{{ form.name }}{% if form.name.errors %}<div class="invalid-feedback" style="display:block">{{ form.name.errors.0 }}</div>{% endif %}</div>
+        <div class="form-group"><label class="form-label">Station Code *</label>{{ form.code }}{% if form.code.errors %}<div class="invalid-feedback" style="display:block">{{ form.code.errors.0 }}</div>{% endif %}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Station Type</label>{{ form.station_type }}</div>
+        <div class="form-group"><label class="form-label">City</label>{{ form.city }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">State</label>{{ form.state }}</div>
+        <div class="form-group"><label class="form-label">Zone</label>{{ form.zone }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Division</label>{{ form.division }}</div>
+        <div class="form-group"><label class="form-label">Total Platforms</label>{{ form.total_platforms }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Latitude</label>{{ form.latitude }}</div>
+        <div class="form-group"><label class="form-label">Longitude</label>{{ form.longitude }}</div>
+      </div>
+      <div style="display:flex;gap:20px;margin-bottom:20px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-secondary);">{{ form.is_junction }} Is Junction</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-secondary);">{{ form.has_goods_shed }} Has Goods Shed</label>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary">{% if action == 'create' %}Create{% else %}Save{% endif %}</button>
+        <a href="{% url 'stations:list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

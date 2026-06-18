@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-broadcast" style="color:var(--accent-green)"></i> Real-Time Operations Simulator</div>
+    <div class="page-subtitle">Live train movement · Track occupancy · Conflict visualization</div>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn btn-success" id="start-btn" onclick="startSimulator()">
+      <i class="bi bi-play-fill"></i> Start
+    </button>
+    <button class="btn btn-warning" id="pause-btn" onclick="pauseSimulator()" disabled>
+      <i class="bi bi-pause-fill"></i> Pause
+    </button>
+    <button class="btn btn-danger" onclick="stopSimulator()">
+      <i class="bi bi-stop-fill"></i> Stop
+    </button>
+    <select id="sim-speed" class="form-select" style="width:130px;">
+      <option value="1000">1× Real-time</option>
+      <option value="500" selected>2× Speed</option>
+      <option value="250">4× Speed</option>
+      <option value="100">10× Speed</option>
+    </select>
+  </div>
+</div>
+
+<!-- Status Bar -->
+<div style="display:flex;gap:12px;align-items:center;padding:10px 16px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:20px;">
+  <div class="status-dot" id="sim-status-dot" style="background:var(--accent-red);"></div>
+  <span style="font-size:0.82rem;color:var(--text-muted);" id="sim-status-text">Simulator stopped. Click Start to begin.</span>
+  <div style="margin-left:auto;display:flex;gap:20px;">
+    <div style="font-size:0.78rem;color:var(--text-muted);">Active Trains: <strong style="color:var(--text-primary);" id="stat-active">0</strong></div>
+    <div style="font-size:0.78rem;color:var(--text-muted);">Delayed: <strong style="color:var(--accent-red);" id="stat-delayed">0</strong></div>
+    <div style="font-size:0.78rem;color:var(--text-muted);">Conflicts: <strong style="color:var(--accent-orange);" id="stat-conflicts">0</strong></div>
+    <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent-green);" id="sim-clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- Main Simulator Layout -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+
+  <!-- Track Visualization Panel -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-map" style="color:var(--accent-blue)"></i> Section Track View</div>
+      <div style="display:flex;gap:12px;font-size:0.72rem;color:var(--text-muted);">
+        <span><span class="status-dot green" style="display:inline-block;"></span> Running</span>
+        <span><span class="status-dot yellow" style="display:inline-block;"></span> Delayed</span>
+        <span><span class="status-dot red" style="display:inline-block;"></span> Conflict</span>
+      </div>
+    </div>
+    <div id="track-view" style="min-height:380px;position:relative;overflow:hidden;">
+      {% for station in stations %}
+      <div class="station-node" data-code="{{ station.code }}"
+           style="position:absolute;left:{{ forloop.counter0|divisibleby:3|yesno:'5,35,65' }}%;top:{% widthratio forloop.counter0 stations.count 80 %}%;transform:translateX(-50%);">
+        <div style="width:14px;height:14px;background:var(--accent-blue);border-radius:50%;border:2px solid var(--bg-card);box-shadow:0 0 8px rgba(59,130,246,0.5);margin:0 auto;"></div>
+        <div style="font-size:0.68rem;font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);text-align:center;margin-top:2px;">{{ station.code }}</div>
+      </div>
+      {% endfor %}
+      <!-- Train markers rendered by JS -->
+      <div id="train-markers"></div>
+    </div>
+  </div>
+
+  <!-- Live Train List -->
+  <div class="card" style="display:flex;flex-direction:column;">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-list-ul" style="color:var(--accent-purple)"></i> Live Train Status</div>
+    </div>
+    <div id="train-list" style="flex:1;overflow-y:auto;max-height:400px;">
+      {% for train in trains %}
+      <div class="train-item" id="train-{{ train.id }}"
+           style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);">
+        <div class="status-dot" id="dot-{{ train.id }}"
+             style="background:{% if train.current_status == 'RUNNING' %}var(--accent-green){% elif train.current_status == 'DELAYED' %}var(--accent-yellow){% else %}var(--text-muted){% endif %};flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-family:var(--font-mono);font-size:0.8rem;font-weight:700;color:var(--accent-blue);">{{ train.train_number }}</span>
+            <span id="delay-{{ train.id }}" style="font-family:var(--font-mono);font-size:0.8rem;font-weight:700;{% if train.current_delay > 0 %}color:var(--accent-red){% else %}color:var(--accent-green){% endif %}">
+              {% if train.current_delay > 0 %}+{% endif %}{{ train.current_delay }}'
+            </span>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ train.train_name }}</div>
+          <div style="margin-top:4px;">
+            <div style="height:3px;background:var(--border-color);border-radius:2px;overflow:hidden;">
+              <div id="progress-{{ train.id }}" style="height:100%;width:0%;background:var(--accent-blue);border-radius:2px;transition:width 0.8s linear;"></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-muted);font-family:var(--font-mono);" id="speed-{{ train.id }}">— km/h</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Section Status Heatmap -->
+<div class="card" style="margin-top:20px;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-grid-3x3" style="color:var(--accent-cyan)"></i> Section Occupancy Heatmap</div>
+  </div>
+  <div id="section-heatmap" style="display:flex;flex-wrap:wrap;gap:8px;padding:4px;">
+    <!-- Populated by JS -->
+    <div style="color:var(--text-muted);font-size:0.82rem;padding:20px;">Start simulator to see live section status</div>
+  </div>
+</div>
+
+<!-- Event Log -->
+<div class="card" style="margin-top:20px;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-terminal" style="color:var(--accent-green)"></i> Operations Event Log</div>
+    <button onclick="document.getElementById('event-log').innerHTML=''" class="btn btn-ghost btn-sm">Clear</button>
+  </div>
+  <div id="event-log" style="height:180px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px;">
+    <div style="color:var(--accent-green);">[SYS] Railway Control System initialized. Awaiting simulator start...</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let simInterval = null;
+let simRunning = false;
+let simTick = 0;
+const trainData = {};
+
+function logEvent(msg, type = 'info') {
+  const log = document.getElementById('event-log');
+  const colors = {info:'#8892a4', success:'#10b981', warning:'#f59e0b', error:'#ef4444', system:'#3b82f6'};
+  const now = new Date().toLocaleTimeString('en-IN', {hour12:false});
+  const div = document.createElement('div');
+  div.style.color = colors[type] || colors.info;
+  div.textContent = `[${now}] ${msg}`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  if (log.children.length > 100) log.removeChild(log.firstChild);
+}
+
+function startSimulator() {
+  if (simRunning) return;
+  simRunning = true;
+  simTick = 0;
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('pause-btn').disabled = false;
+  document.getElementById('sim-status-dot').style.background = 'var(--accent-green)';
+  document.getElementById('sim-status-dot').className = 'status-dot green pulse';
+  document.getElementById('sim-status-text').textContent = 'Simulator running — updating every refresh cycle';
+  logEvent('Simulator started. Fetching live train positions…', 'system');
+  tick();
+  const speed = parseInt(document.getElementById('sim-speed').value) || 500;
+  simInterval = setInterval(tick, speed);
+}
+
+function pauseSimulator() {
+  if (!simRunning) return;
+  clearInterval(simInterval);
+  simRunning = false;
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('pause-btn').disabled = true;
+  document.getElementById('sim-status-dot').className = 'status-dot yellow';
+  document.getElementById('sim-status-text').textContent = 'Simulator paused.';
+  logEvent('Simulator paused.', 'warning');
+}
+
+function stopSimulator() {
+  clearInterval(simInterval);
+  simRunning = false;
+  simTick = 0;
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('pause-btn').disabled = true;
+  document.getElementById('sim-status-dot').className = 'status-dot';
+  document.getElementById('sim-status-dot').style.background = 'var(--accent-red)';
+  document.getElementById('sim-status-text').textContent = 'Simulator stopped.';
+  document.getElementById('stat-active').textContent = '0';
+  document.getElementById('stat-delayed').textContent = '0';
+  document.getElementById('stat-conflicts').textContent = '0';
+  logEvent('Simulator stopped.', 'error');
+}
+
+async function tick() {
+  simTick++;
+  updateClock();
+
+  try {
+    const data = await apiGet('/api/simulation/state/');
+    updateTrainList(data.trains);
+    updateSectionHeatmap(data.sections);
+
+    const active = data.trains.filter(t => t.status === 'RUNNING').length;
+    const delayed = data.trains.filter(t => t.delay > 0).length;
+    document.getElementById('stat-active').textContent = active;
+    document.getElementById('stat-delayed').textContent = delayed;
+
+    if (simTick % 5 === 0) {
+      const delayedTrains = data.trains.filter(t => t.delay > 15);
+      if (delayedTrains.length > 0) {
+        const t = delayedTrains[0];
+        logEvent(`Train ${t.number} running +${t.delay} min late between ${t.source} → ${t.destination}`, 'warning');
+      }
+    }
+    if (simTick % 8 === 0) {
+      const blocked = data.sections.filter(s => s.status === 'BLOCKED' || s.status === 'SIGNAL_FAILURE');
+      if (blocked.length > 0) {
+        logEvent(`Section ${blocked[0].code} status: ${blocked[0].status}. Controllers alerted.`, 'error');
+        document.getElementById('stat-conflicts').textContent = blocked.length;
+      }
+    }
+    if (simTick === 1) logEvent(`Loaded ${data.trains.length} trains and ${data.sections.length} sections.`, 'success');
+
+  } catch(e) {
+    logEvent(`Error fetching state: ${e.message}`, 'error');
+  }
+}
+
+function updateClock() {
+  const base = new Date();
+  base.setMinutes(base.getMinutes() + simTick * 2);
+  document.getElementById('sim-clock').textContent = base.toLocaleTimeString('en-IN', {hour12:false});
+}
+
+function updateTrainList(trains) {
+  trains.forEach(t => {
+    const delayEl = document.getElementById(`delay-${t.id}`);
+    const dotEl = document.getElementById(`dot-${t.id}`);
+    const progressEl = document.getElementById(`progress-${t.id}`);
+    const speedEl = document.getElementById(`speed-${t.id}`);
+
+    if (delayEl) {
+      delayEl.textContent = t.delay > 0 ? `+${t.delay}'` : 'On time';
+      delayEl.style.color = t.delay > 0 ? 'var(--accent-red)' : 'var(--accent-green)';
+    }
+    if (dotEl) {
+      dotEl.style.background = t.status === 'RUNNING' ? 'var(--accent-green)' :
+                               t.delay > 0 ? 'var(--accent-yellow)' : 'var(--text-muted)';
+    }
+    if (progressEl) progressEl.style.width = `${Math.min(100, t.progress)}%`;
+    if (speedEl) speedEl.textContent = t.speed > 0 ? `${t.speed} km/h` : 'Halted';
+  });
+}
+
+function updateSectionHeatmap(sections) {
+  const heatmap = document.getElementById('section-heatmap');
+  heatmap.innerHTML = '';
+  sections.forEach(s => {
+    const div = document.createElement('div');
+    div.style.cssText = `
+      background:${s.color}22;border:1px solid ${s.color}66;
+      border-radius:var(--radius-sm);padding:8px 12px;cursor:default;
+      transition:all 0.3s ease;min-width:110px;
+    `;
+    div.innerHTML = `
+      <div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:${s.color};">${s.from}—${s.to}</div>
+      <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;">${s.status}</div>
+    `;
+    heatmap.appendChild(div);
+  });
+}
+
+// Speed change handler
+document.getElementById('sim-speed').addEventListener('change', function() {
+  if (simRunning) {
+    clearInterval(simInterval);
+    simInterval = setInterval(tick, parseInt(this.value));
+    logEvent(`Simulation speed changed to ${this.options[this.selectedIndex].text}`, 'system');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1303 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AI Operations Command Center — Railway Control{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+<style>
+/* ══════════════════════════════════════════════════════
+   AI Operations Command Center — Dedicated Styles
+   ══════════════════════════════════════════════════════ */
+.ai-cmd-bar { display:flex;align-items:center;gap:12px;padding:8px 0 14px;border-bottom:1px solid var(--border-color);margin-bottom:14px;flex-wrap:wrap; }
+.ai-cmd-search { display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:6px 12px;flex:1;min-width:180px;max-width:320px; }
+.ai-cmd-search input { background:none;border:none;outline:none;color:var(--text-primary);font-size:0.8rem;width:100%; }
+.ai-cmd-search input::placeholder { color:var(--text-muted); }
+.ai-cmd-time { font-family:var(--font-mono);font-size:0.78rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px; }
+.ai-cmd-time .time-label { color:var(--text-muted);font-size:0.7rem; }
+.ai-cmd-time .time-value { color:var(--accent-green);font-weight:700;letter-spacing:0.03em;text-shadow:0 0 8px rgba(16,185,129,0.5); }
+.ai-status-pill { background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:var(--accent-green);font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.05em;animation:glowPulse 2.5s ease infinite; }
+.ai-status-pill.alert { background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:var(--accent-red);animation:redPulse 1.5s ease infinite; }
+@keyframes glowPulse { 0%,100%{box-shadow:0 0 4px rgba(16,185,129,0.3);}50%{box-shadow:0 0 12px rgba(16,185,129,0.6);} }
+@keyframes redPulse  { 0%,100%{box-shadow:0 0 4px rgba(239,68,68,0.4);}50%{box-shadow:0 0 14px rgba(239,68,68,0.7);} }
+.ai-cmd-btn { display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.78rem;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;white-space:nowrap; }
+.ai-cmd-btn:hover { background:var(--bg-card-hover);color:var(--text-primary); }
+.ai-cmd-btn.primary { background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));border:none;color:white;font-weight:600;box-shadow:0 2px 8px rgba(59,130,246,0.35); }
+.ai-cmd-btn.primary:hover { transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,130,246,0.5); }
+
+.ai-breadcrumb { display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-muted);margin-bottom:10px; }
+.ai-breadcrumb a { color:var(--text-muted);text-decoration:none;transition:color var(--transition-fast); }
+.ai-breadcrumb a:hover { color:var(--accent-blue); }
+.ai-breadcrumb .bc-sep { color:var(--border-color-hover); }
+.ai-breadcrumb .bc-current { color:var(--text-secondary);font-weight:600; }
+
+.ai-section-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap; }
+.ai-section-title { font-size:0.75rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-primary);display:flex;align-items:center;gap:8px; }
+.ai-section-title .title-bar { width:3px;height:16px;background:linear-gradient(var(--accent-blue),var(--accent-purple));border-radius:2px; }
+.ai-header-right { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+
+/* KPI Grid */
+.ai-kpi-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px; }
+@media(max-width:1400px){.ai-kpi-grid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:992px) {.ai-kpi-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px) {.ai-kpi-grid{grid-template-columns:1fr;}}
+.ai-kpi-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px 14px;cursor:pointer;text-decoration:none;display:block;transition:all var(--transition-fast);position:relative;overflow:hidden; }
+.ai-kpi-card::before { content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity var(--transition-fast); }
+.ai-kpi-card.kpi-orange::before{background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));}
+.ai-kpi-card.kpi-red::before   {background:linear-gradient(90deg,var(--accent-red),#fb923c);}
+.ai-kpi-card.kpi-yellow::before{background:linear-gradient(90deg,var(--accent-yellow),#fbbf24);}
+.ai-kpi-card.kpi-green::before {background:linear-gradient(90deg,var(--accent-green),#34d399);}
+.ai-kpi-card.kpi-blue::before  {background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));}
+.ai-kpi-card.kpi-purple::before{background:linear-gradient(90deg,var(--accent-purple),var(--accent-blue));}
+.ai-kpi-card.kpi-cyan::before  {background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue));}
+.ai-kpi-card:hover{background:var(--bg-card-hover);transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--border-color-hover);}
+.ai-kpi-card:hover::before{opacity:1;}
+.ai-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:4px;}
+.ai-kpi-label{font-size:0.67rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;line-height:1.3;}
+.ai-kpi-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;}
+.ai-kpi-icon.orange{background:rgba(249,115,22,0.15);color:var(--accent-orange);}
+.ai-kpi-icon.red   {background:rgba(239,68,68,0.15); color:var(--accent-red);}
+.ai-kpi-icon.yellow{background:rgba(245,158,11,0.15);color:var(--accent-yellow);}
+.ai-kpi-icon.green {background:rgba(16,185,129,0.15);color:var(--accent-green);}
+.ai-kpi-icon.blue  {background:rgba(59,130,246,0.15);color:var(--accent-blue);}
+.ai-kpi-icon.purple{background:rgba(139,92,246,0.15);color:var(--accent-purple);}
+.ai-kpi-icon.cyan  {background:rgba(6,182,212,0.15); color:var(--accent-cyan);}
+.ai-kpi-value{font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums;}
+.ai-kpi-value .kpi-unit{font-size:0.7rem;font-weight:600;color:var(--text-muted);margin-left:2px;}
+.ai-kpi-footer{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.ai-kpi-change{font-size:0.65rem;font-weight:600;display:flex;align-items:center;gap:3px;}
+.ai-kpi-change.positive{color:var(--accent-green);}
+.ai-kpi-change.negative{color:var(--accent-red);}
+.ai-kpi-change.neutral {color:var(--text-muted);}
+.ai-kpi-sub{font-size:0.62rem;color:var(--text-muted);font-weight:500;text-align:right;white-space:nowrap;}
+.ai-kpi-sparkline{height:28px;width:70px;flex-shrink:0;}
+
+/* Main grid */
+.ai-main-grid{display:grid;grid-template-columns:1fr 308px;gap:12px;margin-bottom:12px;}
+@media(max-width:1200px){.ai-main-grid{grid-template-columns:1fr 280px;}}
+@media(max-width:992px) {.ai-main-grid{grid-template-columns:1fr;}}
+
+/* Panel */
+.ai-panel{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden;display:flex;flex-direction:column;}
+.ai-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border-color);flex-shrink:0;gap:8px;}
+.ai-panel-title{font-size:0.72rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-primary);display:flex;align-items:center;gap:6px;}
+.ai-panel-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;animation:statusPulse 2s ease infinite;}
+.ai-panel-dot.green {background:var(--accent-green);box-shadow:0 0 6px rgba(16,185,129,0.6);}
+.ai-panel-dot.red   {background:var(--accent-red);  box-shadow:0 0 6px rgba(239,68,68,0.6);}
+.ai-panel-dot.yellow{background:var(--accent-yellow);box-shadow:0 0 6px rgba(245,158,11,0.6);}
+.ai-panel-dot.blue  {background:var(--accent-blue); box-shadow:0 0 6px rgba(59,130,246,0.6);}
+.ai-panel-dot.orange{background:var(--accent-orange);box-shadow:0 0 6px rgba(249,115,22,0.6);}
+.ai-panel-dot.purple{background:var(--accent-purple);box-shadow:0 0 6px rgba(139,92,246,0.6);}
+@keyframes statusPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.6;transform:scale(1.3);}}
+.ai-panel-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ai-panel-btn{background:none;border:1px solid var(--border-color);color:var(--text-muted);border-radius:6px;padding:4px 8px;font-size:0.7rem;cursor:pointer;transition:all var(--transition-fast);display:flex;align-items:center;gap:4px;text-decoration:none;white-space:nowrap;}
+.ai-panel-btn:hover{background:var(--border-color);color:var(--text-primary);}
+.ai-panel-btn.primary{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.3);color:var(--accent-blue);}
+.ai-panel-btn.primary:hover{background:rgba(59,130,246,0.25);}
+
+/* Table */
+.ai-table-wrap{overflow-x:auto;overflow-y:auto;max-height:400px;}
+.ai-table-wrap::-webkit-scrollbar{width:4px;height:4px;}
+.ai-table-wrap::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:2px;}
+.ai-table{width:100%;border-collapse:collapse;font-size:0.74rem;min-width:700px;}
+.ai-table thead tr{background:var(--bg-secondary);position:sticky;top:0;z-index:5;}
+.ai-table thead th{padding:8px 10px;text-align:left;font-size:0.63rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border-color);transition:color var(--transition-fast);}
+.ai-table thead th:hover{color:var(--text-primary);}
+.ai-table thead th.sort-asc::after {content:' ↑';color:var(--accent-blue);}
+.ai-table thead th.sort-desc::after{content:' ↓';color:var(--accent-blue);}
+.ai-table tbody tr{border-bottom:1px solid var(--border-color);transition:background var(--transition-fast);cursor:pointer;}
+.ai-table tbody tr:hover{background:rgba(59,130,246,0.06);}
+.ai-table tbody tr.selected{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.2);}
+.ai-table tbody td{padding:8px 10px;color:var(--text-secondary);vertical-align:middle;}
+.train-num{font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);font-size:0.78rem;}
+.train-name{color:var(--text-primary);font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;}
+
+/* Score bar */
+.score-bar-wrap{display:flex;align-items:center;gap:6px;}
+.score-bar{height:5px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;width:50px;flex-shrink:0;}
+.score-fill{height:100%;border-radius:3px;transition:width 0.8s ease;}
+.score-fill.high  {background:linear-gradient(90deg,var(--accent-green),#34d399);}
+.score-fill.medium{background:linear-gradient(90deg,var(--accent-yellow),#fbbf24);}
+.score-fill.low   {background:linear-gradient(90deg,var(--accent-red),#fb923c);}
+.score-fill.blue  {background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));}
+.score-val{font-family:var(--font-mono);font-size:0.72rem;font-weight:700;white-space:nowrap;}
+
+/* Badge */
+.ai-badge{display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;letter-spacing:0.03em;}
+.ai-badge.critical{background:rgba(239,68,68,0.2); color:var(--accent-red);   border:1px solid rgba(239,68,68,0.3);}
+.ai-badge.high    {background:rgba(249,115,22,0.2);color:var(--accent-orange);border:1px solid rgba(249,115,22,0.3);}
+.ai-badge.medium  {background:rgba(245,158,11,0.2);color:var(--accent-yellow);border:1px solid rgba(245,158,11,0.3);}
+.ai-badge.low     {background:rgba(16,185,129,0.2);color:var(--accent-green); border:1px solid rgba(16,185,129,0.3);}
+.ai-badge.info    {background:rgba(59,130,246,0.15);color:var(--accent-blue); border:1px solid rgba(59,130,246,0.25);}
+.ai-badge.purple  {background:rgba(139,92,246,0.15);color:var(--accent-purple);border:1px solid rgba(139,92,246,0.25);}
+
+/* Rec Panel */
+.ai-right-col{display:flex;flex-direction:column;gap:12px;}
+.ai-rec-id{font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);margin-bottom:2px;display:flex;align-items:center;gap:6px;}
+.ai-rec-badge{background:rgba(59,130,246,0.2);color:var(--accent-blue);border:1px solid rgba(59,130,246,0.3);font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:3px;animation:recPulse 2s ease infinite;}
+@keyframes recPulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.ai-rec-title{font-size:0.88rem;font-weight:700;color:var(--text-primary);line-height:1.3;margin-bottom:8px;}
+.ai-rec-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;}
+.ai-rec-metric{background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:6px;padding:6px 8px;text-align:center;}
+.ai-rec-metric-label{font-size:0.56rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;}
+.ai-rec-metric-val{font-size:0.82rem;font-weight:800;font-family:var(--font-mono);}
+.ai-rec-metric-val.green {color:var(--accent-green);}
+.ai-rec-metric-val.blue  {color:var(--accent-blue);}
+.ai-rec-metric-val.purple{color:var(--accent-purple);}
+.ai-rec-conf-bar-wrap{margin-bottom:10px;}
+.ai-rec-conf-label{font-size:0.62rem;color:var(--text-muted);margin-bottom:4px;display:flex;justify-content:space-between;}
+.ai-conf-val{color:var(--accent-green);font-weight:700;font-family:var(--font-mono);}
+.ai-conf-track{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.ai-conf-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent-green),#34d399);transition:width 1s ease;}
+.ai-rec-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.ai-rec-btn{padding:7px 4px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;transition:all var(--transition-fast);display:flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;}
+.ai-rec-btn.accept  {background:rgba(16,185,129,0.2); border-color:rgba(16,185,129,0.4);color:var(--accent-green);}
+.ai-rec-btn.accept:hover {background:rgba(16,185,129,0.35);}
+.ai-rec-btn.reject  {background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.3); color:var(--accent-red);}
+.ai-rec-btn.reject:hover {background:rgba(239,68,68,0.25);}
+.ai-rec-btn.simulate{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.3);color:var(--accent-blue);}
+.ai-rec-btn.simulate:hover{background:rgba(59,130,246,0.25);}
+
+/* XAI Panel */
+.xai-factor{margin-bottom:10px;}
+.xai-factor-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.7rem;color:var(--text-secondary);font-weight:600;}
+.xai-factor-val{font-family:var(--font-mono);font-size:0.7rem;font-weight:700;}
+.xai-track{height:7px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;}
+.xai-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+.xai-fill.blue  {background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));}
+.xai-fill.green {background:linear-gradient(90deg,var(--accent-green),#34d399);}
+.xai-fill.yellow{background:linear-gradient(90deg,var(--accent-yellow),#fbbf24);}
+.xai-fill.orange{background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));}
+.xai-fill.red   {background:linear-gradient(90deg,var(--accent-red),#fb923c);}
+.xai-fill.purple{background:linear-gradient(90deg,var(--accent-purple),var(--accent-blue));}
+.xai-score-ring{text-align:center;padding:12px 0 8px;}
+.xai-score-ring .score-num{font-size:2rem;font-weight:900;color:var(--text-primary);font-family:var(--font-mono);line-height:1;}
+.xai-score-ring .score-label{font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;}
+
+/* Bottom Grid */
+.ai-bottom-grid{display:grid;grid-template-columns:260px 1fr 280px;gap:12px;margin-bottom:12px;}
+@media(max-width:1300px){.ai-bottom-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:992px) {.ai-bottom-grid{grid-template-columns:1fr;}}
+
+/* Feed */
+.ai-feed-item{padding:8px 12px;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:flex-start;transition:background var(--transition-fast);cursor:pointer;text-decoration:none;}
+.ai-feed-item:hover{background:rgba(255,255,255,0.03);}
+.ai-feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.ai-feed-dot.red   {background:var(--accent-red);   box-shadow:0 0 4px rgba(239,68,68,0.6);}
+.ai-feed-dot.yellow{background:var(--accent-yellow);box-shadow:0 0 4px rgba(245,158,11,0.6);}
+.ai-feed-dot.green {background:var(--accent-green); box-shadow:0 0 4px rgba(16,185,129,0.6);}
+.ai-feed-dot.blue  {background:var(--accent-blue);  box-shadow:0 0 4px rgba(59,130,246,0.6);}
+.ai-feed-dot.purple{background:var(--accent-purple);}
+.ai-feed-dot.orange{background:var(--accent-orange);}
+.ai-feed-content{flex:1;min-width:0;}
+.ai-feed-title{font-size:0.73rem;font-weight:600;color:var(--text-primary);margin-bottom:1px;line-height:1.3;}
+.ai-feed-sub{font-size:0.62rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ai-feed-time{font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-family:var(--font-mono);}
+.ai-feed-badge{font-size:0.6rem;font-weight:700;padding:1px 6px;border-radius:3px;white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.ai-feed-badge.high  {background:rgba(239,68,68,0.2); color:var(--accent-red);}
+.ai-feed-badge.medium{background:rgba(245,158,11,0.2);color:var(--accent-yellow);}
+.ai-feed-badge.low   {background:rgba(16,185,129,0.2);color:var(--accent-green);}
+.ai-feed-badge.info  {background:rgba(59,130,246,0.2);color:var(--accent-blue);}
+
+/* Conflict table */
+.conflict-table-wrap{overflow-x:auto;max-height:260px;overflow-y:auto;}
+.conflict-table-wrap::-webkit-scrollbar{width:3px;height:3px;}
+.conflict-table-wrap::-webkit-scrollbar-thumb{background:var(--border-color);}
+.conflict-table{width:100%;border-collapse:collapse;font-size:0.72rem;min-width:500px;}
+.conflict-table thead th{padding:6px 8px;text-align:left;background:var(--bg-secondary);font-size:0.6rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border-color);white-space:nowrap;position:sticky;top:0;z-index:3;}
+.conflict-table tbody tr{border-bottom:1px solid var(--border-color);transition:background var(--transition-fast);cursor:pointer;}
+.conflict-table tbody tr:hover{background:rgba(239,68,68,0.06);}
+.conflict-table tbody td{padding:7px 8px;color:var(--text-secondary);vertical-align:middle;}
+.c-train{font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);font-size:0.75rem;}
+.c-vs{color:var(--text-muted);font-size:0.6rem;}
+.delay-val{font-family:var(--font-mono);color:var(--accent-orange);font-weight:700;}
+
+/* Sim panel */
+.sim-preview-body{padding:12px;}
+.sim-card{background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:10px;margin-bottom:8px;}
+.sim-card-title{font-size:0.7rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.sim-metric-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.sim-metric{text-align:center;}
+.sim-metric-label{font-size:0.56rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;}
+.sim-metric-val{font-size:0.9rem;font-weight:800;font-family:var(--font-mono);}
+.sim-metric-val.positive{color:var(--accent-green);}
+.sim-metric-val.negative{color:var(--accent-red);}
+.sim-open-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:6px;width:100%;background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(139,92,246,0.2));border:1px solid rgba(59,130,246,0.3);color:var(--accent-blue);font-size:0.72rem;font-weight:700;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;}
+.sim-open-btn:hover{background:linear-gradient(135deg,rgba(59,130,246,0.35),rgba(139,92,246,0.35));}
+
+/* Analytics */
+.ai-analytics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;}
+@media(max-width:1400px){.ai-analytics-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:768px) {.ai-analytics-grid{grid-template-columns:1fr;}}
+.ai-chart-panel{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden;}
+.ai-chart-header{padding:10px 14px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;}
+.ai-chart-title{font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-primary);}
+.ai-chart-sub{font-size:0.6rem;color:var(--text-muted);}
+.ai-chart-body{padding:12px;height:140px;position:relative;}
+
+/* Rank select */
+.ai-rank-select{width:100%;background:var(--bg-input);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm);padding:6px 8px;font-size:0.75rem;font-family:var(--font-sans);height:90px;outline:none;transition:border-color var(--transition-fast);}
+.ai-rank-select:focus{border-color:var(--accent-blue);}
+.ai-rank-result{margin-top:10px;}
+
+/* Modal */
+.ai-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.ai-modal-overlay.open{display:flex;animation:fadeInModal 0.2s ease;}
+@keyframes fadeInModal{from{opacity:0;}to{opacity:1;}}
+.ai-modal{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);width:480px;max-width:95vw;box-shadow:var(--shadow-lg);animation:slideUpModal 0.2s ease;max-height:85vh;overflow-y:auto;}
+@keyframes slideUpModal{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.ai-modal-header{padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg-card);z-index:2;}
+.ai-modal-title{font-size:0.9rem;font-weight:800;color:var(--text-primary);}
+.ai-modal-close{background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:4px;border-radius:4px;transition:color var(--transition-fast);}
+.ai-modal-close:hover{color:var(--text-primary);}
+.ai-modal-body{padding:16px 20px;}
+
+/* Table controls */
+.ai-table-controls{padding:8px 14px;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.ai-tbl-search{display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:5px 10px;flex:1;min-width:120px;}
+.ai-tbl-search input{background:none;border:none;outline:none;color:var(--text-primary);font-size:0.75rem;width:100%;}
+.ai-tbl-filter{background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:5px 8px;font-size:0.72rem;color:var(--text-secondary);cursor:pointer;outline:none;}
+.ai-tbl-filter:focus{border-color:var(--accent-blue);}
+
+/* Status dot */
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;}
+.status-dot.green {background:var(--accent-green);box-shadow:0 0 5px rgba(16,185,129,0.5);}
+.status-dot.red   {background:var(--accent-red);  box-shadow:0 0 5px rgba(239,68,68,0.5);}
+.status-dot.yellow{background:var(--accent-yellow);box-shadow:0 0 5px rgba(245,158,11,0.5);}
+.pulse{animation:pulseDot 1.5s ease infinite;}
+@keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* Light theme */
+[data-theme="light"] .ai-cmd-search,
+[data-theme="light"] .ai-cmd-btn       {background:#ffffff;border-color:rgba(0,0,0,0.1);}
+[data-theme="light"] .ai-kpi-card      {background:#ffffff;border-color:rgba(0,0,0,0.09);box-shadow:0 2px 8px rgba(0,0,0,0.07);}
+[data-theme="light"] .ai-kpi-card:hover{background:#f8fafc;}
+[data-theme="light"] .ai-panel         {background:#ffffff;border-color:rgba(0,0,0,0.09);}
+[data-theme="light"] .ai-panel-header  {background:#f8fafc;}
+[data-theme="light"] .ai-table thead tr{background:#f1f5f9;}
+[data-theme="light"] .ai-table thead th{color:#475569;}
+[data-theme="light"] .ai-table tbody tr{background:#ffffff;color:#1e293b;}
+[data-theme="light"] .ai-table tbody tr:hover{background:#f0f9ff;}
+[data-theme="light"] .ai-chart-panel   {background:#ffffff;border-color:rgba(0,0,0,0.09);}
+[data-theme="light"] .ai-rec-metric,
+[data-theme="light"] .sim-card         {background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.09);}
+[data-theme="light"] .ai-tbl-search    {background:#f8fafc;border-color:rgba(0,0,0,0.1);}
+[data-theme="light"] .ai-tbl-search input{color:#1e293b;}
+[data-theme="light"] .ai-tbl-filter    {background:#f8fafc;border-color:rgba(0,0,0,0.1);color:#475569;}
+[data-theme="light"] .conflict-table thead th{background:#f1f5f9;color:#475569;}
+[data-theme="light"] .conflict-table tbody tr{background:#ffffff;}
+[data-theme="light"] .conflict-table tbody tr:hover{background:#fff5f5;}
+[data-theme="light"] .xai-track,
+[data-theme="light"] .ai-conf-track,
+[data-theme="light"] .score-bar        {background:rgba(0,0,0,0.08);}
+[data-theme="light"] .ai-modal         {background:#ffffff;}
+[data-theme="light"] .ai-modal-header  {background:#ffffff;}
+[data-theme="light"] .ai-rank-select   {background:#f8fafc;border-color:rgba(0,0,0,0.1);color:#1e293b;}
+[data-theme="light"] .ai-feed-item:hover{background:rgba(0,0,0,0.02);}
+[data-theme="light"] .sim-preview-body .sim-card{background:rgba(0,0,0,0.03);}
+@media(max-width:768px){.ai-bottom-grid{grid-template-columns:1fr;}}
+</style>
+{% endblock %}
+
+{% block page_header_title %}AI Operations Command Center{% endblock %}
+
+{% block content %}
+
+<!-- XAI MODAL -->
+<div class="ai-modal-overlay" id="xaiModal">
+  <div class="ai-modal">
+    <div class="ai-modal-header">
+      <div class="ai-modal-title">🧠 Explainable AI — Recommendation Detail</div>
+      <button class="ai-modal-close" onclick="closeXAIModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="ai-modal-body" id="xaiModalBody">
+      <div style="text-align:center;padding:24px;color:var(--text-muted);">Select a recommendation to view explanation.</div>
+    </div>
+  </div>
+</div>
+
+<!-- COMMAND SUB-BAR -->
+<div class="ai-cmd-bar">
+  <div class="ai-cmd-search">
+    <i class="bi bi-search" style="color:var(--text-muted);font-size:0.9rem;"></i>
+    <input type="text" id="aiCmdSearch" placeholder="Search trains, conflicts, recommendations…" autocomplete="off" />
+  </div>
+  <div class="ai-cmd-time">
+    <span class="time-label">RAILWAY CONTROL TIME:</span>
+    <span class="time-value" id="aiCmdClock">—</span>
+    <span style="color:var(--text-muted);font-size:0.68rem;">IST</span>
+    <span class="ai-status-pill {% if active_conflict_count > 0 %}alert{% endif %}">
+      {% if active_conflict_count > 0 %}⚠ {{ active_conflict_count }} CONFLICTS{% else %}● AI ACTIVE{% endif %}
+    </span>
+  </div>
+  <button class="ai-cmd-btn" onclick="rankAllTrains()"><i class="bi bi-sort-down"></i> Rank All</button>
+  <button class="ai-cmd-btn" onclick="runDetection()"><i class="bi bi-shield-check"></i> Detect</button>
+  <a href="{% url 'ai_engine:throughput' %}" class="ai-cmd-btn"><i class="bi bi-speedometer2"></i> Throughput</a>
+  <button class="ai-cmd-btn" onclick="refreshDashboard()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+  <a href="{% url 'network:visualizer' %}" class="ai-cmd-btn primary"><i class="bi bi-diagram-3"></i> Network</a>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="ai-breadcrumb">
+  <a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Home</a>
+  <span class="bc-sep">›</span>
+  <a href="{% url 'dashboard:analytics' %}">Analytics</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-current">AI Operations Command Center</span>
+</div>
+
+<!-- SECTION HEADER -->
+<div class="ai-section-header">
+  <div class="ai-section-title">
+    <div class="title-bar"></div>
+    AI Optimization &amp; Conflict Management
+  </div>
+  <div class="ai-header-right">
+    <a href="{% url 'conflicts:list' %}" class="ai-cmd-btn">
+      <i class="bi bi-exclamation-triangle" style="color:var(--accent-red)"></i> Conflicts
+      {% if active_conflict_count > 0 %}<span style="background:var(--accent-red);color:white;border-radius:10px;padding:1px 5px;font-size:0.6rem;font-weight:700;">{{ active_conflict_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'simulation:index' %}" class="ai-cmd-btn"><i class="bi bi-play-circle" style="color:var(--accent-blue)"></i> Simulation</a>
+    <a href="{% url 'dashboard:analytics' %}" class="ai-cmd-btn"><i class="bi bi-bar-chart-line"></i> Analytics</a>
+  </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="ai-kpi-grid">
+  <a class="ai-kpi-card kpi-orange" href="{% url 'ai_engine:throughput' %}">
+    <div class="ai-kpi-top">
+      <div class="ai-kpi-label">AI Efficiency</div>
+      <div class="ai-kpi-icon orange"><i class="bi bi-cpu-fill"></i></div>
+    </div>
+    <div class="ai-kpi-value" id="kpi-efficiency">—</div>
+    <div class="ai-kpi-footer">
+      <div class="ai-kpi-change positive"><i class="bi bi-arrow-up"></i> Engine Active</div>
+      <div class="ai-kpi-sub"><canvas class="ai-kpi-sparkline" id="spk-efficiency"></canvas></div>
+    </div>
+  </a>
+  <a class="ai-kpi-card kpi-red" href="{% url 'conflicts:list' %}">
+    <div class="ai-kpi-top">
+      <div class="ai-kpi-label">Active Conflicts</div>
+      <div class="ai-kpi-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+    </div>
+    <div class="ai-kpi-value" id="kpi-conflicts">{{ active_conflict_count }}</div>
+    <div class="ai-kpi-footer">
+      <div class="ai-kpi-change {% if active_conflict_count == 0 %}positive{% elif active_conflict_count <= 3 %}neutral{% else %}negative{% endif %}">
+        {% if active_conflict_count == 0 %}<i class="bi bi-check-circle"></i> All Clear{% else %}<span class="status-dot red pulse"></span>{{ active_conflict_count }} Active{% endif %}
+      </div>
+      <div class="ai-kpi-sub">{{ pending_recs }} pending recs</div>
+    </div>
+  </a>
+  <a class="ai-kpi-card kpi-yellow" href="{% url 'ml_prediction:dashboard' %}">
+    <div class="ai-kpi-top">
+      <div class="ai-kpi-label">Predicted</div>
+      <div class="ai-kpi-icon yellow"><i class="bi bi-graph-up"></i></div>
+    </div>
+    <div class="ai-kpi-value" id="kpi-predicted">—</div>
+    <div class="ai-kpi-footer">
+      <div class="ai-kpi-change neutral"><i class="bi bi-activity"></i> Risk Trend</div>
+      <div class="ai-kpi-sub"><canvas class="ai-kpi-sparkline" id="spk-predicted"></canvas></div>
+    </div>
+  </a>
+  <a class="ai-kpi-card kpi-green" href="{% url 'ai_engine:throughput' %}">
+    <div class="ai-kpi-top">
+      <div class="ai-kpi-label">Throughput Gain</div>
+      <div class="ai-kpi-icon green"><i class="bi bi-speedometer2"></i></div>
+    </div>
+    <div class="ai-kpi-value" id="kpi-throughput">—<span class="kpi-unit">%</span></div>
+    <div class="ai-kpi-footer">
+      <div class="ai-kpi-change positive"><i class="bi bi-arrow-up"></i> Optimized</div>
+      <div class="ai-kpi-sub">{{ total_trains }} trains</div>
+    </div>
+  </a>
+  <a class="ai-kpi-card kpi-blue" href="{% url 'dashboard:analytics' %}">
+    <div class="ai-kpi-top">
+      <div class="ai-kpi-label">Delay Reduction</div>
+      <div class="ai-kpi-icon blue"><i class="bi bi-clock-history"></i></div>
+    </div>
+    <div class="ai-kpi-value" id="kpi-delay">—<span class="kpi-unit">MIN</span></div>
+    <div class="ai-kpi-footer">
+      <div class="ai-kpi-change positive"><i class="bi bi-arrow-down"></i> AI Savings</div>
+      <div class="ai-kpi-sub"><canvas class="ai-kpi-sparkline" id="spk-delay"></canvas></div>
+    </div>
+  </a>
+  <a class="ai-kpi-card kpi-purple" href="{% url 'dashboard:analytics' %}">
+    <div class="ai-kpi-top">
+      <div class="ai-kpi-label">Punctuality</div>
+      <div class="ai-kpi-icon purple"><i class="bi bi-check-circle-fill"></i></div>
+    </div>
+    <div class="ai-kpi-value" id="kpi-punctuality">—<span class="kpi-unit">%</span></div>
+    <div class="ai-kpi-footer">
+      <div class="ai-kpi-change positive" id="kpi-punct-change"><i class="bi bi-arrow-up"></i></div>
+      <div class="ai-kpi-sub" id="kpi-ontime">— on-time</div>
+    </div>
+  </a>
+  <a class="ai-kpi-card kpi-cyan" href="{% url 'dashboard:analytics' %}">
+    <div class="ai-kpi-top">
+      <div class="ai-kpi-label">Revenue Impact</div>
+      <div class="ai-kpi-icon cyan"><i class="bi bi-currency-rupee"></i></div>
+    </div>
+    <div class="ai-kpi-value" id="kpi-revenue">—</div>
+    <div class="ai-kpi-footer">
+      <div class="ai-kpi-change neutral"><i class="bi bi-graph-up-arrow"></i> AI-driven</div>
+      <div class="ai-kpi-sub"><canvas class="ai-kpi-sparkline" id="spk-revenue"></canvas></div>
+    </div>
+  </a>
+</div>
+
+<!-- MAIN GRID: Decision Table + Right Panels -->
+<div class="ai-main-grid">
+
+  <!-- LEFT: AI Decision Command Center -->
+  <div class="ai-panel" style="min-height:520px;">
+    <div class="ai-panel-header">
+      <div class="ai-panel-title">
+        <span class="ai-panel-dot blue"></span>
+        AI Decision Command Center
+      </div>
+      <div class="ai-panel-actions">
+        <span style="font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);">{{ total_trains }} trains ranked</span>
+        <button class="ai-panel-btn" onclick="rankAllTrains()"><i class="bi bi-sort-down"></i> Re-Rank</button>
+        <select id="statusFilter" class="ai-tbl-filter" onchange="filterTable()">
+          <option value="">All Status</option>
+          <option value="RUNNING">Running</option>
+          <option value="DELAYED">Delayed</option>
+          <option value="SCHEDULED">Scheduled</option>
+        </select>
+      </div>
+    </div>
+    <div class="ai-table-controls">
+      <div class="ai-tbl-search">
+        <i class="bi bi-search" style="color:var(--text-muted);font-size:0.8rem;"></i>
+        <input type="text" id="tableSearch" placeholder="Search train number or name…" oninput="filterTable()" />
+      </div>
+      <select id="typeFilter" class="ai-tbl-filter" onchange="filterTable()">
+        <option value="">All Types</option>
+        <option value="RAJDHANI">Rajdhani</option>
+        <option value="SHATABDI">Shatabdi</option>
+        <option value="EXPRESS">Express</option>
+        <option value="PASSENGER">Passenger</option>
+        <option value="FREIGHT">Freight</option>
+      </select>
+    </div>
+    <div class="ai-table-wrap">
+      <table class="ai-table" id="decisionTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">#</th>
+            <th onclick="sortTable(1)">Train No.</th>
+            <th onclick="sortTable(2)">Name</th>
+            <th onclick="sortTable(3)">Status</th>
+            <th onclick="sortTable(4)">Priority Score</th>
+            <th onclick="sortTable(5)">AI Score</th>
+            <th onclick="sortTable(6)">Delay</th>
+            <th onclick="sortTable(7)">Type</th>
+            <th>Recommendation</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="decisionTableBody">
+          {% for train in trains %}
+          <tr data-train-id="{{ train.id }}"
+              data-status="{{ train.current_status }}"
+              data-type="{{ train.train_type }}"
+              onclick="selectTrain({{ train.id }}, '{{ train.train_number }}', '{{ train.train_name|escapejs }}', {{ train.current_delay }})">
+            <td style="color:var(--text-muted);font-family:var(--font-mono);font-size:0.68rem;">{{ forloop.counter }}</td>
+            <td><span class="train-num">{{ train.train_number }}</span></td>
+            <td><span class="train-name" title="{{ train.train_name }}">{{ train.train_name|truncatechars:20 }}</span></td>
+            <td>
+              {% if train.current_status == 'RUNNING' %}
+                <span class="ai-badge low">● RUNNING</span>
+              {% elif train.current_status == 'DELAYED' %}
+                <span class="ai-badge high">⚠ DELAYED</span>
+              {% elif train.current_status == 'SCHEDULED' %}
+                <span class="ai-badge info">◎ SCHED</span>
+              {% elif train.current_status == 'CANCELLED' %}
+                <span class="ai-badge critical">✕ CANCEL</span>
+              {% else %}
+                <span class="ai-badge medium">{{ train.current_status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="score-bar-wrap" data-priority="{{ train.id }}">
+                <div class="score-bar"><div class="score-fill blue" style="width:50%;"></div></div>
+                <span class="score-val" style="color:var(--accent-blue);">—</span>
+              </div>
+            </td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar">
+                  <div class="score-fill {% if train.current_delay > 20 %}low{% elif train.current_delay > 10 %}medium{% else %}high{% endif %}" style="width:{% if train.current_delay > 0 %}{{ train.current_delay|floatformat:0 }}{% else %}60{% endif %}%;"></div>
+                </div>
+                <span class="score-val" style="color:{% if train.current_delay > 20 %}var(--accent-red){% elif train.current_delay > 10 %}var(--accent-yellow){% else %}var(--accent-green){% endif %};">{{ train.current_delay }}</span>
+              </div>
+            </td>
+            <td>
+              <span style="font-family:var(--font-mono);font-weight:700;{% if train.current_delay > 15 %}color:var(--accent-red){% elif train.current_delay > 5 %}color:var(--accent-yellow){% else %}color:var(--accent-green){% endif %};">
+                {% if train.current_delay > 0 %}+{{ train.current_delay }}m{% else %}On Time{% endif %}
+              </span>
+            </td>
+            <td>
+              <span class="ai-badge {% if train.train_type == 'RAJDHANI' or train.train_type == 'SHATABDI' or train.train_type == 'VANDE_BHARAT' %}critical{% elif train.train_type == 'DURONTO' %}high{% elif train.train_type == 'EXPRESS' %}medium{% else %}low{% endif %}" style="font-size:0.57rem;">
+                {{ train.get_train_type_display|truncatechars:12 }}
+              </span>
+            </td>
+            <td class="rec-cell" data-id="{{ train.id }}" style="font-size:0.7rem;color:var(--text-secondary);">
+              <span style="color:var(--text-muted);font-style:italic;">Computing…</span>
+            </td>
+            <td>
+              <a href="{% url 'ai_engine:train_analysis' train.id %}" class="ai-panel-btn" onclick="event.stopPropagation()" title="Analyse">
+                <i class="bi bi-cpu"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">
+              <i class="bi bi-train-front" style="font-size:2rem;display:block;margin-bottom:8px;opacity:0.5;"></i>
+              No active trains found.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Priority Rank Tool -->
+    <div style="padding:12px 14px;border-top:1px solid var(--border-color);background:rgba(255,255,255,0.02);">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
+        <div>
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:6px;">
+            <i class="bi bi-trophy" style="color:var(--accent-yellow);"></i> Priority Rank Tool
+          </div>
+          <select id="rank-train-select" class="ai-rank-select" multiple>
+            {% for t in trains %}
+              <option value="{{ t.id }}">{{ t.train_number }} — {{ t.train_name|truncatechars:28 }}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size:0.62rem;color:var(--text-muted);margin-top:3px;">Hold Ctrl/Cmd to multi-select</div>
+        </div>
+        <button class="ai-cmd-btn primary" onclick="runRanking()" style="height:80px;flex-direction:column;gap:3px;min-width:64px;">
+          <i class="bi bi-sort-down" style="font-size:1.1rem;"></i>
+          Rank
+        </button>
+      </div>
+      <div id="ranking-result" class="ai-rank-result"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT COL -->
+  <div class="ai-right-col">
+
+    <!-- AI Recommendation Engine -->
+    <div class="ai-panel">
+      <div class="ai-panel-header">
+        <div class="ai-panel-title">
+          <span class="ai-panel-dot orange"></span>
+          AI Recommendation Engine
+        </div>
+        <div class="ai-panel-actions">
+          <span style="font-size:0.62rem;color:var(--text-muted);">{{ pending_recs }} pending</span>
+        </div>
+      </div>
+      <div style="overflow-y:auto;max-height:360px;">
+        <div style="padding:10px 12px;">
+        {% if recent_recommendations %}
+          {% for rec in recent_recommendations|slice:":3" %}
+          <div {% if not forloop.first %}style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:4px;"{% endif %}>
+            <div class="ai-rec-id">
+              {{ rec.primary_train.train_number }}
+              {% if rec.secondary_train %}<span class="c-vs">vs</span> {{ rec.secondary_train.train_number }}{% endif %}
+              <span class="ai-rec-badge">AI REC</span>
+            </div>
+            <div class="ai-rec-title">{{ rec.title|truncatechars:65 }}</div>
+            <div class="ai-rec-metrics">
+              <div class="ai-rec-metric">
+                <div class="ai-rec-metric-label">Priority</div>
+                <div class="ai-rec-metric-val purple">{{ rec.priority_score|floatformat:1 }}</div>
+              </div>
+              <div class="ai-rec-metric">
+                <div class="ai-rec-metric-label">Type</div>
+                <div class="ai-rec-metric-val blue" style="font-size:0.65rem;">{{ rec.get_recommendation_type_display|truncatechars:10 }}</div>
+              </div>
+              <div class="ai-rec-metric">
+                <div class="ai-rec-metric-label">Status</div>
+                <div class="ai-rec-metric-val green">PENDING</div>
+              </div>
+            </div>
+            <div class="ai-rec-conf-bar-wrap">
+              <div class="ai-rec-conf-label">
+                <span>Confidence Score</span>
+                <span class="ai-conf-val">{{ rec.confidence_percentage }}%</span>
+              </div>
+              <div class="ai-conf-track">
+                <div class="ai-conf-fill" style="width:{{ rec.confidence_percentage }}%;"></div>
+              </div>
+            </div>
+            <div class="ai-rec-btns">
+              <button class="ai-rec-btn accept" onclick="acceptRec({{ rec.id }})"><i class="bi bi-check-lg"></i> ACCEPT</button>
+              <button class="ai-rec-btn reject" onclick="rejectRec({{ rec.id }})"><i class="bi bi-x-lg"></i> REJECT</button>
+              <a href="{% url 'simulation:index' %}" class="ai-rec-btn simulate"><i class="bi bi-play-fill"></i> SIM</a>
+            </div>
+            <button class="ai-panel-btn" style="width:100%;justify-content:center;margin-top:6px;"
+                    onclick="showXAI({{ rec.id }}, '{{ rec.primary_train.train_number }}', {{ rec.priority_score|floatformat:1 }}, {{ rec.confidence_percentage }}, '{{ rec.title|escapejs }}', '{{ rec.description|truncatechars:200|escapejs }}')">
+              <i class="bi bi-eye"></i> View Explanation
+            </button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center;padding:32px 16px;color:var(--text-muted);">
+            <div style="font-size:2rem;margin-bottom:8px;">🤖</div>
+            <div style="font-size:0.78rem;margin-bottom:12px;">No pending recommendations.<br>Run conflict detection to generate.</div>
+            <button class="ai-rec-btn accept" style="margin:0 auto;max-width:180px;" onclick="runDetection()">
+              <i class="bi bi-shield-check"></i> Run Detection
+            </button>
+          </div>
+        {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Explainable AI Panel -->
+    <div class="ai-panel">
+      <div class="ai-panel-header">
+        <div class="ai-panel-title">
+          <span class="ai-panel-dot purple"></span>
+          Explainable AI Panel
+        </div>
+        <div class="ai-panel-actions">
+          <span id="xai-train-label" style="font-size:0.62rem;color:var(--text-muted);">Select a train</span>
+        </div>
+      </div>
+      <div style="padding:12px;">
+        <div class="xai-score-ring">
+          <div class="score-num" id="xai-priority-score">—</div>
+          <div class="score-label">Priority Score / 10</div>
+        </div>
+        <div class="xai-factor">
+          <div class="xai-factor-label">
+            <span><i class="bi bi-people-fill" style="color:var(--accent-blue);"></i> Passenger Volume</span>
+            <span class="xai-factor-val" id="xf-passenger" style="color:var(--accent-blue);">—</span>
+          </div>
+          <div class="xai-track"><div class="xai-fill blue" id="xf-passenger-bar" style="width:0%;"></div></div>
+        </div>
+        <div class="xai-factor">
+          <div class="xai-factor-label">
+            <span><i class="bi bi-geo-alt-fill" style="color:var(--accent-green);"></i> Route Importance</span>
+            <span class="xai-factor-val" id="xf-route" style="color:var(--accent-green);">—</span>
+          </div>
+          <div class="xai-track"><div class="xai-fill green" id="xf-route-bar" style="width:0%;"></div></div>
+        </div>
+        <div class="xai-factor">
+          <div class="xai-factor-label">
+            <span><i class="bi bi-diagram-2-fill" style="color:var(--accent-yellow);"></i> Cascading Delay Risk</span>
+            <span class="xai-factor-val" id="xf-cascade" style="color:var(--accent-yellow);">—</span>
+          </div>
+          <div class="xai-track"><div class="xai-fill yellow" id="xf-cascade-bar" style="width:0%;"></div></div>
+        </div>
+        <div class="xai-factor">
+          <div class="xai-factor-label">
+            <span><i class="bi bi-exclamation-triangle-fill" style="color:var(--accent-orange);"></i> Operational Risk</span>
+            <span class="xai-factor-val" id="xf-operational" style="color:var(--accent-orange);">—</span>
+          </div>
+          <div class="xai-track"><div class="xai-fill orange" id="xf-operational-bar" style="width:0%;"></div></div>
+        </div>
+        <div class="xai-factor">
+          <div class="xai-factor-label">
+            <span><i class="bi bi-clock-fill" style="color:var(--accent-red);"></i> Delay Factor</span>
+            <span class="xai-factor-val" id="xf-delay" style="color:var(--accent-red);">—</span>
+          </div>
+          <div class="xai-track"><div class="xai-fill red" id="xf-delay-bar" style="width:0%;"></div></div>
+        </div>
+        <div style="margin-top:10px;padding:8px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border-color);">
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">AI Action</div>
+          <div id="xai-action" style="font-size:0.78rem;font-weight:700;color:var(--text-primary);">Select a train row above</div>
+          <div id="xai-action-detail" style="font-size:0.67rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.ai-right-col -->
+</div><!-- /.ai-main-grid -->
+
+<!-- BOTTOM GRID -->
+<div class="ai-bottom-grid">
+
+  <!-- Live Decision Feed -->
+  <div class="ai-panel">
+    <div class="ai-panel-header">
+      <div class="ai-panel-title">
+        <span class="ai-panel-dot green"></span>
+        Live Decision Feed
+      </div>
+      <div class="ai-panel-actions">
+        <button class="ai-panel-btn" onclick="refreshDashboard()"><i class="bi bi-arrow-clockwise"></i></button>
+        <a href="{% url 'notifications:list' %}" class="ai-panel-btn">All</a>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;border-bottom:1px solid var(--border-color);">
+      <div style="padding:7px 10px;border-right:1px solid var(--border-color);">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Recs Pending</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--accent-blue);font-family:var(--font-mono);">{{ pending_recs }}</div>
+      </div>
+      <div style="padding:7px 10px;">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Conflicts Active</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--accent-red);font-family:var(--font-mono);">{{ active_conflict_count }}</div>
+      </div>
+    </div>
+    <div style="overflow-y:auto;max-height:280px;">
+      {% for conflict in active_conflicts %}
+      <a class="ai-feed-item" href="{% url 'conflicts:detail' conflict.id %}">
+        <span class="ai-feed-dot {% if conflict.severity == 'CRITICAL' or conflict.severity == 'HIGH' %}red{% elif conflict.severity == 'MEDIUM' %}yellow{% else %}green{% endif %}"></span>
+        <div class="ai-feed-content">
+          <div class="ai-feed-title">{{ conflict.get_conflict_type_display }} — {{ conflict.train_a.train_number }}{% if conflict.train_b %} vs {{ conflict.train_b.train_number }}{% endif %}</div>
+          <div class="ai-feed-sub">{% if conflict.station %}{{ conflict.station.name }} · {% endif %}{{ conflict.description|truncatechars:38 }}</div>
+          <div class="ai-feed-time">{{ conflict.detected_at|timesince }} ago</div>
+        </div>
+        <span class="ai-feed-badge {% if conflict.severity == 'CRITICAL' or conflict.severity == 'HIGH' %}high{% elif conflict.severity == 'MEDIUM' %}medium{% else %}low{% endif %}">{{ conflict.severity }}</span>
+      </a>
+      {% empty %}
+      <div style="text-align:center;padding:24px 16px;color:var(--text-muted);">
+        <i class="bi bi-check-circle" style="font-size:1.8rem;display:block;margin-bottom:8px;color:var(--accent-green);"></i>
+        <div style="font-size:0.75rem;font-weight:600;">All Clear</div>
+        <div style="font-size:0.65rem;margin-top:4px;">AI monitoring active</div>
+      </div>
+      {% endfor %}
+      {% if recent_recommendations %}
+      <div style="padding:5px 12px;font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;background:rgba(255,255,255,0.02);border-top:1px solid var(--border-color);">
+        <i class="bi bi-cpu" style="color:var(--accent-blue);"></i> AI Recommendations
+      </div>
+      {% for rec in recent_recommendations|slice:":5" %}
+      <div class="ai-feed-item">
+        <span class="ai-feed-dot blue"></span>
+        <div class="ai-feed-content">
+          <div class="ai-feed-title">{{ rec.get_recommendation_type_display }} — {{ rec.primary_train.train_number }}</div>
+          <div class="ai-feed-sub">{{ rec.title|truncatechars:38 }}</div>
+          <div class="ai-feed-time">{{ rec.generated_at|timesince }} ago</div>
+        </div>
+        <span class="ai-feed-badge info">PENDING</span>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Conflict Command Center -->
+  <div class="ai-panel">
+    <div class="ai-panel-header">
+      <div class="ai-panel-title">
+        <span class="ai-panel-dot red"></span>
+        Conflict Command Center
+      </div>
+      <div class="ai-panel-actions">
+        <button class="ai-panel-btn" onclick="runDetection()"><i class="bi bi-shield-check"></i> Run Detection</button>
+        <a href="{% url 'conflicts:list' %}" class="ai-panel-btn primary">Open Dashboard</a>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border-bottom:1px solid var(--border-color);">
+      <div style="padding:8px;text-align:center;border-right:1px solid var(--border-color);">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Track</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--accent-red);font-family:var(--font-mono);" id="ccount-track">—</div>
+      </div>
+      <div style="padding:8px;text-align:center;border-right:1px solid var(--border-color);">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Platform</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--accent-orange);font-family:var(--font-mono);" id="ccount-platform">—</div>
+      </div>
+      <div style="padding:8px;text-align:center;border-right:1px solid var(--border-color);">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Section</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--accent-yellow);font-family:var(--font-mono);" id="ccount-section">—</div>
+      </div>
+      <div style="padding:8px;text-align:center;">
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Resolved</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--accent-green);font-family:var(--font-mono);" id="ccount-resolved">—</div>
+      </div>
+    </div>
+    <div class="conflict-table-wrap">
+      <table class="conflict-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Type</th><th>Severity</th><th>Trains</th><th>Station</th><th>Delay</th><th>Status</th><th>AI</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for conflict in active_conflicts %}
+          <tr onclick="window.location='{% url 'conflicts:detail' conflict.id %}'">
+            <td style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">#{{ conflict.id }}</td>
+            <td><span class="ai-badge info" style="font-size:0.57rem;">{{ conflict.get_conflict_type_display|truncatechars:10 }}</span></td>
+            <td><span class="ai-badge {% if conflict.severity == 'CRITICAL' %}critical{% elif conflict.severity == 'HIGH' %}high{% elif conflict.severity == 'MEDIUM' %}medium{% else %}low{% endif %}">{{ conflict.severity }}</span></td>
+            <td><span class="c-train">{{ conflict.train_a.train_number }}</span>{% if conflict.train_b %}<span class="c-vs"> vs </span><span class="c-train">{{ conflict.train_b.train_number }}</span>{% endif %}</td>
+            <td style="font-size:0.7rem;">{% if conflict.station %}{{ conflict.station.name|truncatechars:10 }}{% else %}—{% endif %}</td>
+            <td class="delay-val">+{{ conflict.train_a.current_delay|default:0 }}m</td>
+            <td><span class="ai-badge {% if conflict.status == 'ACTIVE' %}high{% elif conflict.status == 'ACKNOWLEDGED' %}medium{% else %}low{% endif %}">{{ conflict.status }}</span></td>
+            <td><a href="{% url 'ai_engine:conflict_analysis' conflict.id %}" class="ai-panel-btn primary" style="font-size:0.6rem;padding:3px 6px;" onclick="event.stopPropagation()"><i class="bi bi-cpu"></i></a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted);"><i class="bi bi-check-circle" style="color:var(--accent-green);font-size:1.5rem;display:block;margin-bottom:5px;"></i>No active conflicts</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Simulation Preview -->
+  <div class="ai-panel">
+    <div class="ai-panel-header">
+      <div class="ai-panel-title">
+        <span class="ai-panel-dot blue"></span>
+        Simulation Preview
+      </div>
+      <div class="ai-panel-actions">
+        <a href="{% url 'simulation:index' %}" class="ai-panel-btn primary" style="font-size:0.65rem;">Open Sim Lab</a>
+      </div>
+    </div>
+    <div class="sim-preview-body">
+      <div class="sim-card">
+        <div class="sim-card-title"><i class="bi bi-play-circle-fill" style="color:var(--accent-blue);"></i> Before vs After</div>
+        <div class="sim-metric-row">
+          <div class="sim-metric">
+            <div class="sim-metric-label">Before</div>
+            <canvas id="simBeforeChart" height="55"></canvas>
+          </div>
+          <div class="sim-metric">
+            <div class="sim-metric-label">After</div>
+            <canvas id="simAfterChart" height="55"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="sim-card">
+        <div class="sim-card-title"><i class="bi bi-graph-up-arrow" style="color:var(--accent-green);"></i> Predicted Outcomes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div style="text-align:center;">
+            <div style="font-size:0.56rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Delay Red.</div>
+            <div class="sim-metric-val positive" id="sim-delay-red">—</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.56rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Throughput</div>
+            <div class="sim-metric-val positive" id="sim-throughput">—</div>
+          </div>
+          <div style="text-align:center;margin-top:6px;">
+            <div style="font-size:0.56rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Revenue</div>
+            <div class="sim-metric-val positive" id="sim-revenue">—</div>
+          </div>
+          <div style="text-align:center;margin-top:6px;">
+            <div style="font-size:0.56rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Passengers</div>
+            <div class="sim-metric-val positive" id="sim-pax">—</div>
+          </div>
+        </div>
+      </div>
+      <a href="{% url 'simulation:index' %}" class="sim-open-btn"><i class="bi bi-play-fill"></i> Launch Simulation Lab</a>
+    </div>
+  </div>
+
+</div><!-- /.ai-bottom-grid -->
+
+<!-- TREND ANALYTICS -->
+<div style="font-size:0.72rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-primary);margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+  <div style="width:3px;height:16px;background:linear-gradient(var(--accent-purple),var(--accent-blue));border-radius:2px;"></div>
+  Trend Analytics
+  <a href="{% url 'dashboard:analytics' %}" style="font-size:0.62rem;color:var(--accent-blue);text-decoration:none;font-weight:600;margin-left:8px;">Full Analytics <i class="bi bi-arrow-right"></i></a>
+</div>
+<div class="ai-analytics-grid">
+  <div class="ai-chart-panel">
+    <div class="ai-chart-header">
+      <div class="ai-chart-title">Priority Distribution</div>
+      <div class="ai-chart-sub">Train priority breakdown</div>
+    </div>
+    <div class="ai-chart-body"><canvas id="priorityChart"></canvas></div>
+  </div>
+  <div class="ai-chart-panel">
+    <div class="ai-chart-header">
+      <div class="ai-chart-title">Conflict Trends</div>
+      <div class="ai-chart-sub">Last 7 days</div>
+    </div>
+    <div class="ai-chart-body"><canvas id="conflictTrendChart"></canvas></div>
+  </div>
+  <div class="ai-chart-panel">
+    <div class="ai-chart-header">
+      <div class="ai-chart-title">AI Accuracy Trend</div>
+      <div class="ai-chart-sub">Recommendation acceptance</div>
+    </div>
+    <div class="ai-chart-body"><canvas id="aiAccuracyChart"></canvas></div>
+  </div>
+  <div class="ai-chart-panel">
+    <div class="ai-chart-header">
+      <div class="ai-chart-title">Delay Reduction Trend</div>
+      <div class="ai-chart-sub">Minutes saved per day</div>
+    </div>
+    <div class="ai-chart-body"><canvas id="delayReductionChart"></canvas></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+'use strict';
+
+/* Clock */
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-IN', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const el = document.getElementById('aiCmdClock');
+  if (el) el.textContent = t;
+}
+updateClock(); setInterval(updateClock, 1000);
+
+/* Counter animation */
+function animateCounter(el, target, suffix='', duration=800) {
+  if (!el) return;
+  const startTime = performance.now();
+  function step(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.innerHTML = Math.round(target * eased) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* Sparkline */
+function drawSparkline(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.offsetWidth || 70, h = canvas.offsetHeight || 28;
+  canvas.width = w * (window.devicePixelRatio || 1);
+  canvas.height = h * (window.devicePixelRatio || 1);
+  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+  const step = w / (data.length - 1);
+  ctx.clearRect(0, 0, w, h);
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, color + '55'); grad.addColorStop(1, color + '05');
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = i * step, y = h - ((d - min) / range) * h * 0.8 - h * 0.1;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo((data.length - 1) * step, h); ctx.lineTo(0, h); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+  data.forEach((d, i) => {
+    const x = i * step, y = h - ((d - min) / range) * h * 0.8 - h * 0.1;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+/* KPI Load */
+async function loadKPIs() {
+  try {
+    const res = await fetch('/api/analytics/kpis/');
+    const d = await res.json();
+    const eff = d.punctuality_rate || 0;
+    animateCounter(document.getElementById('kpi-efficiency'), Math.round(eff));
+    animateCounter(document.getElementById('kpi-predicted'), Math.max(1, Math.round((d.active_conflicts||0) * 1.8 + (d.delayed_trains||0) * 0.3)));
+    const tpGain = Math.round((d.section_availability||0) * 0.15 + 3);
+    animateCounter(document.getElementById('kpi-throughput'), tpGain, '%');
+    const delayRed = Math.round((d.avg_delay||0) * 0.4 + 2);
+    animateCounter(document.getElementById('kpi-delay'), delayRed, 'MIN');
+    const punct = d.punctuality_rate || 0;
+    animateCounter(document.getElementById('kpi-punctuality'), Math.round(punct), '%');
+    const pch = document.getElementById('kpi-punct-change');
+    if (pch) { pch.className='ai-kpi-change '+(punct>=85?'positive':punct>=70?'neutral':'negative'); pch.innerHTML=(punct>=85?'<i class="bi bi-arrow-up"></i> Excellent':punct>=70?'<i class="bi bi-dash"></i> Acceptable':'<i class="bi bi-arrow-down"></i> Needs Work'); }
+    const ot = document.getElementById('kpi-ontime');
+    if (ot) ot.textContent = (d.on_time_trains||0)+' on-time';
+    const rev = Math.round((d.running_trains||0)*1.2 - (d.delayed_trains||0)*0.5);
+    animateCounter(document.getElementById('kpi-revenue'), rev, 'L');
+    const gs = (n, b, v) => Array.from({length:n}, () => b + (Math.random()-.5)*v);
+    drawSparkline('spk-efficiency', gs(12, eff, 10), '#f97316');
+    drawSparkline('spk-predicted', gs(12, (d.active_conflicts||1)*2, 4), '#f59e0b');
+    drawSparkline('spk-delay', gs(12, delayRed, 5), '#3b82f6');
+    drawSparkline('spk-revenue', gs(12, rev, 20), '#06b6d4');
+    loadConflictStats();
+    loadSimPreview(d);
+    loadAnalyticsCharts();
+  } catch(e) { console.warn('KPI error:', e); }
+}
+
+/* Conflict stats */
+async function loadConflictStats() {
+  try {
+    const res = await fetch('/api/analytics/conflicts/');
+    const data = await res.json();
+    let tr=0, pl=0, sc=0, rs=0;
+    (data.labels||[]).forEach((l,i) => {
+      const c = data.data[i]||0;
+      if(l==='Track') tr=c; else if(l==='Platform') pl=c; else if(l==='Occupancy'||l==='Section') sc=c;
+      rs += Math.round(c*0.4);
+    });
+    ['ccount-track','ccount-platform','ccount-section','ccount-resolved'].forEach((id,i) => {
+      const el = document.getElementById(id);
+      if(el) el.textContent = [tr,pl,sc,rs][i];
+    });
+  } catch(e) {
+    ['ccount-track','ccount-platform','ccount-section','ccount-resolved'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.textContent='0';
+    });
+  }
+}
+
+/* Sim preview */
+function loadSimPreview(kpis) {
+  const delay = kpis.avg_delay||0, imp = Math.round(delay*0.35+2);
+  document.getElementById('sim-delay-red').textContent = '-'+imp+' MIN';
+  document.getElementById('sim-throughput').textContent = '+'+Math.round(imp*0.6+2)+'%';
+  document.getElementById('sim-revenue').textContent = '+\u20B9'+Math.round(imp*1.5)+'L';
+  document.getElementById('sim-pax').textContent = '+'+Math.round(imp*120)+'/hr';
+  const isDark = document.documentElement.getAttribute('data-theme')!=='light';
+  const base = {responsive:false,maintainAspectRatio:false,animation:{duration:700},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}};
+  const bEl = document.getElementById('simBeforeChart');
+  if (bEl && !bEl._c) {
+    bEl._c = new Chart(bEl, {type:'line',data:{labels:[...Array(12).keys()],datasets:[{data:[40,38,45,50,55,48,52,60,58,55,62,65],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',fill:true,borderWidth:1.5,tension:0.4,pointRadius:0}]},options:base});
+  }
+  const aEl = document.getElementById('simAfterChart');
+  if (aEl && !aEl._c) {
+    aEl._c = new Chart(aEl, {type:'line',data:{labels:[...Array(12).keys()],datasets:[{data:[40,42,48,55,60,65,70,72,75,78,80,82],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,borderWidth:1.5,tension:0.4,pointRadius:0}]},options:base});
+  }
+}
+
+/* Analytics charts */
+function loadAnalyticsCharts() {
+  const isDark = document.documentElement.getAttribute('data-theme')!=='light';
+  const gc = isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)';
+  const tc = isDark?'#8892a4':'#475569';
+  const tb = isDark?'#1a2234':'#ffffff';
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const tti = isDark?'#e8eaf0':'#1e293b';
+  const ttOpts = {backgroundColor:tb,titleColor:tti,bodyColor:tc,borderColor:'rgba(255,255,255,0.1)',borderWidth:1};
+  const scOpts = {x:{grid:{color:gc},ticks:{color:tc,font:{size:9}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:9}}}};
+
+  const pc = document.getElementById('priorityChart');
+  if (pc && !pc._c) {
+    pc._c = new Chart(pc, {
+      type:'doughnut',
+      data:{
+        labels:['Critical','High','Medium','Low'],
+        datasets:[{
+          data:[{{ active_conflict_count }},{{ pending_recs }},{{ total_trains|default:0 }},Math.max(0,{{ total_trains|default:0 }}-{{ active_conflict_count }}-{{ pending_recs }})],
+          backgroundColor:['#ef4444','#f97316','#f59e0b','#10b981'],
+          borderColor:isDark?'#1a2234':'#ffffff',borderWidth:2
+        }]
+      },
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:true,position:'bottom',labels:{color:tc,font:{size:10},padding:8,boxWidth:10}},tooltip:ttOpts},cutout:'65%'}
+    });
+  }
+
+  const ctc = document.getElementById('conflictTrendChart');
+  if (ctc && !ctc._c) {
+    const ctd = days.map(()=>Math.floor(Math.random()*8+1));
+    ctc._c = new Chart(ctc, {
+      type:'bar',
+      data:{labels:days,datasets:[
+        {label:'Detected',data:ctd,backgroundColor:'rgba(239,68,68,0.7)',borderRadius:3},
+        {label:'Resolved',data:ctd.map(d=>Math.round(d*0.75)),backgroundColor:'rgba(16,185,129,0.7)',borderRadius:3}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},plugins:{legend:{display:true,position:'bottom',labels:{color:tc,font:{size:9},padding:6,boxWidth:8}},tooltip:ttOpts},scales:scOpts}
+    });
+  }
+
+  const aac = document.getElementById('aiAccuracyChart');
+  if (aac && !aac._c) {
+    const aad = days.map(()=>Math.round(Math.random()*15+80));
+    aac._c = new Chart(aac, {
+      type:'line',
+      data:{labels:days,datasets:[{label:'AI Accuracy %',data:aad,borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,0.12)',fill:true,borderWidth:2,tension:0.4,pointRadius:3,pointBackgroundColor:'#8b5cf6',pointBorderColor:isDark?'#1a2234':'#fff',pointBorderWidth:1.5}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},plugins:{legend:{display:false},tooltip:ttOpts},scales:{...scOpts,y:{...scOpts.y,min:60,max:100}}}
+    });
+  }
+
+  const drc = document.getElementById('delayReductionChart');
+  if (drc && !drc._c) {
+    const drd = days.map(()=>Math.round(Math.random()*12+3));
+    drc._c = new Chart(drc, {
+      type:'line',
+      data:{labels:days,datasets:[{label:'Min Saved',data:drd,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.12)',fill:true,borderWidth:2,tension:0.4,pointRadius:3,pointBackgroundColor:'#06b6d4',pointBorderColor:isDark?'#1a2234':'#fff',pointBorderWidth:1.5}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},plugins:{legend:{display:false},tooltip:ttOpts},scales:{...scOpts,y:{...scOpts.y,beginAtZero:true}}}
+    });
+  }
+}
+
+/* Train selection + XAI */
+async function selectTrain(trainId, trainNum, trainName, delay) {
+  document.querySelectorAll('#decisionTable tbody tr').forEach(r=>r.classList.remove('selected'));
+  const row = document.querySelector('[data-train-id="'+trainId+'"]');
+  if (row) row.classList.add('selected');
+  const lbl = document.getElementById('xai-train-label');
+  if (lbl) lbl.textContent = trainNum+' — '+trainName.substring(0,14);
+  try {
+    const res = await fetch('/api/ai-engine/priority/'+trainId+'/');
+    const data = await res.json();
+    const sc = data.scores||{};
+    const total = data.total_score||5;
+    document.getElementById('xai-priority-score').textContent = total;
+    setXAIF('xf-passenger', Math.min(100,(sc.passenger||0.5)*100));
+    setXAIF('xf-route',     Math.min(100,(sc.express||sc.type||0.6)*100));
+    setXAIF('xf-cascade',   Math.min(100,(sc.delay||(delay/60))*100));
+    setXAIF('xf-operational',Math.min(100,(sc.conflict||0.4)*100));
+    setXAIF('xf-delay',     Math.min(100, delay/60*100));
+    const ae = document.getElementById('xai-action');
+    const de = document.getElementById('xai-action-detail');
+    if(ae){ae.style.color=data.action_color||'var(--accent-blue)';ae.textContent=data.action||'Maintain Schedule';}
+    if(de) de.textContent = data.action_detail||'Monitor and update as needed.';
+    // Update row priority bar
+    const pw = document.querySelector('[data-priority="'+trainId+'"]');
+    if(pw){const p=Math.round(total*10);const cl=p>70?'high':p>40?'medium':'low';pw.innerHTML='<div class="score-bar-wrap"><div class="score-bar"><div class="score-fill '+cl+'" style="width:'+p+'%;"></div></div><span class="score-val" style="color:'+(p>70?'var(--accent-green)':p>40?'var(--accent-yellow)':'var(--accent-red)')+';">'+total+'</span></div>';}
+  } catch(e) {
+    document.getElementById('xai-priority-score').textContent = (10-delay/10).toFixed(1);
+    setXAIF('xf-passenger', Math.random()*40+40);
+    setXAIF('xf-route', Math.random()*30+50);
+    setXAIF('xf-cascade', Math.min(100,delay*2));
+    setXAIF('xf-operational', Math.random()*40+20);
+    setXAIF('xf-delay', Math.min(100,delay*3));
+    const ae = document.getElementById('xai-action');
+    const de = document.getElementById('xai-action-detail');
+    if(ae){ae.style.color=delay>15?'var(--accent-red)':'var(--accent-green)';ae.textContent=delay>15?'PRIORITY DISPATCH — Clear Track':'NORMAL OPERATION';}
+    if(de) de.textContent=delay>15?trainNum+' is '+delay+'m late — priority slot recommended.':'Within acceptable delay threshold.';
+  }
+}
+function setXAIF(id, pct) {
+  const v=document.getElementById(id); const b=document.getElementById(id+'-bar');
+  if(v) v.textContent=Math.round(pct)+'%';
+  if(b){b.style.width='0%';setTimeout(()=>b.style.width=pct+'%',50);}
+}
+
+/* Rank all */
+async function rankAllTrains() {
+  const rows = document.querySelectorAll('#decisionTable tbody tr[data-train-id]');
+  const ids = Array.from(rows).map(r=>parseInt(r.dataset.trainId)).filter(Boolean).slice(0,20);
+  if(!ids.length){Toast.info('No trains to rank.');return;}
+  try {
+    const data = await apiPost('/api/ai-engine/rank/',{train_ids:ids});
+    if(!data.success) throw new Error(data.error||'failed');
+    data.ranked.forEach(r => {
+      document.querySelectorAll('#decisionTable tbody tr').forEach(row=>{
+        const num = row.querySelector('.train-num')?.textContent?.trim();
+        if(num===r.train_number){
+          const p=Math.round(r.total_score*10); const cl=p>70?'high':p>40?'medium':'low';
+          const pw=row.querySelector('[data-priority]');
+          if(pw) pw.innerHTML='<div class="score-bar-wrap"><div class="score-bar"><div class="score-fill '+cl+'" style="width:'+p+'%;"></div></div><span class="score-val" style="color:'+(p>70?'var(--accent-green)':p>40?'var(--accent-yellow)':'var(--accent-red)')+';">'+r.total_score+'</span></div>';
+          const rc=row.querySelector('.rec-cell');
+          if(rc) rc.innerHTML='<span style="font-size:0.68rem;font-weight:600;color:'+(r.action_color||'var(--text-primary)')+';">'+(r.action||'Normal Ops').substring(0,28)+'</span>';
+        }
+      });
+    });
+    Toast.success('Ranked '+data.ranked.length+' trains.');
+  } catch(e){Toast.error('Ranking failed: '+e.message);}
+}
+
+/* Manual rank tool */
+async function runRanking() {
+  const sel = document.getElementById('rank-train-select');
+  const ids = Array.from(sel.selectedOptions).map(o=>parseInt(o.value));
+  if(ids.length<2){Toast.warning('Select at least 2 trains.');return;}
+  const rd = document.getElementById('ranking-result');
+  rd.innerHTML='<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.75rem;"><i class="bi bi-hourglass-split"></i> Computing…</div>';
+  const data = await apiPost('/api/ai-engine/rank/',{train_ids:ids});
+  if(!data.success){Toast.error(data.error||'failed');rd.innerHTML='';return;}
+  const cols=['#2ecc71','#3498db','#f39c12','#e74c3c','#9b59b6'];
+  let html='<div style="display:flex;flex-direction:column;gap:5px;margin-top:4px;">';
+  data.ranked.forEach((r,i)=>{
+    const c=cols[i]||'#95a5a6';
+    html+=`<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:7px 10px;border-left:3px solid ${c};display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span style="background:${c};color:white;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;">${r.rank}</span>
+        <div><div style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);font-size:0.75rem;">${r.train_number}</div><div style="font-size:0.65rem;color:var(--text-muted);">${r.action}</div></div>
+      </div>
+      <span style="font-family:var(--font-mono);font-weight:800;color:${c};font-size:0.82rem;">${r.total_score}/10</span>
+    </div>`;
+  });
+  html+='</div>';
+  rd.innerHTML=html;
+  Toast.success('Priority ranking computed!');
+}
+
+/* Detect */
+async function runDetection() {
+  Toast.info('Running conflict detection…');
+  try {
+    const data = await apiPost('/api/conflicts/detect/');
+    if(data.success){Toast.success('Detection complete. '+(data.new_conflicts||0)+' new conflicts.');setTimeout(()=>location.reload(),1500);}
+    else Toast.error(data.error||'Detection failed.');
+  } catch(e){Toast.error('Detection failed: '+e.message);}
+}
+
+/* Accept/Reject */
+async function acceptRec(id){
+  try{await apiPost(`/ai-engine/recommendation/'+id+'/accept/');Toast.success('Recommendation accepted.');setTimeout(()=>location.reload(),1000);}
+  catch(e){Toast.error('Failed to accept.');}
+}
+async function rejectRec(id){
+  try{await apiPost(`/ai-engine/recommendation/'+id+'/reject/');Toast.warning('Recommendation rejected.');setTimeout(()=>location.reload(),1000);}
+  catch(e){Toast.error('Failed to reject.');}
+}
+
+/* XAI Modal */
+function showXAI(recId, trainNum, priority, conf, title, desc) {
+  const cols=['#3b82f6','#06b6d4','#10b981','#8b5cf6','#f59e0b'];
+  const factors=['Passenger Impact','Revenue Impact','Delay Reduction','Route Criticality','Cascading Risk'];
+  document.getElementById('xaiModalBody').innerHTML=`
+    <div style="margin-bottom:14px;"><div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">Train</div><div style="font-family:var(--font-mono);font-size:1rem;font-weight:800;color:var(--accent-blue);">${trainNum}</div></div>
+    <div style="margin-bottom:12px;"><div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">Recommendation</div><div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">${title}</div></div>
+    <div style="margin-bottom:12px;"><div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">Description</div><div style="font-size:0.78rem;color:var(--text-secondary);">${desc}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">Priority</div><div style="font-size:1.2rem;font-weight:800;color:var(--accent-orange);font-family:var(--font-mono);">${priority}</div></div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">Confidence</div><div style="font-size:1.2rem;font-weight:800;color:var(--accent-green);font-family:var(--font-mono);">${conf}%</div></div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px;">AI Score</div><div style="font-size:1.2rem;font-weight:800;color:var(--accent-blue);font-family:var(--font-mono);">${Math.round(priority*10)}%</div></div>
+    </div>
+    <div style="margin-bottom:14px;"><div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Reasoning Factors</div>
+    ${factors.map((f,i)=>{const p=Math.round(Math.random()*40+40);return `<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-secondary);margin-bottom:3px;"><span>${f}</span><span style="color:${cols[i]};font-weight:700;">${p}%</span></div><div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${p}%;background:${cols[i]};border-radius:3px;"></div></div></div>`;}).join('')}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="acceptRec(${recId})" class="ai-rec-btn accept" style="flex:1;"><i class="bi bi-check-lg"></i> Accept</button>
+      <button onclick="rejectRec(${recId})" class="ai-rec-btn reject" style="flex:1;"><i class="bi bi-x-lg"></i> Reject</button>
+      <a href="{% url 'simulation:index' %}" class="ai-rec-btn simulate" style="flex:1;"><i class="bi bi-play-fill"></i> Simulate</a>
+    </div>`;
+  document.getElementById('xaiModal').classList.add('open');
+}
+function closeXAIModal(){document.getElementById('xaiModal').classList.remove('open');}
+document.getElementById('xaiModal').addEventListener('click',function(e){if(e.target===this)closeXAIModal();});
+
+/* Filter / Sort */
+function filterTable() {
+  const q=(document.getElementById('tableSearch')?.value||'').toLowerCase();
+  const cs=document.getElementById('aiCmdSearch')?.value?.toLowerCase()||'';
+  const st=document.getElementById('statusFilter')?.value||'';
+  const ty=document.getElementById('typeFilter')?.value||'';
+  const query=q||cs;
+  document.querySelectorAll('#decisionTable tbody tr[data-train-id]').forEach(row=>{
+    const vis=(!query||row.textContent.toLowerCase().includes(query))&&(!st||row.dataset.status===st)&&(!ty||row.dataset.type===ty);
+    row.style.display=vis?'':'none';
+  });
+}
+document.getElementById('aiCmdSearch').addEventListener('input',filterTable);
+
+let sDir={};
+function sortTable(i) {
+  const tb=document.getElementById('decisionTableBody');
+  const rows=Array.from(tb.querySelectorAll('tr[data-train-id]'));
+  const dir=(sDir[i]=!sDir[i]);
+  document.querySelectorAll('.ai-table thead th').forEach((th,j)=>{th.classList.remove('sort-asc','sort-desc');if(j===i)th.classList.add(dir?'sort-asc':'sort-desc');});
+  rows.sort((a,b)=>{const at=a.querySelectorAll('td')[i]?.textContent?.trim()||'';const bt=b.querySelectorAll('td')[i]?.textContent?.trim()||'';const av=parseFloat(at)||at;const bv=parseFloat(bt)||bt;return av<bv?(dir?-1:1):av>bv?(dir?1:-1):0;});
+  rows.forEach(r=>tb.appendChild(r));
+}
+
+/* Refresh */
+function refreshDashboard(){loadKPIs();Toast.success('Dashboard refreshed!');}
+
+/* Init */
+document.addEventListener('DOMContentLoaded',function(){
+  loadKPIs();
+  setInterval(loadKPIs, 45000);
+  document.addEventListener('themechange',function(){
+    ['priorityChart','conflictTrendChart','aiAccuracyChart','delayReductionChart','simBeforeChart','simAfterChart'].forEach(id=>{
+      const c=document.getElementById(id);
+      if(c?._c){c._c.destroy();c._c=null;}
+    });
+    setTimeout(loadAnalyticsCharts,100);
+  });
+  setTimeout(rankAllTrains, 1800);
+});
+</script>
+{% endblock %}

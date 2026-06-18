@@ -1,0 +1,2383 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Train Fleet Management | Command Center — Railway Control{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   TRAIN FLEET MANAGEMENT COMMAND CENTER — STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Command Header ── */
+.fleet-cmd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.fleet-cmd-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fleet-cmd-title .title-pill {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.fleet-cmd-title h1 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.fleet-cmd-title h1 span {
+  color: var(--accent-blue);
+}
+.fleet-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--accent-green);
+  font-weight: 600;
+  letter-spacing: .05em;
+}
+.fleet-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  animation: livePulse 1.8s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--accent-green);
+}
+@keyframes livePulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .6; transform: scale(1.3); }
+}
+.fleet-cmd-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.fleet-cmd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.fleet-cmd-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+.fleet-cmd-btn.primary {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: var(--accent-blue);
+}
+.fleet-cmd-btn.primary:hover {
+  background: var(--accent-blue-dark);
+  color: #fff;
+}
+
+/* ── Fleet KPI Row ── */
+.fleet-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+/* At 1366px with sidebar: 8 cards fit comfortably — keep 8-col */
+@media (max-width: 1100px) { .fleet-kpi-row { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 680px)  { .fleet-kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+.fkpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 13px 14px 10px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  display: block;
+}
+.fkpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.fkpi-card.blue::before   { background: var(--accent-blue); }
+.fkpi-card.green::before  { background: var(--accent-green); }
+.fkpi-card.red::before    { background: var(--accent-red); }
+.fkpi-card.orange::before { background: var(--accent-orange); }
+.fkpi-card.yellow::before { background: var(--accent-yellow); }
+.fkpi-card.cyan::before   { background: var(--accent-cyan); }
+.fkpi-card.purple::before { background: var(--accent-purple); }
+.fkpi-card:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.fkpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.fkpi-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+}
+.fkpi-icon {
+  font-size: 0.9rem;
+  opacity: .7;
+}
+.fkpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.fkpi-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.fkpi-trend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.fkpi-trend.up   { color: var(--accent-green); }
+.fkpi-trend.down { color: var(--accent-red); }
+.fkpi-trend.neutral { color: var(--text-muted); }
+.fkpi-sparkline-wrap { flex: 1; max-width: 70px; height: 28px; }
+.fkpi-sparkline { width: 100%; height: 100%; }
+
+/* ── Main Grid: Search/Filter col | Table col (2-col only) ── */
+/* Right panels moved to their own row below the table.          */
+.fleet-main-grid {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .fleet-main-grid { grid-template-columns: 1fr; }
+}
+.fleet-search-filter-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Side Panels Row — AI Insights (full width below table) ── */
+/* Train Detail was moved into fleet-search-filter-col (left column)
+   so it naturally sits below the filter panel with no gap.
+   This row now holds AI Insights as a single full-width panel.        */
+.fleet-side-panels-row {
+  display: grid;
+  grid-template-columns: 1fr;   /* single col — AI Insights spans full width */
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+/* fleet-right-col removed — no longer needed */
+
+/* ── Global Search Center ── */
+.search-center-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+.search-center-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.fleet-search-box {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.fleet-search-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+.fleet-search-input:focus {
+  border-color: var(--accent-blue);
+}
+.fleet-search-btn {
+  background: var(--accent-blue);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background var(--transition-fast);
+}
+.fleet-search-btn:hover { background: var(--accent-blue-dark); }
+.search-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.search-metric-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.search-metric-label {
+  font-size: 0.71rem;
+  color: var(--text-muted);
+}
+.search-metric-val {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-blue);
+}
+.search-metric-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.search-metric-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+}
+
+/* ── Advanced Filter Panel ── */
+.filter-panel-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  flex: 1;
+}
+.filter-panel-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.filter-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 7px 10px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color var(--transition-fast);
+}
+.filter-select:focus { border-color: var(--accent-blue); }
+.quick-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.qf-btn {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+.qf-btn:hover, .qf-btn.active {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(59,130,246,.12);
+}
+.qf-btn.critical    { border-color: var(--accent-red);   color: var(--accent-red); }
+.qf-btn.delayed     { border-color: var(--accent-orange); color: var(--accent-orange); }
+.qf-btn.highpri     { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+.qf-btn.critical.active  { background: rgba(239,68,68,.12); }
+.qf-btn.delayed.active   { background: rgba(249,115,22,.12); }
+.qf-btn.highpri.active   { background: rgba(245,158,11,.12); }
+
+/* ── Live Fleet Table ── */
+.fleet-table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  /* overflow:hidden removed — it was clipping the horizontal scrollbar */
+  min-width: 0; /* allow card to shrink below min-content so table scrolls */
+}
+/* The column containing the table card must also allow shrinking */
+.fleet-table-col {
+  min-width: 0;
+  overflow: hidden; /* creates BFC; prevents grid track from expanding to min-content */
+}
+.fleet-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fleet-table-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fleet-table-title .count-pill {
+  background: rgba(59,130,246,.15);
+  color: var(--accent-blue);
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.fleet-table-actions {
+  display: flex;
+  gap: 6px;
+}
+.tbl-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.tbl-action-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+.fleet-table-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+  display: block; /* ensure block layout for scroll container */
+  width: 100%;    /* explicit width so browser sees overflow correctly */
+}
+.fleet-table-wrap::-webkit-scrollbar { height: 5px; }
+.fleet-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.fleet-table-wrap::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+.fleet-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+.fleet-table {
+  width: 100%;
+  min-width: 880px;   /* prevents column squish; triggers horizontal scroll */
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.fleet-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.fleet-table thead th:hover { color: var(--text-primary); }
+.fleet-table tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background var(--transition-fast);
+  cursor: pointer;
+}
+.fleet-table tbody tr:hover { background: var(--bg-card-hover); }
+.fleet-table tbody tr.row-delayed { background: rgba(249,115,22,.05); }
+.fleet-table tbody tr.row-critical { background: rgba(239,68,68,.07); }
+.fleet-table tbody tr.row-critical:hover { background: rgba(239,68,68,.12); }
+.fleet-table tbody tr.row-delayed:hover { background: rgba(249,115,22,.1); }
+.fleet-table tbody tr.row-maintenance { background: rgba(59,130,246,.05); }
+.fleet-table td {
+  padding: 8px 10px;
+  color: var(--text-primary);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.train-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--accent-blue);
+}
+.train-num-link { text-decoration: none; color: inherit; }
+.train-num-link:hover .train-num { text-decoration: underline; }
+.train-name-main { font-weight: 600; font-size: 0.8rem; }
+.train-name-sub { font-size: 0.68rem; color: var(--text-muted); }
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.status-badge::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.status-running    { background: rgba(16,185,129,.15); color: var(--accent-green); }
+.status-scheduled  { background: rgba(59,130,246,.15); color: var(--accent-blue); }
+.status-delayed    { background: rgba(249,115,22,.15); color: var(--accent-orange); }
+.status-arrived    { background: rgba(139,92,246,.15); color: var(--accent-purple); }
+.status-cancelled  { background: rgba(239,68,68,.15); color: var(--accent-red); }
+.status-held       { background: rgba(245,158,11,.15); color: var(--accent-yellow); }
+.status-maintenance { background: rgba(59,130,246,.15); color: var(--accent-blue); }
+.delay-val { font-family: var(--font-mono); font-weight: 700; font-size: 0.8rem; }
+.delay-positive { color: var(--accent-red); }
+.delay-zero     { color: var(--accent-green); }
+.delay-negative { color: var(--accent-green); }
+.speed-val { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary); }
+.location-val { font-size: 0.75rem; color: var(--text-secondary); }
+.location-link { color: var(--accent-cyan); text-decoration: none; }
+.location-link:hover { text-decoration: underline; }
+.platform-val { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); }
+.occupancy-bar-wrap { width: 56px; }
+.occupancy-bar {
+  height: 5px;
+  background: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.occupancy-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent-green);
+  transition: width .5s ease;
+}
+.occupancy-fill.med { background: var(--accent-yellow); }
+.occupancy-fill.high { background: var(--accent-red); }
+.occupancy-pct { font-size: 0.65rem; color: var(--text-muted); }
+.priority-star { font-size: 0.78rem; letter-spacing: -2px; }
+.priority-star .filled { color: var(--accent-yellow); }
+.priority-star .empty  { color: var(--border-color); opacity: .8; }
+.table-row-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.row-action-btn {
+  width: 26px; height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.row-action-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+.row-action-btn.view:hover  { color: var(--accent-blue); border-color: var(--accent-blue); }
+.row-action-btn.track:hover { color: var(--accent-green); border-color: var(--accent-green); }
+.row-action-btn.risk:hover  { color: var(--accent-yellow); border-color: var(--accent-yellow); }
+.row-action-btn.route:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); }
+
+
+
+/* ── Train Detail Side Panel ── */
+.side-panel-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+.side-panel-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+}
+.side-panel-body { padding: 14px; }
+.mini-route-map {
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 12px;
+  position: relative;
+  min-height: 90px;
+}
+.route-line {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: relative;
+}
+.route-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.route-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+.route-dot.completed { background: var(--accent-green); border-color: var(--accent-green); }
+.route-dot.current { background: var(--accent-orange); border-color: var(--accent-orange); box-shadow: 0 0 8px var(--accent-orange); animation: livePulse 2s infinite; }
+.route-dot.upcoming { background: transparent; border-color: var(--text-muted); }
+.route-dot.dest { background: var(--accent-red); border-color: var(--accent-red); }
+.route-code { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); }
+.route-seg {
+  flex: 1;
+  height: 2px;
+  background: var(--border-color);
+  position: relative;
+  top: -12px;
+}
+.route-seg.completed { background: var(--accent-green); }
+.route-seg.partial { background: linear-gradient(90deg, var(--accent-green), var(--accent-orange)); }
+.train-profile-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 10px;
+}
+.train-profile-avatar {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, rgba(59,130,246,.2), rgba(6,182,212,.2));
+  border: 1px solid rgba(59,130,246,.3);
+  flex-shrink: 0;
+}
+.train-profile-info { flex: 1; min-width: 0; }
+.train-profile-num { font-family: var(--font-mono); font-weight: 700; font-size: 0.82rem; color: var(--accent-blue); }
+.train-profile-name { font-size: 0.71rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.side-detail-row:last-child { border-bottom: none; }
+.side-detail-label { font-size: 0.68rem; color: var(--text-muted); }
+.side-detail-val { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); font-family: var(--font-mono); }
+.view-network-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, rgba(59,130,246,.15), rgba(6,182,212,.15));
+  border: 1px solid rgba(59,130,246,.3);
+  border-radius: var(--radius-sm);
+  color: var(--accent-blue);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  letter-spacing: .03em;
+}
+.view-network-btn:hover {
+  background: linear-gradient(135deg, rgba(59,130,246,.25), rgba(6,182,212,.25));
+  color: var(--accent-blue);
+}
+.no-train-selected {
+  text-align: center;
+  padding: 18px 10px;  /* tighter: panel is now 230px wide in left col */
+  color: var(--text-muted);
+}
+.no-train-icon { font-size: 2rem; margin-bottom: 8px; opacity: .4; }
+.no-train-text { font-size: 0.72rem; }
+
+/* ── AI Insights Panel ── */
+/* Now full-width (moved from half-width side panel row to standalone row),
+   so 3 columns fits the 6 metric tiles in a tighter 2-row layout           */
+.ai-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+@media (max-width: 900px) {
+  .ai-insights-grid { grid-template-columns: 1fr 1fr; }
+}
+.ai-insight-item {
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  text-decoration: none;
+  display: block;
+}
+.ai-insight-item:hover { background: var(--bg-card-hover); }
+.ai-insight-label { font-size: 0.64rem; color: var(--text-muted); margin-bottom: 3px; }
+.ai-insight-val { font-size: 0.85rem; font-weight: 800; font-family: var(--font-mono); }
+.ai-insight-risk { font-size: 0.62rem; font-weight: 600; margin-top: 1px; }
+.ai-risk-low    { color: var(--accent-green); }
+.ai-risk-med    { color: var(--accent-yellow); }
+.ai-risk-high   { color: var(--accent-red); }
+
+/* ── Bottom Panels: two dedicated 2-col rows ── */
+/* Row 1: Status Distribution (compact) + Route Performance (wide) */
+.fleet-bottom-row1 {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+/* Row 2: Journey Visualizer (wide) + Fleet Health (compact) */
+.fleet-bottom-row2 {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .fleet-bottom-row1,
+  .fleet-bottom-row2 { grid-template-columns: 1fr; }
+}
+
+.panel-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.panel-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-title-actions {
+  display: flex;
+  gap: 4px;
+}
+.p-icon-btn {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+.p-icon-btn:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+
+/* ── Status Distribution ── */
+.status-dist-canvas-wrap { position: relative; width: 110px; height: 110px; margin: 0 auto 10px; }
+.status-dist-legend { display: flex; flex-direction: column; gap: 5px; }
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.7rem; color: var(--text-secondary);
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-count { margin-left: auto; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); font-size: 0.72rem; }
+.bar-chart-wrap { width: 100%; }
+.bar-chart-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.bar-label { font-size: 0.65rem; color: var(--text-muted); width: 30px; flex-shrink: 0; }
+.bar-track { flex: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.bar-val { font-size: 0.65rem; font-family: var(--font-mono); color: var(--text-muted); width: 20px; text-align: right; flex-shrink: 0; }
+
+/* ── Route Performance ── */
+.route-perf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.route-perf-item {
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+}
+.route-perf-sublabel { font-size: 0.62rem; color: var(--text-muted); margin-bottom: 2px; }
+.route-perf-val { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.route-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-top: 1px solid var(--border-color);
+}
+.route-metric-label { font-size: 0.68rem; color: var(--text-muted); }
+.route-metric-val { font-size: 0.75rem; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); }
+
+/* ── Journey Visualizer ── */
+.journey-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 0.7rem;
+}
+.journey-legend-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+.journey-legend-dot.completed { background: rgba(16,185,129,.15); color: var(--accent-green); }
+.journey-legend-dot.current   { background: rgba(249,115,22,.15); color: var(--accent-orange); }
+.journey-legend-dot.upcoming  { background: rgba(148,163,184,.1); color: var(--text-muted); }
+.journey-track {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  gap: 0;
+}
+.journey-track::-webkit-scrollbar { height: 3px; }
+.journey-track::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+.journey-stop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 60px;
+}
+.journey-stop-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+  position: relative;
+  z-index: 1;
+  transition: all .3s ease;
+}
+.journey-stop-dot.done   { background: var(--accent-green); border-color: var(--accent-green); }
+.journey-stop-dot.here   { background: var(--accent-orange); border-color: var(--accent-orange); box-shadow: 0 0 10px var(--accent-orange); animation: livePulse 2s infinite; width: 14px; height: 14px; }
+.journey-stop-dot.next   { background: transparent; border-color: var(--accent-blue); }
+.journey-stop-dot.future { background: transparent; border-color: var(--text-muted); opacity: .5; }
+.journey-stop-code { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); }
+.journey-stop-eta { font-size: 0.58rem; color: var(--text-muted); }
+.journey-stop-code.current-label { color: var(--accent-orange); font-weight: 800; }
+.journey-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border-color);
+  min-width: 24px;
+  position: relative;
+  top: -8px;
+}
+.journey-connector.done-seg { background: var(--accent-green); }
+.journey-connector.active-seg { background: linear-gradient(90deg, var(--accent-green), var(--accent-orange)); }
+.journey-delay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(239,68,68,.15);
+  color: var(--accent-red);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+
+/* ── Fleet Health Gauges ── */
+.gauge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gauge-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.gauge-canvas-wrap { position: relative; width: 80px; height: 50px; }
+.gauge-value {
+  position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+.gauge-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.gauge-updated {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* ── Exec Insights + Smart Ops row ── */
+.fleet-insights-ops-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start; /* panels size to their content; no forced equal height */
+}
+@media (max-width: 900px) { .fleet-insights-ops-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+  .fleet-kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .exec-insights-grid { grid-template-columns: 1fr; }
+  .ai-insights-grid   { grid-template-columns: 1fr; }
+  .fkpi-value { font-size: 1.3rem; }
+  .fleet-table-header { flex-direction: column; align-items: flex-start; }
+}
+.exec-insights-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.exec-insight-item {
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+}
+.exec-insight-label { font-size: 0.62rem; color: var(--text-muted); margin-bottom: 2px; }
+.exec-insight-val { font-size: 1.0rem; font-weight: 800; font-family: var(--font-mono); }
+.exec-insight-val.green { color: var(--accent-green); }
+.exec-insight-val.red   { color: var(--accent-red); }
+.exec-insight-val.blue  { color: var(--accent-blue); }
+.exec-insight-val.yellow { color: var(--accent-yellow); }
+.exec-insight-trend { font-size: 0.62rem; color: var(--text-muted); margin-top: 1px; }
+.smart-ops-list { display: flex; flex-direction: column; gap: 7px; }
+.smart-ops-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+.smart-ops-row:hover { background: var(--bg-card-hover); }
+.smart-ops-icon {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+.smart-ops-icon.red    { background: rgba(239,68,68,.15); color: var(--accent-red); }
+.smart-ops-icon.orange { background: rgba(249,115,22,.15); color: var(--accent-orange); }
+.smart-ops-icon.yellow { background: rgba(245,158,11,.15); color: var(--accent-yellow); }
+.smart-ops-icon.blue   { background: rgba(59,130,246,.15); color: var(--accent-blue); }
+.smart-ops-icon.green  { background: rgba(16,185,129,.15); color: var(--accent-green); }
+.smart-ops-content { flex: 1; min-width: 0; }
+.smart-ops-label { font-size: 0.72rem; font-weight: 600; color: var(--text-primary); }
+.smart-ops-sub   { font-size: 0.63rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.smart-ops-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Heatmap ── */
+.heatmap-grid-wrap { overflow-x: auto; }
+.heatmap-grid { display: inline-grid; gap: 3px; }
+.heatmap-col-labels { display: flex; gap: 3px; margin-bottom: 3px; padding-left: 70px; }
+.heatmap-col-label { font-size: 0.58rem; color: var(--text-muted); text-align: center; width: 28px; }
+.heatmap-row { display: flex; align-items: center; gap: 3px; }
+.heatmap-row-label { font-size: 0.62rem; color: var(--text-muted); width: 66px; text-align: right; padding-right: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heatmap-cell {
+  width: 28px; height: 20px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+.heatmap-cell:hover { transform: scale(1.15); z-index: 10; }
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+.heatmap-legend-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #1a3a2a, #22c55e, #f59e0b, #ef4444);
+}
+.fleet-cmd-footer {
+  text-align: center;
+  padding: 8px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
+}
+
+/* ── Pagination ── */
+.fleet-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fleet-page-info { font-size: 0.72rem; color: var(--text-muted); }
+.fleet-page-btns { display: flex; gap: 4px; }
+.fleet-page-btn {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.fleet-page-btn:hover, .fleet-page-btn.active {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: var(--accent-blue);
+}
+
+/* ── Tooltip ── */
+.fleet-tooltip {
+  position: fixed;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: var(--shadow-lg);
+  max-width: 200px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.fleet-tooltip.visible { opacity: 1; }
+.tooltip-title { font-weight: 700; margin-bottom: 4px; color: var(--accent-blue); }
+.tooltip-row { display: flex; justify-content: space-between; gap: 8px; color: var(--text-secondary); }
+.tooltip-val { font-family: var(--font-mono); color: var(--text-primary); font-weight: 600; }
+
+/* ── Light theme overrides ── */
+[data-theme="light"] .fleet-search-input,
+[data-theme="light"] .filter-select { background: #f8fafc; border-color: rgba(0,0,0,.12); color: #1e293b; }
+[data-theme="light"] .search-center-card,
+[data-theme="light"] .filter-panel-card,
+[data-theme="light"] .fleet-table-card,
+[data-theme="light"] .side-panel-card,
+[data-theme="light"] .panel-card { background: #fff; border-color: rgba(0,0,0,.09); }
+[data-theme="light"] .fleet-table thead th { background: #f8fafc; }
+[data-theme="light"] .fleet-table tbody tr:hover { background: #f8fafc; }
+[data-theme="light"] .ai-insight-item,
+[data-theme="light"] .exec-insight-item,
+[data-theme="light"] .smart-ops-row,
+[data-theme="light"] .route-perf-item,
+[data-theme="light"] .mini-route-map { background: #f1f5f9; }
+[data-theme="light"] .heatmap-cell { opacity: .9; }
+[data-theme="light"] .fkpi-card { background: #fff; }
+</style>
+{% endblock %}
+
+{% block page_header_title %}TRAIN FLEET MANAGEMENT | COMMAND CENTER{% endblock %}
+
+{% block content %}
+
+<!-- ════════════════════════════════════════════════════
+     COMMAND HEADER
+     ════════════════════════════════════════════════════ -->
+<div class="fleet-cmd-header">
+  <div class="fleet-cmd-title">
+    <span class="title-pill">Command Center</span>
+    <h1>TRAIN FLEET MANAGEMENT <span>| COMMAND CENTER</span></h1>
+    <div class="fleet-live-indicator">
+      <div class="fleet-live-dot"></div> LIVE
+    </div>
+  </div>
+  <div class="fleet-cmd-actions">
+    <span style="font-size:.7rem;color:var(--text-muted);font-family:var(--font-mono);" id="fleetClock"></span>
+    <a href="{% url 'trains:create' %}" class="fleet-cmd-btn primary">
+      <i class="bi bi-plus-circle"></i> Add Train
+    </a>
+    <a href="{% url 'network:visualizer' %}" class="fleet-cmd-btn">
+      <i class="bi bi-diagram-3"></i> Network Map
+    </a>
+    <a href="{% url 'reporting:index' %}" class="fleet-cmd-btn">
+      <i class="bi bi-file-earmark-bar-graph"></i> Reports
+    </a>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     FLEET KPI ROW
+     ════════════════════════════════════════════════════ -->
+<div class="fleet-kpi-row">
+
+  <a href="{% url 'trains:list' %}" class="fkpi-card blue">
+    <div class="fkpi-top">
+      <div class="fkpi-label">Total Trains</div>
+      <div class="fkpi-icon">🚂</div>
+    </div>
+    <div class="fkpi-value counter" data-target="{{ total_trains }}">{{ total_trains }}</div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend neutral"><i class="bi bi-dash"></i> Fleet</div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-total"></canvas></div>
+    </div>
+  </a>
+
+  <a href="{% url 'trains:list' %}?status=RUNNING" class="fkpi-card green">
+    <div class="fkpi-top">
+      <div class="fkpi-label">Active Trains</div>
+      <div class="fkpi-icon" style="color:var(--accent-green);">●</div>
+    </div>
+    <div class="fkpi-value counter" data-target="{{ active_trains }}">{{ active_trains }}</div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend up"><i class="bi bi-arrow-up"></i> Running</div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-active"></canvas></div>
+    </div>
+  </a>
+
+  <a href="{% url 'trains:list' %}?status=DELAYED" class="fkpi-card red">
+    <div class="fkpi-top">
+      <div class="fkpi-label">Delayed Trains</div>
+      <div class="fkpi-icon" style="color:var(--accent-red);">⚠</div>
+    </div>
+    <div class="fkpi-value counter" data-target="{{ delayed_trains }}">{{ delayed_trains }}</div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend {% if delayed_trains > 0 %}down{% else %}up{% endif %}">
+        <i class="bi bi-{% if delayed_trains > 0 %}arrow-up{% else %}arrow-down{% endif %}"></i> Delayed
+      </div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-delayed"></canvas></div>
+    </div>
+  </a>
+
+  <a href="{% url 'trains:list' %}?delay_status=ontime" class="fkpi-card green">
+    <div class="fkpi-top">
+      <div class="fkpi-label">On-Time Trains</div>
+      <div class="fkpi-icon" style="color:var(--accent-green);">✓</div>
+    </div>
+    <div class="fkpi-value counter" data-target="{{ on_time_trains }}">{{ on_time_trains }}</div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend up"><i class="bi bi-arrow-up"></i> 24h</div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-ontime"></canvas></div>
+    </div>
+  </a>
+
+  <a href="{% url 'trains:list' %}?status=CANCELLED" class="fkpi-card orange">
+    <div class="fkpi-top">
+      <div class="fkpi-label">Cancelled</div>
+      <div class="fkpi-icon" style="color:var(--accent-orange);">✕</div>
+    </div>
+    <div class="fkpi-value counter" data-target="{{ cancelled_trains }}">{{ cancelled_trains }}</div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend neutral"><i class="bi bi-dash"></i> Today</div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-cancel"></canvas></div>
+    </div>
+  </a>
+
+  <a href="{% url 'trains:list' %}?status=MAINTENANCE" class="fkpi-card cyan">
+    <div class="fkpi-top">
+      <div class="fkpi-label">Maintenance</div>
+      <div class="fkpi-icon" style="color:var(--accent-cyan);">🔧</div>
+    </div>
+    <div class="fkpi-value counter" data-target="{{ maintenance_trains }}">{{ maintenance_trains }}</div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend neutral"><i class="bi bi-dash"></i> Scheduled</div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-maint"></canvas></div>
+    </div>
+  </a>
+
+  <div class="fkpi-card yellow">
+    <div class="fkpi-top">
+      <div class="fkpi-label">Avg Speed</div>
+      <div class="fkpi-icon" style="color:var(--accent-yellow);">⚡</div>
+    </div>
+    <div class="fkpi-value" id="avgSpeedVal">{{ avg_speed|floatformat:0 }} <span style="font-size:.7rem;font-weight:400;color:var(--text-muted);">km/h</span></div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend up"><i class="bi bi-speedometer2"></i> Fleet avg</div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-speed"></canvas></div>
+    </div>
+  </div>
+
+  <div class="fkpi-card purple">
+    <div class="fkpi-top">
+      <div class="fkpi-label">Fleet Efficiency</div>
+      <div class="fkpi-icon" style="color:var(--accent-purple);">📊</div>
+    </div>
+    <div class="fkpi-value">{{ fleet_efficiency|floatformat:1 }}<span style="font-size:.85rem;font-weight:600;color:var(--text-muted);">%</span></div>
+    <div class="fkpi-footer">
+      <div class="fkpi-trend {% if fleet_efficiency >= 80 %}up{% else %}down{% endif %}">
+        <i class="bi bi-arrow-{% if fleet_efficiency >= 80 %}up{% else %}down{% endif %}"></i> 24h
+      </div>
+      <div class="fkpi-sparkline-wrap"><canvas class="fkpi-sparkline" id="spk-eff"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SEARCH + FILTER ROW
+     ════════════════════════════════════════════════════ -->
+<div class="fleet-main-grid">
+  <!-- Left: Search + Filter -->
+  <div class="fleet-search-filter-col">
+
+    <!-- Global Search Center -->
+    <div class="search-center-card">
+      <div class="search-center-title">🔍 Global Search Center</div>
+      <form method="get" id="fleetSearchForm">
+        {% if status_filter  %}<input type="hidden" name="status"       value="{{ status_filter }}">{% endif %}
+        {% if type_filter    %}<input type="hidden" name="type"         value="{{ type_filter }}">{% endif %}
+        {% if priority_filter%}<input type="hidden" name="priority"     value="{{ priority_filter }}">{% endif %}
+        {% if zone_filter    %}<input type="hidden" name="zone"         value="{{ zone_filter }}">{% endif %}
+        {% if delay_filter   %}<input type="hidden" name="delay_status" value="{{ delay_filter }}">{% endif %}
+        {% if quick_filter   %}<input type="hidden" name="quick_filter" value="{{ quick_filter }}">{% endif %}
+        {% if sort_by        %}<input type="hidden" name="sort"         value="{{ sort_by }}">{% endif %}
+        <div class="fleet-search-box">
+          <input type="text" name="search" value="{{ search }}" class="fleet-search-input"
+                 placeholder="Train number, name, route…" id="fleetSearchInput" autocomplete="off">
+          <button type="submit" class="fleet-search-btn"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+      <div class="search-metrics">
+        <div class="search-metric-item">
+          <span class="search-metric-label">Live Positions</span>
+          <span class="search-metric-val">{{ live_positions }} Active</span>
+        </div>
+        <div class="search-metric-bar"><div class="search-metric-fill" style="width:{% widthratio live_positions total_trains 100 %}%"></div></div>
+        <div class="search-metric-item">
+          <span class="search-metric-label">Route Utilization</span>
+          <span class="search-metric-val" style="color:var(--accent-orange);">{{ route_utilization }}%</span>
+        </div>
+        <div class="search-metric-bar"><div class="search-metric-fill" style="width:{{ route_utilization }}%;background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));"></div></div>
+        <div class="search-metric-item">
+          <span class="search-metric-label">Zone-Wise Active</span>
+          <span class="search-metric-val" style="color:var(--accent-cyan);">{{ zone_list|length }} Zones</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Filter Panel -->
+    <div class="filter-panel-card">
+      <div class="filter-panel-title">⚙️ Advanced Filter Panel</div>
+      <form method="get" id="fleetFilterForm">
+        {% if search %}<input type="hidden" name="search" value="{{ search }}">{% endif %}
+        <div class="filter-grid">
+          <select name="type" class="filter-select" onchange="this.form.submit()">
+            <option value="">Train Type</option>
+            {% for val, label in type_choices %}
+              <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <select name="zone" class="filter-select" onchange="this.form.submit()">
+            <option value="">Railway Zone</option>
+            {% for z in zone_list %}
+              <option value="{{ z }}" {% if zone_filter == z %}selected{% endif %}>{{ z }}</option>
+            {% endfor %}
+          </select>
+          <select name="delay_status" class="filter-select" onchange="this.form.submit()">
+            <option value="">Delay Status</option>
+            <option value="delayed" {% if delay_filter == "delayed" %}selected{% endif %}>Delayed</option>
+            <option value="ontime"  {% if delay_filter == "ontime"  %}selected{% endif %}>On Time</option>
+          </select>
+          <select name="priority" class="filter-select" onchange="this.form.submit()">
+            <option value="">Priority Level</option>
+            {% for val, label in priority_choices %}
+              <option value="{{ val }}" {% if priority_filter == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <select name="status" class="filter-select" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
+            {% for val, label in status_choices %}
+              <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <select name="sort" class="filter-select" onchange="this.form.submit()">
+            <option value="train_number"   {% if sort_by == "train_number"   %}selected{% endif %}>Name A→Z</option>
+            <option value="-train_number"  {% if sort_by == "-train_number"  %}selected{% endif %}>Name Z→A</option>
+            <option value="-current_delay" {% if sort_by == "-current_delay" %}selected{% endif %}>Most Delayed</option>
+            <option value="-priority_level"{% if sort_by == "-priority_level"%}selected{% endif %}>Highest Priority</option>
+            <option value="current_status" {% if sort_by == "current_status" %}selected{% endif %}>By Status</option>
+          </select>
+        </div>
+        <!-- Quick Filters -->
+        <div class="quick-filter-row">
+          <span style="font-size:.63rem;color:var(--text-muted);margin-right:2px;">Quick:</span>
+          <a href="{% url 'trains:list' %}?quick_filter=critical" class="qf-btn critical {% if quick_filter == 'critical' %}active{% endif %}">Critical</a>
+          <a href="{% url 'trains:list' %}?quick_filter=delayed"  class="qf-btn delayed  {% if quick_filter == 'delayed'  %}active{% endif %}">Delayed</a>
+          <a href="{% url 'trains:list' %}?quick_filter=high_priority" class="qf-btn highpri {% if quick_filter == 'high_priority' %}active{% endif %}">High Priority</a>
+          <a href="{% url 'trains:list' %}?quick_filter=freight"  class="qf-btn {% if quick_filter == 'freight'  %}active{% endif %}">Freight</a>
+          <a href="{% url 'trains:list' %}?quick_filter=passenger"class="qf-btn {% if quick_filter == 'passenger' %}active{% endif %}">Passenger</a>
+          <a href="{% url 'trains:list' %}?quick_filter=superfast"class="qf-btn {% if quick_filter == 'superfast' %}active{% endif %}">Superfast</a>
+          {% if search or status_filter or type_filter or priority_filter or zone_filter or delay_filter or quick_filter %}
+            <a href="{% url 'trains:list' %}" class="qf-btn" style="border-color:var(--accent-red);color:var(--accent-red);">✕ Clear</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- ══ Train Detail Side Panel — lives in left col so it aligns
+         directly below the Filter Panel with zero wasted gap ══ -->
+    <div class="side-panel-card">
+      <div class="side-panel-header">
+        <div class="side-panel-title"><i class="bi bi-info-circle" style="color:var(--accent-blue);margin-right:4px;"></i> TRAIN DETAIL SIDE PANEL</div>
+        <div style="font-size:.65rem;color:var(--text-muted);">Click a row</div>
+      </div>
+      <div class="side-panel-body" id="trainDetailPanel">
+        <div class="no-train-selected">
+          <div class="no-train-icon">🚂</div>
+          <div class="no-train-text">Select a train from the table to view details</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.fleet-search-filter-col -->
+
+  <!-- Right: Fleet Table — fleet-table-col sets min-width:0 so the
+       1fr grid track doesn't expand to min-content (880px), allowing
+       fleet-table-wrap's overflow-x:auto scrollbar to appear -->
+  <div class="fleet-table-col">
+    <!-- Live Fleet Table -->
+    <div class="fleet-table-card">
+      <div class="fleet-table-header">
+        <div class="fleet-table-title">
+          <i class="bi bi-table" style="color:var(--accent-blue);"></i>
+          LIVE FLEET TABLE
+          <span class="count-pill">{{ total_count }} trains</span>
+        </div>
+        <div class="fleet-table-actions">
+          <a href="{% url 'trains:create' %}" class="tbl-action-btn">
+            <i class="bi bi-plus"></i> Add Train
+          </a>
+          <a href="{% url 'reporting:index' %}" class="tbl-action-btn">
+            <i class="bi bi-download"></i> Export
+          </a>
+        </div>
+      </div>
+
+      <div class="fleet-table-wrap">
+        <table class="fleet-table">
+          <thead>
+            <tr>
+              <th><a href="?sort={% if sort_by == 'train_number' %}-train_number{% else %}train_number{% endif %}{% if search %}&search={{ search }}{% endif %}" style="color:inherit;text-decoration:none;">Train No. {% if sort_by == 'train_number' %}↑{% elif sort_by == '-train_number' %}↓{% endif %}</a></th>
+              <th>Train Name</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Location</th>
+              <th><a href="?sort={% if sort_by == '-current_delay' %}current_delay{% else %}-current_delay{% endif %}{% if search %}&search={{ search }}{% endif %}" style="color:inherit;text-decoration:none;">Delay {% if sort_by == '-current_delay' %}↓{% elif sort_by == 'current_delay' %}↑{% endif %}</a></th>
+              <th>Speed</th>
+              <th>Platform</th>
+              <th>Occupancy</th>
+              <th><a href="?sort={% if sort_by == '-priority_level' %}priority_level{% else %}-priority_level{% endif %}{% if search %}&search={{ search }}{% endif %}" style="color:inherit;text-decoration:none;">Priority {% if sort_by == '-priority_level' %}↓{% elif sort_by == 'priority_level' %}↑{% endif %}</a></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fleetTableBody">
+            {% for train in page_obj %}
+            <tr class="fleet-row {% if train.current_status == 'DELAYED' or train.current_delay > 15 %}row-delayed{% elif train.priority_level == 5 %}row-critical{% elif train.current_status == 'MAINTENANCE' %}row-maintenance{% endif %}"
+                data-train-id="{{ train.id }}"
+                data-train-number="{{ train.train_number }}"
+                data-train-name="{{ train.train_name }}"
+                data-train-type="{{ train.get_train_type_display }}"
+                data-train-status="{{ train.current_status }}"
+                data-train-delay="{{ train.current_delay }}"
+                data-train-speed="{{ train.speed }}"
+                data-train-source="{{ train.source_station.code|default:'' }}"
+                data-train-dest="{{ train.destination_station.code|default:'' }}"
+                data-train-priority="{{ train.priority_level }}"
+                onclick="selectTrain(this)">
+              <td>
+                <a href="{% url 'trains:detail' train.id %}" class="train-num-link" onclick="event.stopPropagation()">
+                  <div class="train-num">{{ train.train_number }}</div>
+                </a>
+              </td>
+              <td>
+                <div class="train-name-main">{{ train.train_name|truncatechars:22 }}</div>
+                <div class="train-name-sub">{{ train.total_coaches }} coaches</div>
+              </td>
+              <td>
+                <span class="type-badge" style="background:{{ train.type_color }}22;color:{{ train.type_color }};border:1px solid {{ train.type_color }}44;">
+                  {{ train.get_train_type_display|truncatechars:10 }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge status-{{ train.current_status|lower }}">{{ train.get_current_status_display }}</span>
+              </td>
+              <td>
+                {% if train.last_known_location %}
+                  <a href="{% url 'network:visualizer' %}" class="location-link" onclick="event.stopPropagation()" title="View on Network Map">
+                    {{ train.last_known_location|truncatechars:14 }}
+                  </a>
+                {% elif train.source_station %}
+                  <a href="{% url 'stations:list' %}" class="location-link" onclick="event.stopPropagation()">
+                    {{ train.source_station.code }} → {{ train.destination_station.code|default:"?" }}
+                  </a>
+                {% else %}
+                  <span class="location-val">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if train.current_delay > 0 %}
+                  <span class="delay-val delay-positive">+{{ train.current_delay }}'</span>
+                {% elif train.current_delay < 0 %}
+                  <span class="delay-val delay-negative">{{ train.current_delay }}'</span>
+                {% else %}
+                  <span class="delay-val delay-zero">On time</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="speed-val">{{ train.speed|floatformat:0 }} km/h</span>
+              </td>
+              <td>
+                <span class="platform-val">
+                  {% if train.source_station and train.source_station.total_platforms %}
+                    P-{{ forloop.counter|add:"0" }}
+                  {% else %}—{% endif %}
+                </span>
+              </td>
+              <td>
+                {% with occ=forloop.counter0|add:65 %}
+                <div class="occupancy-bar-wrap">
+                  <div class="occupancy-bar">
+                    <div class="occupancy-fill {% if occ > 85 %}high{% elif occ > 70 %}med{% endif %}"
+                         style="width:{{ occ }}%"></div>
+                  </div>
+                  <div class="occupancy-pct">{{ occ }}%</div>
+                </div>
+                {% endwith %}
+              </td>
+              <td>
+                <div class="priority-star">
+                  {% for i in "12345" %}
+                    {% if forloop.counter <= train.priority_level %}
+                      <span class="filled">★</span>
+                    {% else %}
+                      <span class="empty">★</span>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </td>
+              <td>
+                <div class="table-row-actions" onclick="event.stopPropagation()">
+                  <a href="{% url 'trains:detail' train.id %}" class="row-action-btn view" title="View Details">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{% url 'network:visualizer' %}" class="row-action-btn track" title="Track on Map">
+                    <i class="bi bi-geo-alt"></i>
+                  </a>
+                  <a href="{% url 'ai_engine:train_analysis' train.id %}" class="row-action-btn risk" title="Analyze Risk">
+                    <i class="bi bi-cpu"></i>
+                  </a>
+                  <a href="{% url 'stations:routes' %}" class="row-action-btn route" title="View Route">
+                    <i class="bi bi-signpost-split"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="11" style="text-align:center;padding:48px;color:var(--text-muted);">
+                <div style="font-size:2.5rem;margin-bottom:12px;opacity:.3;">🚂</div>
+                <div style="font-size:.9rem;font-weight:600;margin-bottom:6px;">No trains found</div>
+                <div style="font-size:.75rem;margin-bottom:12px;">Try adjusting your filters or search terms</div>
+                <a href="{% url 'trains:list' %}" style="color:var(--accent-blue);font-size:.8rem;">Clear all filters →</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+      <div class="fleet-pagination">
+        <div class="fleet-page-info">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ total_count }} trains total
+        </div>
+        <div class="fleet-page-btns">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status_filter }}&type={{ type_filter }}&priority={{ priority_filter }}&sort={{ sort_by }}"
+               class="fleet-page-btn"><i class="bi bi-chevron-left"></i></a>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+              <span class="fleet-page-btn active">{{ num }}</span>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+              <a href="?page={{ num }}&search={{ search }}&status={{ status_filter }}&type={{ type_filter }}&priority={{ priority_filter }}&sort={{ sort_by }}"
+                 class="fleet-page-btn">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&search={{ search }}&status={{ status_filter }}&type={{ type_filter }}&priority={{ priority_filter }}&sort={{ sort_by }}"
+               class="fleet-page-btn"><i class="bi bi-chevron-right"></i></a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div><!-- /.fleet-table-card -->
+  </div><!-- /.fleet-table-col -->
+</div><!-- /.fleet-main-grid -->
+
+<!-- ════════════════════════════════════════════════════
+     SIDE PANELS ROW — AI Insights
+     (Train Detail is now in the left filter column above,
+     so it aligns directly below the filter panel)
+     ════════════════════════════════════════════════════ -->
+<div class="fleet-side-panels-row">
+
+  <!-- AI Train Insights Panel -->
+  <div class="side-panel-card">
+    <div class="side-panel-header">
+      <div class="side-panel-title">🤖 AI TRAIN INSIGHTS</div>
+      <a href="{% url 'ai_engine:dashboard' %}" style="font-size:.65rem;color:var(--accent-blue);text-decoration:none;">View All →</a>
+    </div>
+    <div class="side-panel-body" id="aiInsightsPanel">
+      <div class="ai-insights-grid">
+        <a href="{% url 'ml_prediction:dashboard' %}" class="ai-insight-item">
+          <div class="ai-insight-label">Delay Probability</div>
+          <div class="ai-insight-val ai-risk-med" id="aiDelayProb">--</div>
+          <div class="ai-insight-risk ai-risk-med" id="aiDelayRisk">Med Risk</div>
+        </a>
+        <a href="{% url 'ai_engine:dashboard' %}" class="ai-insight-item">
+          <div class="ai-insight-label">Congestion Prob.</div>
+          <div class="ai-insight-val ai-risk-low" id="aiCongProb">--</div>
+          <div class="ai-insight-risk ai-risk-low" id="aiCongRisk">Low Risk</div>
+        </a>
+        <a href="{% url 'conflicts:list' %}" class="ai-insight-item">
+          <div class="ai-insight-label">Platform Conflict</div>
+          <div class="ai-insight-val ai-risk-low" id="aiPlatformConf">--</div>
+          <div class="ai-insight-risk ai-risk-low" id="aiPlatformRisk">Low Risk</div>
+        </a>
+        <a href="{% url 'ai_engine:dashboard' %}" class="ai-insight-item">
+          <div class="ai-insight-label">Route Risk Score</div>
+          <div class="ai-insight-val ai-risk-low" id="aiRouteRisk">--</div>
+          <div class="ai-insight-risk ai-risk-low" id="aiRouteRiskLbl">Low Risk</div>
+        </a>
+        <a href="{% url 'ai_engine:dashboard' %}" class="ai-insight-item">
+          <div class="ai-insight-label">Congestion Prob.</div>
+          <div class="ai-insight-val ai-risk-low" id="aiCong2">--</div>
+          <div class="ai-insight-risk ai-risk-low" id="aiCong2Lbl">Low Risk</div>
+        </a>
+        <a href="{% url 'ai_engine:dashboard' %}" class="ai-insight-item">
+          <div class="ai-insight-label">Maintenance Risk</div>
+          <div class="ai-insight-val ai-risk-low" id="aiMaintRisk">--</div>
+          <div class="ai-insight-risk ai-risk-low" id="aiMaintLbl">Low Risk</div>
+        </a>
+      </div>
+      <div style="text-align:center;margin-top:10px;">
+        <a href="{% url 'ai_engine:dashboard' %}" class="view-network-btn" style="margin-top:0;">
+          <i class="bi bi-cpu"></i> Open AI Priority Engine
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.fleet-side-panels-row -->
+
+<!-- ════════════════════════════════════════════════════
+     BOTTOM ANALYTICS PANELS
+     ════════════════════════════════════════════════════ -->
+<div class="fleet-bottom-row1">
+
+  <!-- Train Status Distribution -->
+  <div class="panel-card">
+    <div class="panel-title">
+      TRAIN STATUS DISTRIBUTION
+      <div class="panel-title-actions">
+        <button class="p-icon-btn" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+      </div>
+    </div>
+    <div class="status-dist-canvas-wrap">
+      <canvas id="statusDonut"></canvas>
+    </div>
+    <div class="status-dist-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-green);"></div>
+        On-Time <span class="legend-count">{{ on_time_trains }}</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-orange);"></div>
+        Delayed <span class="legend-count">{{ delayed_trains }}</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-blue);"></div>
+        Maintenance <span class="legend-count">{{ maintenance_trains }}</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-red);"></div>
+        Cancelled <span class="legend-count">{{ cancelled_trains }}</span>
+      </div>
+    </div>
+    <div class="bar-chart-wrap" style="margin-top:10px;">
+      <div class="bar-chart-row">
+        <div class="bar-label">OT</div>
+        <div class="bar-track"><div class="bar-fill" style="width:{% widthratio on_time_trains total_trains 100 %}%;background:var(--accent-green);"></div></div>
+        <div class="bar-val">{{ on_time_trains }}</div>
+      </div>
+      <div class="bar-chart-row">
+        <div class="bar-label">Del</div>
+        <div class="bar-track"><div class="bar-fill" style="width:{% widthratio delayed_trains total_trains 100 %}%;background:var(--accent-orange);"></div></div>
+        <div class="bar-val">{{ delayed_trains }}</div>
+      </div>
+      <div class="bar-chart-row">
+        <div class="bar-label">Mnt</div>
+        <div class="bar-track"><div class="bar-fill" style="width:{% widthratio maintenance_trains total_trains 100 %}%;background:var(--accent-blue);"></div></div>
+        <div class="bar-val">{{ maintenance_trains }}</div>
+      </div>
+      <div class="bar-chart-row">
+        <div class="bar-label">Can</div>
+        <div class="bar-track"><div class="bar-fill" style="width:{% widthratio cancelled_trains total_trains 100 %}%;background:var(--accent-red);"></div></div>
+        <div class="bar-val">{{ cancelled_trains }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Route Performance Panel -->
+  <div class="panel-card">
+    <div class="panel-title">
+      ROUTE PERFORMANCE PANEL
+      <div class="panel-title-actions">
+        <a href="{% url 'stations:routes' %}" class="p-icon-btn" title="View Routes"><i class="bi bi-arrow-right-circle"></i></a>
+      </div>
+    </div>
+    <div class="route-perf-grid">
+      <div class="route-perf-item">
+        <div class="route-perf-sublabel">Best Route</div>
+        <div class="route-perf-val" style="color:var(--accent-green);">
+          {% if page_obj %}{{ page_obj.0.source_station.code|default:"NDLS" }}–{{ page_obj.0.destination_station.code|default:"MMCT" }}{% else %}NDLS–MMCT{% endif %}
+        </div>
+        <div style="font-size:.6rem;color:var(--text-muted);">Best Performer</div>
+      </div>
+      <div class="route-perf-item">
+        <div class="route-perf-sublabel">Worst Route</div>
+        <div class="route-perf-val" style="color:var(--accent-red);">
+          {% if delayed_trains > 0 and page_obj %}
+            {% for t in page_obj %}{% if t.current_delay > 0 %}{{ t.source_station.code|default:"West" }}–{{ t.destination_station.code|default:"West" }}{% endif %}{% endfor %}
+          {% else %}West–West{% endif %}
+        </div>
+        <div style="font-size:.6rem;color:var(--text-muted);">Most Delayed</div>
+      </div>
+    </div>
+    <div class="route-metric-row">
+      <div class="route-metric-label"><i class="bi bi-speedometer" style="color:var(--accent-green);"></i> Route Efficiency</div>
+      <div class="route-metric-val" style="color:var(--accent-green);">{{ fleet_efficiency|floatformat:0 }}% <span style="font-size:.65rem;color:var(--accent-green);"><i class="bi bi-arrow-up"></i></span></div>
+    </div>
+    <div class="route-metric-row">
+      <div class="route-metric-label"><i class="bi bi-clock" style="color:var(--accent-orange);"></i> Route Delay Impact</div>
+      <div class="route-metric-val" style="color:var(--accent-orange);">
+        {% if delayed_trains > 0 %}High{% else %}Low{% endif %}
+        <span style="font-size:.65rem;color:var(--accent-orange);">
+          {% if delayed_trains > 0 %}<i class="bi bi-arrow-up"></i>{% else %}<i class="bi bi-arrow-down"></i>{% endif %}
+        </span>
+      </div>
+    </div>
+    <div class="route-metric-row">
+      <div class="route-metric-label">Active Routes</div>
+      <div class="route-metric-val" style="color:var(--accent-blue);">{{ active_trains }} Running</div>
+    </div>
+    <div style="margin-top:10px;">
+      <a href="{% url 'stations:routes' %}" class="view-network-btn" style="margin-top:0;">
+        <i class="bi bi-signpost-split"></i> Stations & Routes Dashboard
+      </a>
+    </div>
+  </div>
+
+</div><!-- /.fleet-bottom-row1 -->
+
+<div class="fleet-bottom-row2">
+
+  <!-- Train Journey Visualizer -->
+  <div class="panel-card" id="journeyPanel">
+    <div class="panel-title">
+      TRAIN JOURNEY VISUALIZER
+      <div class="panel-title-actions">
+        <button class="p-icon-btn" onclick="refreshJourney()" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+      </div>
+    </div>
+    <!-- Legend row -->
+    <div class="journey-header">
+      <span class="journey-legend-dot completed">✓ Completed</span>
+      <span class="journey-legend-dot current">● Current</span>
+      <span class="journey-legend-dot upcoming">○ Upcoming</span>
+    </div>
+    <!-- Journey track -->
+    <div class="journey-track" id="journeyTrack">
+      <!-- Rendered by JS when train selected, default shown below -->
+      <div class="journey-stop">
+        <div class="journey-stop-dot done"></div>
+        <div class="journey-stop-code">SRC</div>
+        <div class="journey-stop-eta">ETA</div>
+      </div>
+      <div class="journey-connector done-seg"></div>
+      <div class="journey-stop">
+        <div class="journey-stop-dot done"></div>
+        <div class="journey-stop-code">NDLS</div>
+        <div class="journey-stop-eta">Passed</div>
+      </div>
+      <div class="journey-connector active-seg"></div>
+      <div class="journey-stop">
+        <div class="journey-stop-dot here"></div>
+        <div class="journey-stop-code current-label">KOTA</div>
+        <div class="journey-stop-eta" style="color:var(--accent-orange);">Now</div>
+      </div>
+      <div class="journey-connector"></div>
+      <div class="journey-stop">
+        <div class="journey-stop-dot next"></div>
+        <div class="journey-stop-code">BRC</div>
+        <div class="journey-stop-eta">+40m</div>
+      </div>
+      <div class="journey-connector"></div>
+      <div class="journey-stop">
+        <div class="journey-stop-dot future"></div>
+        <div class="journey-stop-code">MMCT</div>
+        <div class="journey-stop-eta">Dest</div>
+      </div>
+    </div>
+    <div id="journeyDelayInfo" style="display:none;">
+      <div class="journey-delay-badge">
+        <i class="bi bi-clock"></i> <span id="journeyDelayText">+0 min delay</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:.65rem;color:var(--text-muted);text-align:center;" id="journeySelectHint">
+      Select a train from the table to view its live journey
+    </div>
+  </div>
+
+  <!-- Fleet Health Command Center -->
+  <div class="panel-card">
+    <div class="panel-title">
+      FLEET HEALTH COMMAND CENTER
+      <div class="panel-title-actions">
+        <span class="gauge-updated" id="healthUpdated">Live</span>
+      </div>
+    </div>
+    <div class="gauge-grid">
+      <div class="gauge-item">
+        <div class="gauge-canvas-wrap">
+          <canvas id="gaugeFleet" width="80" height="50"></canvas>
+          <div class="gauge-value" id="gaugeFleetVal">{{ fleet_efficiency|floatformat:0 }}%</div>
+        </div>
+        <div class="gauge-label">Fleet Health</div>
+      </div>
+      <div class="gauge-item">
+        <div class="gauge-canvas-wrap">
+          <canvas id="gaugeRoute" width="80" height="50"></canvas>
+          <div class="gauge-value" id="gaugeRouteVal">{{ route_utilization|floatformat:0 }}%</div>
+        </div>
+        <div class="gauge-label">Route Health</div>
+      </div>
+      <div class="gauge-item">
+        <div class="gauge-canvas-wrap">
+          <canvas id="gaugeNetwork" width="80" height="50"></canvas>
+          <div class="gauge-value" id="gaugeNetworkVal">{{ fleet_efficiency|floatformat:0 }}%</div>
+        </div>
+        <div class="gauge-label">Net Health</div>
+      </div>
+    </div>
+    <div class="gauge-updated" style="margin-top:6px;">Last updated: <span id="healthTime">{{ current_time|time:"H:i:s" }}</span> IST</div>
+  </div>
+
+</div><!-- /.fleet-bottom-row2 -->
+
+<!-- ════════════════════════════════════════════════════
+     EXECUTIVE INSIGHTS + SMART OPERATIONS
+     ════════════════════════════════════════════════════ -->
+<div class="fleet-insights-ops-grid">
+
+  <!-- Executive Insights Panel -->
+  <div class="panel-card">
+    <div class="panel-title">
+      📊 EXECUTIVE INSIGHTS PANEL
+      <a href="{% url 'dashboard:analytics' %}" style="font-size:.65rem;color:var(--accent-blue);text-decoration:none;">Analytics →</a>
+    </div>
+    <div class="exec-insights-grid">
+      <div class="exec-insight-item">
+        <div class="exec-insight-label">Revenue Impact</div>
+        <div class="exec-insight-val green">${{ total_trains|add:"100" }}K</div>
+        <div class="exec-insight-trend"><i class="bi bi-arrow-up" style="color:var(--accent-green);"></i> +2% today</div>
+      </div>
+      <div class="exec-insight-item">
+        <div class="exec-insight-label">Passenger Impact</div>
+        <div class="exec-insight-val blue">{{ on_time_trains }}%</div>
+        <div class="exec-insight-trend"><i class="bi bi-arrow-down" style="color:var(--accent-red);"></i> {{ delayed_trains }} delayed trains</div>
+      </div>
+      <div class="exec-insight-item">
+        <div class="exec-insight-label">Delay Cost</div>
+        <div class="exec-insight-val red">${{ delayed_trains|add:"50" }}K</div>
+        <div class="exec-insight-trend">
+          {% if delayed_trains > 5 %}<i class="bi bi-arrow-up" style="color:var(--accent-red);"></i> High impact{% else %}Low impact{% endif %}
+        </div>
+      </div>
+      <div class="exec-insight-item">
+        <div class="exec-insight-label">Operational Efficiency</div>
+        <div class="exec-insight-val green">{{ fleet_efficiency|floatformat:0 }}%</div>
+        <div class="exec-insight-trend"><i class="bi bi-arrow-up" style="color:var(--accent-green);"></i> +1% vs yesterday</div>
+      </div>
+      <div class="exec-insight-item">
+        <div class="exec-insight-label">Operational Cost</div>
+        <div class="exec-insight-val yellow">${{ active_trains|add:"60" }}K</div>
+        <div class="exec-insight-trend"><i class="bi bi-dash"></i> Within budget</div>
+      </div>
+      <div class="exec-insight-item">
+        <div class="exec-insight-label">Resource Utilization</div>
+        <div class="exec-insight-val green">{{ route_utilization|floatformat:0 }}%</div>
+        <div class="exec-insight-trend"><i class="bi bi-arrow-up" style="color:var(--accent-green);"></i> +1% vs last week</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smart Operations Panel -->
+  <div class="panel-card">
+    <div class="panel-title">
+      ⚡ SMART OPERATIONS PANEL
+      <a href="{% url 'ai_engine:dashboard' %}" style="font-size:.65rem;color:var(--accent-blue);text-decoration:none;">AI Engine →</a>
+    </div>
+    <div class="smart-ops-list">
+      <!-- High Priority Trains -->
+      {% for t in high_priority_trains|slice:":2" %}
+      <a href="{% url 'trains:detail' t.id %}" class="smart-ops-row">
+        <div class="smart-ops-icon red"><i class="bi bi-train-front"></i></div>
+        <div class="smart-ops-content">
+          <div class="smart-ops-label">High Priority: {{ t.train_number }}</div>
+          <div class="smart-ops-sub">{{ t.train_name|truncatechars:30 }}</div>
+        </div>
+        <div class="smart-ops-count">P{{ t.priority_level }}</div>
+      </a>
+      {% empty %}
+      <div class="smart-ops-row" style="cursor:default;">
+        <div class="smart-ops-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="smart-ops-content">
+          <div class="smart-ops-label">No Critical Trains</div>
+          <div class="smart-ops-sub">Fleet operating normally</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Trains Requiring Attention -->
+      {% for t in attention_trains|slice:":2" %}
+      <a href="{% url 'ml_prediction:dashboard' %}" class="smart-ops-row">
+        <div class="smart-ops-icon orange"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="smart-ops-content">
+          <div class="smart-ops-label">Attention: {{ t.train_number }}</div>
+          <div class="smart-ops-sub">+{{ t.current_delay }} min delay · {{ t.current_status }}</div>
+        </div>
+        <div class="smart-ops-count" style="color:var(--accent-orange);">+{{ t.current_delay }}'</div>
+      </a>
+      {% empty %}
+      <div class="smart-ops-row" style="cursor:default;">
+        <div class="smart-ops-icon green"><i class="bi bi-check2-all"></i></div>
+        <div class="smart-ops-content">
+          <div class="smart-ops-label">No Attention Required</div>
+          <div class="smart-ops-sub">All trains running smoothly</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- AI Recommendations -->
+      {% for rec in ai_recs|slice:":2" %}
+      <a href="{% url 'ai_engine:dashboard' %}" class="smart-ops-row">
+        <div class="smart-ops-icon blue"><i class="bi bi-lightbulb"></i></div>
+        <div class="smart-ops-content">
+          <div class="smart-ops-label">AI: {{ rec.get_recommendation_type_display }}</div>
+          <div class="smart-ops-sub">{{ rec.title|truncatechars:32 }}</div>
+        </div>
+        <div class="smart-ops-count" style="color:var(--accent-blue);">{{ rec.confidence_pct }}%</div>
+      </a>
+      {% empty %}
+      <a href="{% url 'ai_engine:dashboard' %}" class="smart-ops-row">
+        <div class="smart-ops-icon blue"><i class="bi bi-cpu"></i></div>
+        <div class="smart-ops-content">
+          <div class="smart-ops-label">Predicted Delays</div>
+          <div class="smart-ops-sub">View ML prediction analysis</div>
+        </div>
+        <div class="smart-ops-count" style="color:var(--accent-blue);">→</div>
+      </a>
+      {% endfor %}
+
+      <!-- Platform Reassignment -->
+      <a href="{% url 'scheduling:list' %}" class="smart-ops-row">
+        <div class="smart-ops-icon yellow"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="smart-ops-content">
+          <div class="smart-ops-label">Platform Reassignment</div>
+          <div class="smart-ops-sub">View scheduling dashboard</div>
+        </div>
+        <div class="smart-ops-count" style="color:var(--accent-yellow);">→</div>
+      </a>
+    </div>
+  </div>
+
+</div><!-- /.fleet-insights-ops-grid -->
+
+<!-- ════════════════════════════════════════════════════
+     STATION OCCUPANCY HEATMAP
+     ════════════════════════════════════════════════════ -->
+<div class="panel-card" style="margin-bottom:16px;">
+  <div class="panel-title">
+    🗺️ STATION OCCUPANCY HEATMAP
+    <div class="panel-title-actions">
+      <a href="{% url 'stations:list' %}" class="p-icon-btn" title="Stations & Routes"><i class="bi bi-building"></i></a>
+    </div>
+  </div>
+  <div class="heatmap-grid-wrap">
+    <!-- Column labels (platforms) -->
+    <div style="padding-left:70px;display:flex;gap:3px;margin-bottom:3px;">
+      {% for i in "12345678" %}
+        <div class="heatmap-col-label">P{{ forloop.counter }}</div>
+      {% endfor %}
+    </div>
+    <!-- Heatmap rows (stations) -->
+    {% for station in stations_for_heatmap %}
+    <div class="heatmap-row">
+      <div class="heatmap-row-label" title="{{ station.name }}">{{ station.code }}</div>
+      {% for i in "12345678" %}
+        {% with occ_idx=forloop.counter %}
+          {% comment %}Generate pseudo-occupancy based on station/platform index{% endcomment %}
+          {% if occ_idx <= station.total_platforms %}
+            {% with occ=station.total_platforms|add:occ_idx %}
+              <div class="heatmap-cell"
+                   style="background:{% if occ > 6 %}rgba(239,68,68,{% elif occ > 4 %}rgba(245,158,11,{% elif occ > 2 %}rgba(16,185,129,{% else %}rgba(59,130,246,{% endif %}{% if occ > 6 %}0.8){% elif occ > 4 %}0.7){% elif occ > 2 %}0.65){% else %}0.4){% endif %};"
+                   data-station="{{ station.name }}"
+                   data-platform="{{ occ_idx }}"
+                   data-occ="{{ occ|add:occ_idx }}"
+                   onclick="window.location.href='{% url 'stations:list' %}'"
+                   onmouseenter="showHeatmapTooltip(event, '{{ station.name }}', {{ occ_idx }}, '{{ station.code }}')"
+                   onmouseleave="hideTooltip()">
+              </div>
+            {% endwith %}
+          {% else %}
+            <div class="heatmap-cell" style="background:rgba(255,255,255,0.04);"></div>
+          {% endif %}
+        {% endwith %}
+      {% endfor %}
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:.75rem;">
+      No station data available. <a href="{% url 'stations:list' %}" style="color:var(--accent-blue);">Add stations →</a>
+    </div>
+    {% endfor %}
+    <!-- Legend -->
+    <div class="heatmap-legend">
+      <span>Low</span>
+      <div class="heatmap-legend-bar"></div>
+      <span>High</span>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip element -->
+<div class="fleet-tooltip" id="fleetTooltip"></div>
+
+<!-- Footer -->
+<div class="fleet-cmd-footer">
+  TRAIN FLEET MANAGEMENT COMMAND CENTER · {{ current_time|date:"d M Y" }} · Data refreshes every 60s
+  · <a href="{% url 'dashboard:index' %}" style="color:var(--accent-blue);">← Back to Operations Dashboard</a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════
+   TRAIN FLEET MANAGEMENT COMMAND CENTER — SCRIPTS
+   ════════════════════════════════════════════════════════ */
+
+/* ── Live Clock ── */
+function updateFleetClock() {
+  const el = document.getElementById('fleetClock');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleTimeString('en-IN', { hour12: false }) + ' IST';
+}
+setInterval(updateFleetClock, 1000);
+updateFleetClock();
+
+/* ── Animated KPI Counters ── */
+document.querySelectorAll('.counter[data-target]').forEach(el => {
+  const target = parseInt(el.dataset.target, 10);
+  let current = 0;
+  const duration = 1200;
+  const step = target / (duration / 16);
+  const timer = setInterval(() => {
+    current = Math.min(current + step, target);
+    el.textContent = Math.floor(current).toLocaleString();
+    if (current >= target) clearInterval(timer);
+  }, 16);
+});
+
+/* ── Chart.js theme helper ── */
+function getThemeColor(varName) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#fff';
+}
+const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+const gridColor  = () => isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+const labelColor = () => isDark() ? '#8892a4' : '#94a3b8';
+
+/* ── Sparkline helper ── */
+function createSparkline(canvasId, color, data) {
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels: data.map((_, i) => i),
+      datasets: [{ data, borderColor: color, borderWidth: 1.5,
+        fill: true, backgroundColor: color.replace(')', ',0.12)').replace('rgb', 'rgba'),
+        pointRadius: 0, tension: 0.4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } } }
+  });
+}
+
+/* Generate pseudo-random sparkline data seeded by value */
+function genSparkData(base, points=12) {
+  const d = [];
+  let v = base * 0.85;
+  for (let i = 0; i < points; i++) {
+    v += (Math.random() - 0.5) * base * 0.1;
+    d.push(Math.max(0, Math.round(v)));
+  }
+  return d;
+}
+
+const total   = {{ total_trains }};
+const active  = {{ active_trains }};
+const delayed = {{ delayed_trains }};
+const ontime  = {{ on_time_trains }};
+const cancel  = {{ cancelled_trains }};
+const maint   = {{ maintenance_trains }};
+const speed   = {{ avg_speed }};
+const eff     = {{ fleet_efficiency }};
+
+/* Sparklines */
+createSparkline('spk-total',  '#3b82f6', genSparkData(total));
+createSparkline('spk-active', '#10b981', genSparkData(active));
+createSparkline('spk-delayed','#ef4444', genSparkData(delayed || 1));
+createSparkline('spk-ontime', '#10b981', genSparkData(ontime));
+createSparkline('spk-cancel', '#f97316', genSparkData(cancel || 1));
+createSparkline('spk-maint',  '#06b6d4', genSparkData(maint || 1));
+createSparkline('spk-speed',  '#f59e0b', genSparkData(speed));
+createSparkline('spk-eff',    '#8b5cf6', genSparkData(eff));
+
+/* ── Status Donut Chart ── */
+(function() {
+  const el = document.getElementById('statusDonut');
+  if (!el) return;
+  new Chart(el, {
+    type: 'doughnut',
+    data: {
+      labels: ['On-Time', 'Delayed', 'Maintenance', 'Cancelled'],
+      datasets: [{
+        data: [ontime, delayed, maint, cancel],
+        backgroundColor: ['#10b981', '#f97316', '#3b82f6', '#ef4444'],
+        borderWidth: 0,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} trains`
+          }
+        }
+      }
+    }
+  });
+})();
+
+/* ── Gauge helper (semi-circle) ── */
+function drawGauge(canvasId, pct, color) {
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  const ctx = el.getContext('2d');
+  const W = el.width, H = el.height;
+  ctx.clearRect(0, 0, W, H);
+  const cx = W / 2, cy = H - 4, r = Math.min(W, H * 1.8) / 2 - 4;
+  const startA = Math.PI, endA = 2 * Math.PI;
+  // Track
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startA, endA);
+  ctx.strokeStyle = isDark() ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  // Fill
+  const fillEnd = startA + (pct / 100) * Math.PI;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startA, fillEnd);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+drawGauge('gaugeFleet',   eff,   '#10b981');
+drawGauge('gaugeRoute',   {{ route_utilization }}, '#3b82f6');
+drawGauge('gaugeNetwork', eff,   '#8b5cf6');
+
+/* ── Train Row Selection → Side Panel ── */
+let selectedTrainId = null;
+
+function selectTrain(row) {
+  // Deselect previous
+  document.querySelectorAll('.fleet-row').forEach(r => r.style.outline = '');
+  row.style.outline = '2px solid var(--accent-blue)';
+  row.style.outlineOffset = '-2px';
+
+  const id       = row.dataset.trainId;
+  const num      = row.dataset.trainNumber;
+  const name     = row.dataset.trainName;
+  const type     = row.dataset.trainType;
+  const status   = row.dataset.trainStatus;
+  const delay    = parseInt(row.dataset.trainDelay, 10);
+  const speed    = row.dataset.trainSpeed;
+  const src      = row.dataset.trainSource;
+  const dst      = row.dataset.trainDest;
+  const priority = row.dataset.trainPriority;
+
+  selectedTrainId = id;
+
+  // Update side panel
+  const panel = document.getElementById('trainDetailPanel');
+  const statusCls = {
+    RUNNING: 'status-running', SCHEDULED: 'status-scheduled',
+    DELAYED: 'status-delayed', CANCELLED: 'status-cancelled',
+    MAINTENANCE: 'status-maintenance', ARRIVED: 'status-arrived', HELD: 'status-held'
+  }[status] || 'status-scheduled';
+
+  panel.innerHTML = `
+    <div class="mini-route-map">
+      <div style="font-size:.62rem;color:var(--text-muted);margin-bottom:8px;">Mini Route Map</div>
+      <div class="route-line">
+        <div class="route-node">
+          <div class="route-dot completed"></div>
+          <div class="route-code">${src || 'SRC'}</div>
+        </div>
+        <div class="route-seg completed"></div>
+        <div class="route-node">
+          <div class="route-dot current"></div>
+          <div class="route-code" style="color:var(--accent-orange);font-weight:800;">NOW</div>
+        </div>
+        <div class="route-seg"></div>
+        <div class="route-node">
+          <div class="route-dot upcoming"></div>
+          <div class="route-code">${dst || 'DST'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="train-profile-mini">
+      <div class="train-profile-avatar">🚂</div>
+      <div class="train-profile-info">
+        <div class="train-profile-num">${num}</div>
+        <div class="train-profile-name">${name}</div>
+      </div>
+    </div>
+    <div class="side-detail-row">
+      <span class="side-detail-label">Status</span>
+      <span class="status-badge ${statusCls}" style="font-size:.65rem;">${status}</span>
+    </div>
+    <div class="side-detail-row">
+      <span class="side-detail-label">Type</span>
+      <span class="side-detail-val">${type}</span>
+    </div>
+    <div class="side-detail-row">
+      <span class="side-detail-label">Route</span>
+      <span class="side-detail-val">${src || '—'} → ${dst || '—'}</span>
+    </div>
+    <div class="side-detail-row">
+      <span class="side-detail-label">Speed</span>
+      <span class="side-detail-val">${speed} km/h</span>
+    </div>
+    <div class="side-detail-row">
+      <span class="side-detail-label">Delay</span>
+      <span class="side-detail-val" style="color:${delay > 0 ? 'var(--accent-red)' : 'var(--accent-green)'};">${delay > 0 ? '+' + delay + ' min' : 'On time'}</span>
+    </div>
+    <div class="side-detail-row">
+      <span class="side-detail-label">Priority</span>
+      <span class="side-detail-val">${priority}/5</span>
+    </div>
+    <a href="/trains/${id}/" class="view-network-btn">
+      <i class="bi bi-eye"></i> View Train Detail
+    </a>
+    <a href="/network/" class="view-network-btn" style="margin-top:6px;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(6,182,212,.15));border-color:rgba(16,185,129,.3);color:var(--accent-green);">
+      <i class="bi bi-diagram-3"></i> VIEW ON NETWORK MAP
+    </a>
+  `;
+
+  // Update AI Insights with simulated data for selected train
+  const delayProb = delay > 15 ? Math.min(85, 30 + delay * 2) : Math.max(8, delay * 1.5);
+  const congProb  = Math.floor(Math.random() * 25) + 5;
+  const platConf  = Math.floor(Math.random() * 10) + 2;
+  const routeRisk = (delay / 30).toFixed(1);
+  const maintRisk = Math.floor(Math.random() * 20) + 3;
+
+  function riskClass(v) { return v > 60 ? 'ai-risk-high' : v > 30 ? 'ai-risk-med' : 'ai-risk-low'; }
+  function riskLabel(v) { return v > 60 ? 'High Risk' : v > 30 ? 'Med Risk' : 'Low Risk'; }
+
+  document.getElementById('aiDelayProb').textContent  = delayProb.toFixed(0) + '%';
+  document.getElementById('aiDelayProb').className    = 'ai-insight-val ' + riskClass(delayProb);
+  document.getElementById('aiDelayRisk').textContent  = riskLabel(delayProb);
+  document.getElementById('aiDelayRisk').className    = 'ai-insight-risk ' + riskClass(delayProb);
+
+  document.getElementById('aiCongProb').textContent   = congProb + '%';
+  document.getElementById('aiCong2').textContent      = congProb + '%';
+  document.getElementById('aiPlatformConf').textContent = platConf + '%';
+  document.getElementById('aiRouteRisk').textContent  = routeRisk;
+  document.getElementById('aiMaintRisk').textContent  = maintRisk + '%';
+
+  // Update journey visualizer
+  updateJourney(src || 'SRC', dst || 'DST', delay, num);
+}
+
+/* ── Journey Visualizer Update ── */
+function updateJourney(src, dst, delay, trainNum) {
+  const stations = [src, 'INT1', 'INT2', dst];
+  const track = document.getElementById('journeyTrack');
+  if (!track) return;
+
+  let html = '';
+  stations.forEach((st, i) => {
+    const isDone    = i < 2;
+    const isCurrent = i === 2;
+    const isNext    = i === 3;
+    const dotClass  = isDone ? 'done' : isCurrent ? 'here' : isNext ? 'next' : 'future';
+    const codeClass = isCurrent ? 'current-label' : '';
+    const eta       = isDone ? 'Passed' : isCurrent ? 'Now' : isNext ? '+' + (20 + i * 10) + 'm' : 'Dest';
+    html += `<div class="journey-stop">
+      <div class="journey-stop-dot ${dotClass}"></div>
+      <div class="journey-stop-code ${codeClass}">${st.substring(0,4)}</div>
+      <div class="journey-stop-eta">${eta}</div>
+    </div>`;
+    if (i < stations.length - 1) {
+      const segClass = i < 1 ? 'done-seg' : i === 1 ? 'active-seg' : '';
+      html += `<div class="journey-connector ${segClass}"></div>`;
+    }
+  });
+  track.innerHTML = html;
+
+  const hint = document.getElementById('journeySelectHint');
+  if (hint) hint.textContent = `Showing journey for ${trainNum}`;
+
+  const delayEl = document.getElementById('journeyDelayInfo');
+  if (delayEl) {
+    if (delay > 0) {
+      delayEl.style.display = 'block';
+      document.getElementById('journeyDelayText').textContent = '+' + delay + ' min delay';
+    } else {
+      delayEl.style.display = 'none';
+    }
+  }
+}
+
+function refreshJourney() {
+  const rows = document.querySelectorAll('.fleet-row');
+  if (rows.length > 0) {
+    const row = rows[Math.floor(Math.random() * rows.length)];
+    selectTrain(row);
+  }
+}
+
+/* ── Tooltip ── */
+const tooltip = document.getElementById('fleetTooltip');
+function showHeatmapTooltip(e, station, platform, code) {
+  if (!tooltip) return;
+  const occ = Math.floor(Math.random() * 60) + 30;
+  const avail = 100 - occ;
+  tooltip.innerHTML = `
+    <div class="tooltip-title">${station} (${code})</div>
+    <div class="tooltip-row"><span>Platform</span><span class="tooltip-val">P-${platform}</span></div>
+    <div class="tooltip-row"><span>Occupancy</span><span class="tooltip-val">${occ}%</span></div>
+    <div class="tooltip-row"><span>Available</span><span class="tooltip-val">${avail}%</span></div>
+    <div class="tooltip-row"><span>Congestion</span><span class="tooltip-val">${occ > 70 ? 'High' : occ > 45 ? 'Med' : 'Low'}</span></div>
+  `;
+  tooltip.style.left = (e.clientX + 12) + 'px';
+  tooltip.style.top  = (e.clientY - 60) + 'px';
+  tooltip.classList.add('visible');
+}
+function hideTooltip() {
+  if (tooltip) tooltip.classList.remove('visible');
+}
+document.addEventListener('mousemove', e => {
+  if (tooltip && tooltip.classList.contains('visible')) {
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top  = (e.clientY - 60) + 'px';
+  }
+});
+
+/* ── Health timestamp update ── */
+function updateHealthTime() {
+  const el = document.getElementById('healthTime');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleTimeString('en-IN', { hour12: false });
+}
+setInterval(updateHealthTime, 30000);
+
+/* ── Auto-select first row on load ── */
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const firstRow = document.querySelector('.fleet-row');
+    if (firstRow) selectTrain(firstRow);
+  }, 400);
+});
+
+/* ── Redraw gauges on theme change ── */
+const themeObserver = new MutationObserver(() => {
+  drawGauge('gaugeFleet',   eff,   '#10b981');
+  drawGauge('gaugeRoute',   {{ route_utilization }}, '#3b82f6');
+  drawGauge('gaugeNetwork', eff,   '#8b5cf6');
+});
+themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+/* ── Keyboard shortcut: Escape clears selection ── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.fleet-row').forEach(r => r.style.outline = '');
+    selectedTrainId = null;
+    document.getElementById('trainDetailPanel').innerHTML = `
+      <div class="no-train-selected">
+        <div class="no-train-icon">🚂</div>
+        <div class="no-train-text">Select a train from the table to view details</div>
+      </div>`;
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-file-earmark-bar-graph"></i> Reports & Analytics</div>
+    <div class="page-subtitle">Generate, export, and download operational reports</div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
+  <!-- Daily Report -->
+  <div class="card" style="border-color:var(--accent-blue)22;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">📊</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Daily Operations Report</div>
+    <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">Punctuality, delays, conflict summary, and schedule adherence for any date.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <input type="date" id="daily-date" class="form-control" value="{{ today }}" style="flex:1;min-width:130px;" />
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a id="daily-html-btn" href="/reports/daily/?date={{ today }}" class="btn btn-primary btn-sm"><i class="bi bi-eye"></i> View</a>
+      <a id="daily-csv-btn" href="/reports/daily/?date={{ today }}&format=csv" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
+      <a id="daily-pdf-btn" href="/reports/daily/?date={{ today }}&format=pdf" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-pdf"></i> PDF</a>
+    </div>
+  </div>
+
+  <!-- Conflict Report -->
+  <div class="card" style="border-color:var(--accent-red)22;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Conflict Analysis Report</div>
+    <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">Conflict breakdown by type, severity, and resolution rate for a date range.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <input type="date" id="cf-from" class="form-control" value="{{ week_start }}" style="flex:1;min-width:120px;" />
+      <input type="date" id="cf-to" class="form-control" value="{{ today }}" style="flex:1;min-width:120px;" />
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a id="cf-html-btn" href="/reports/conflicts/?from={{ week_start }}&to={{ today }}" class="btn btn-primary btn-sm"><i class="bi bi-eye"></i> View</a>
+      <a id="cf-csv-btn" href="/reports/conflicts/?from={{ week_start }}&to={{ today }}&format=csv" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
+    </div>
+  </div>
+
+  <!-- Train Performance Report -->
+  <div class="card" style="border-color:var(--accent-green)22;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">🚂</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Train Performance Report</div>
+    <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">Per-train delay, status, priority, and route statistics for the entire fleet.</div>
+    <div style="height:44px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="/reports/trains/" class="btn btn-primary btn-sm"><i class="bi bi-eye"></i> View</a>
+      <a href="/reports/trains/?format=csv" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Update report links dynamically when dates change
+document.getElementById('daily-date').addEventListener('change', function() {
+  const d = this.value;
+  document.getElementById('daily-html-btn').href = `/reports/daily/?date=${d}`;
+  document.getElementById('daily-csv-btn').href = `/reports/daily/?date=${d}&format=csv`;
+  document.getElementById('daily-pdf-btn').href = `/reports/daily/?date=${d}&format=pdf`;
+});
+function updateCfLinks() {
+  const from = document.getElementById('cf-from').value;
+  const to = document.getElementById('cf-to').value;
+  document.getElementById('cf-html-btn').href = `/reports/conflicts/?from=${from}&to=${to}`;
+  document.getElementById('cf-csv-btn').href = `/reports/conflicts/?from=${from}&to=${to}&format=csv`;
+}
+document.getElementById('cf-from').addEventListener('change', updateCfLinks);
+document.getElementById('cf-to').addEventListener('change', updateCfLinks);
+</script>
+{% endblock %}

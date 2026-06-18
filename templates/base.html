@@ -1,0 +1,228 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI-Assisted Train Traffic Control & Section Throughput Optimization System" />
+  <title>{% block title %}{{ page_title|default:"Railway Control System" }}{% endblock %}</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="train-icon">🚂</div>
+  <div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;">Railway Control System</div>
+  <div class="loading-bar"></div>
+</div>
+
+<!-- Mobile sidebar overlay -->
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <a href="{% url 'dashboard:index' %}" class="sidebar-brand">
+    <div class="brand-icon">🚆</div>
+    <div class="brand-text">
+      <div class="brand-name">RailControl AI</div>
+      <div class="brand-sub">v2.4 — {% now "d M Y" %}</div>
+    </div>
+  </a>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Operations</div>
+
+    <a href="{% url 'dashboard:index' %}" class="nav-item {% if active_nav == 'dashboard' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-speedometer2"></i></span>
+      <span class="nav-label">Dashboard</span>
+    </a>
+
+    <a href="{% url 'trains:list' %}" class="nav-item {% if active_nav == 'trains' %}active{% endif %}">
+      <span class="nav-icon">🚂</span>
+      <span class="nav-label">Trains</span>
+    </a>
+
+    <a href="{% url 'scheduling:list' %}" class="nav-item {% if active_nav == 'scheduling' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-calendar3"></i></span>
+      <span class="nav-label">Scheduling</span>
+    </a>
+
+    <a href="{% url 'conflicts:list' %}" class="nav-item {% if active_nav == 'conflicts' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-exclamation-triangle"></i></span>
+      <span class="nav-label">Conflicts</span>
+      {% if unread_notification_count > 0 %}
+        <span class="nav-badge">{{ unread_notification_count }}</span>
+      {% endif %}
+    </a>
+
+    <div class="nav-section-label">Intelligence</div>
+
+    <a href="{% url 'ai_engine:dashboard' %}" class="nav-item {% if active_nav == 'ai_engine' %}active{% endif %}">
+      <span class="nav-icon">🤖</span>
+      <span class="nav-label">AI Priority Engine</span>
+    </a>
+
+    <a href="{% url 'ml_prediction:dashboard' %}" class="nav-item {% if active_nav == 'ml_prediction' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-graph-up-arrow"></i></span>
+      <span class="nav-label">ML Prediction</span>
+    </a>
+
+    <a href="{% url 'simulation:index' %}" class="nav-item {% if active_nav == 'simulation' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-play-circle"></i></span>
+      <span class="nav-label">Simulation</span>
+    </a>
+
+    <div class="nav-section-label">Infrastructure</div>
+
+    <a href="{% url 'stations:list' %}" class="nav-item {% if active_nav == 'stations' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-building"></i></span>
+      <span class="nav-label">Stations & Routes</span>
+    </a>
+
+    <a href="{% url 'network:visualizer' %}" class="nav-item {% if active_nav == 'network' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-diagram-3"></i></span>
+      <span class="nav-label">Network Map</span>
+    </a>
+
+    <div class="nav-section-label">Analytics</div>
+
+    <a href="{% url 'dashboard:analytics' %}" class="nav-item {% if active_nav == 'analytics' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-bar-chart-line"></i></span>
+      <span class="nav-label">Analytics</span>
+    </a>
+
+    <a href="{% url 'reporting:index' %}" class="nav-item {% if active_nav == 'reports' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-file-earmark-bar-graph"></i></span>
+      <span class="nav-label">Reports</span>
+    </a>
+
+    <a href="{% url 'notifications:list' %}" class="nav-item {% if active_nav == 'notifications' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-bell"></i></span>
+      <span class="nav-label">Notifications</span>
+      {% if unread_notification_count > 0 %}
+        <span class="nav-badge">{{ unread_notification_count }}</span>
+      {% endif %}
+    </a>
+
+    {% if user.is_admin %}
+    <div class="nav-section-label">Admin</div>
+    <a href="{% url 'auth:user_list' %}" class="nav-item {% if active_nav == 'users' %}active{% endif %}">
+      <span class="nav-icon"><i class="bi bi-people"></i></span>
+      <span class="nav-label">User Management</span>
+    </a>
+    <a href="{% url 'simulation:realtime' %}" class="nav-item">
+      <span class="nav-icon"><i class="bi bi-broadcast"></i></span>
+      <span class="nav-label">Live Simulator</span>
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{% url 'auth:profile' %}" class="sidebar-user" style="text-decoration:none;">
+      <div class="avatar">{{ user.display_name|first|upper }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ user.display_name }}</div>
+        <div class="user-role">{{ user.get_role_display }}</div>
+      </div>
+    </a>
+  </div>
+</aside>
+
+<!-- Main Wrapper -->
+<div class="main-wrapper" id="main-wrapper">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="topbar-toggle" id="sidebar-toggle" title="Toggle Sidebar">
+      <i class="bi bi-list"></i>
+    </button>
+    <button class="topbar-toggle" id="sidebar-mobile-toggle" style="display:none;">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <div class="topbar-title">
+      {% block page_header_title %}{{ page_title|default:"Dashboard" }}{% endblock %}
+    </div>
+
+    <!-- Live Clock -->
+    <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);margin-right:8px;">
+      <span id="current-time"></span>
+      <span style="margin-left:4px;">IST</span>
+    </div>
+
+    <div class="topbar-actions">
+      <!-- Run Conflict Detection -->
+      <button class="topbar-btn" id="detect-conflicts-btn" title="Run Conflict Detection">
+        <i class="bi bi-shield-check"></i>
+        <span class="d-none d-md-inline">Detect</span>
+      </button>
+
+      <!-- Notifications -->
+      <a href="{% url 'notifications:list' %}" class="topbar-btn" title="Notifications">
+        <i class="bi bi-bell"></i>
+        <span class="notif-badge" id="notif-count" style="display:{% if unread_notification_count > 0 %}flex{% else %}none{% endif %};">
+          {{ unread_notification_count }}
+        </span>
+      </a>
+
+      <!-- Theme Toggle -->
+      <button class="topbar-btn" id="theme-toggle" title="Toggle Theme">☀️</button>
+
+      <!-- Profile -->
+      <a href="{% url 'auth:profile' %}" class="topbar-btn">
+        <i class="bi bi-person-circle"></i>
+        <span class="d-none d-md-inline">{{ user.display_name }}</span>
+      </a>
+
+      <!-- Logout -->
+      <a href="{% url 'auth:logout' %}" class="topbar-btn" style="color:var(--accent-red);" title="Logout">
+        <i class="bi bi-box-arrow-right"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Django Messages → toast -->
+  {% if messages %}
+    {% for message in messages %}
+      <span class="message-data" data-message="{{ message }}"
+        data-type="{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}"
+        style="display:none;"></span>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Content -->
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+
+</div><!-- /.main-wrapper -->
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Scripts -->
+<script src="{% static 'js/app.js' %}"></script>
+{% block extra_js %}{% endblock %}
+
+<script>
+// Mobile sidebar detection
+if (window.innerWidth <= 992) {
+  document.getElementById('sidebar-toggle').style.display = 'none';
+  const mobileBtn = document.getElementById('sidebar-mobile-toggle');
+  if (mobileBtn) mobileBtn.style.display = 'flex';
+}
+</script>
+</body>
+</html>

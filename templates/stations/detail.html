@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><span style="font-family:var(--font-mono);color:var(--accent-blue);">{{ station.code }}</span> — {{ station.name }}</div>
+    <div class="page-subtitle">{{ station.get_station_type_display }} · {{ station.city }}, {{ station.state }}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'stations:edit' station.id %}" class="btn btn-secondary"><i class="bi bi-pencil"></i> Edit</a>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div class="card">
+    <div class="card-header"><div class="card-title"><i class="bi bi-info-circle"></i> Station Info</div></div>
+    <div style="display:grid;gap:12px;">
+      {% for label, value in station.code,station.name,station.zone,station.division,station.total_platforms,station.latitude,station.longitude %}
+      {% endfor %}
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;"><span style="color:var(--text-muted);">Zone</span><span style="font-weight:600;">{{ station.zone }}</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;"><span style="color:var(--text-muted);">Division</span><span style="font-weight:600;">{{ station.division }}</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;"><span style="color:var(--text-muted);">Platforms</span><span style="font-weight:600;">{{ station.total_platforms }}</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;"><span style="color:var(--text-muted);">Coordinates</span><span style="font-family:var(--font-mono);font-size:0.82rem;">{{ station.latitude }}, {{ station.longitude }}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Junction</span><span>{% if station.is_junction %}<span style="color:var(--accent-green);">Yes</span>{% else %}<span style="color:var(--text-muted);">No</span>{% endif %}</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title"><i class="bi bi-sign-stop"></i> Platforms</div></div>
+    {% for p in platforms %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-color);">
+      <div><div style="font-weight:600;">Platform {{ p.platform_number }}</div><div style="font-size:0.72rem;color:var(--text-muted);">{{ p.length }}m · {{ p.get_platform_type_display }}</div></div>
+      <span class="badge badge-{{ p.status|lower }}">{{ p.status }}</span>
+    </div>
+    {% empty %}<div style="text-align:center;padding:24px;color:var(--text-muted);">No platforms configured.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ER Diagram — Railway Control System</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px;
+           display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 1.1rem; font-weight: 600; }
+  header span { font-size: 0.78rem; color: #8b949e; background: #21262d; padding: 3px 10px;
+                border-radius: 20px; border: 1px solid #30363d; }
+  .controls { margin-left: auto; display: flex; gap: 8px; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #30363d; background: #21262d;
+         color: #e6edf3; font-size: 0.78rem; cursor: pointer; }
+  .btn:hover { background: #30363d; }
+  .canvas-wrap { overflow: auto; padding: 40px; min-height: calc(100vh - 57px); }
+  svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  /* ── Table box ─────────────────────────────── */
+  .tbl-header { fill: #1f6feb; }
+  .tbl-header-auth  { fill: #388bfd; }
+  .tbl-header-train { fill: #3fb950; }
+  .tbl-header-station{ fill: #d29922; }
+  .tbl-header-sched { fill: #bc8cff; }
+  .tbl-header-conflict { fill: #f85149; }
+  .tbl-header-ai    { fill: #79c0ff; }
+  .tbl-header-notif { fill: #e3b341; }
+  .tbl-header-ml    { fill: #56d364; }
+  .tbl-header-sim   { fill: #f0883e; }
+  .tbl-header-report{ fill: #8b949e; }
+  .tbl-header-analytics { fill: #7ee787; }
+  .tbl-bg   { fill: #161b22; stroke: #30363d; stroke-width: 1; }
+  .tbl-row  { fill: #0d1117; }
+  .tbl-row-alt { fill: #161b22; }
+  .col-pk   { fill: #f0883e; font-size: 10px; }
+  .col-fk   { fill: #79c0ff; font-size: 10px; }
+  .col-name { fill: #e6edf3; font-size: 10px; }
+  .col-type { fill: #8b949e; font-size: 9.5px; }
+  .rel-line { fill: none; stroke-width: 1.5; }
+  .rel-pk   { stroke: #3fb950; }
+  .rel-fk   { stroke: #388bfd; }
+  .tbl-title { fill: #ffffff; font-size: 11px; font-weight: 700; }
+  .legend-box { fill: #161b22; stroke: #30363d; stroke-width: 1; }
+</style>
+</head>
+<body>
+<header>
+  <span>🚆</span>
+  <h1>Railway Control System — Entity Relationship Diagram</h1>
+  <span>13 tables &nbsp;|&nbsp; MySQL InnoDB</span>
+  <div class="controls">
+    <button class="btn" onclick="zoom(1.2)">＋ Zoom In</button>
+    <button class="btn" onclick="zoom(0.85)">－ Zoom Out</button>
+    <button class="btn" onclick="resetZoom()">↺ Reset</button>
+    <button class="btn" onclick="window.print()">🖨 Print</button>
+  </div>
+</header>
+
+<div class="canvas-wrap" id="canvas">
+<svg id="erd" viewBox="0 0 2400 1700" width="2400" height="1700" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#3fb950" />
+  </marker>
+  <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#388bfd" />
+  </marker>
+</defs>
+
+<!-- ═══════════════════════════════════════════════════════════
+     RELATIONSHIP LINES (drawn first, behind tables)
+════════════════════════════════════════════════════════════ -->
+<!-- auth_users → trains (created_by) -->
+<line x1="290" y1="160" x2="500" y2="265" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.6"/>
+<!-- auth_users → simulation (created_by) -->
+<line x1="290" y1="180" x2="1760" y2="420" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.4"/>
+<!-- auth_users → auth_user_activities -->
+<line x1="160" y1="210" x2="160" y2="310" class="rel-line rel-pk" marker-end="url(#arrow-green)" opacity="0.7"/>
+<!-- auth_users → auth_password_reset_tokens -->
+<line x1="230" y1="210" x2="390" y2="310" class="rel-line rel-pk" marker-end="url(#arrow-green)" opacity="0.7"/>
+<!-- stations → trains (source) -->
+<line x1="820" y1="200" x2="700" y2="270" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.6"/>
+<!-- stations → platforms -->
+<line x1="900" y1="260" x2="900" y2="380" class="rel-line rel-pk" marker-end="url(#arrow-green)" opacity="0.7"/>
+<!-- stations → routes -->
+<line x1="980" y1="200" x2="1100" y2="310" class="rel-line rel-pk" marker-end="url(#arrow-green)" opacity="0.6"/>
+<!-- routes → track_sections -->
+<line x1="1120" y1="420" x2="1120" y2="530" class="rel-line rel-pk" marker-end="url(#arrow-green)" opacity="0.6"/>
+<!-- trains → schedules -->
+<line x1="620" y1="360" x2="740" y2="540" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.6"/>
+<!-- trains → conflicts -->
+<line x1="660" y1="360" x2="500" y2="620" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.6"/>
+<!-- trains → ai_recommendations -->
+<line x1="700" y1="340" x2="1300" y2="640" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.4"/>
+<!-- trains → delay_predictions -->
+<line x1="680" y1="360" x2="1580" y2="650" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.4"/>
+<!-- conflicts → conflict_recommendations -->
+<line x1="420" y1="760" x2="420" y2="870" class="rel-line rel-pk" marker-end="url(#arrow-green)" opacity="0.7"/>
+<!-- schedules → section_occupancy -->
+<line x1="800" y1="700" x2="1000" y2="820" class="rel-line rel-pk" marker-end="url(#arrow-green)" opacity="0.6"/>
+<!-- auth_users → notifications (user) -->
+<line x1="200" y1="210" x2="1800" y2="960" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.3"/>
+<!-- auth_users → reports (generated_by) -->
+<line x1="180" y1="210" x2="1980" y2="1360" class="rel-line rel-fk" marker-end="url(#arrow-blue)" opacity="0.3"/>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TABLES
+════════════════════════════════════════════════════════════ -->
+
+<!-- ── auth_users ── pos 40,60 w=280 ─────────────────────────── -->
+<g transform="translate(40,60)">
+  <rect class="tbl-bg" width="280" height="200" rx="6"/>
+  <rect class="tbl-header-auth" width="280" height="28" rx="6"/>
+  <rect class="tbl-header-auth" width="280" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">auth_users</text>
+  <text x="240" y="19" fill="rgba(255,255,255,0.5)" font-size="9">MODULE 1</text>
+  <!-- rows -->
+  <rect class="tbl-row" x="0" y="28" width="280" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="180" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="280" height="20"/>
+  <text class="col-name" x="36" y="62">username</text><text class="col-type" x="180" y="62">VARCHAR(150)</text>
+  <rect class="tbl-row" x="0" y="68" width="280" height="20"/>
+  <text class="col-name" x="36" y="82">email</text><text class="col-type" x="180" y="82">VARCHAR(254)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="280" height="20"/>
+  <text class="col-name" x="36" y="102">role</text><text class="col-type" x="180" y="102">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="108" width="280" height="20"/>
+  <text class="col-name" x="36" y="122">employee_id</text><text class="col-type" x="180" y="122">VARCHAR(20)</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="280" height="20"/>
+  <text class="col-name" x="36" y="142">is_on_duty</text><text class="col-type" x="180" y="142">TINYINT(1)</text>
+  <rect class="tbl-row" x="0" y="148" width="280" height="20"/>
+  <text class="col-name" x="36" y="162">created_at</text><text class="col-type" x="180" y="162">DATETIME(6)</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="280" height="20"/>
+  <text class="col-name" x="36" y="182">password</text><text class="col-type" x="180" y="182">VARCHAR(128)</text>
+  <rect class="tbl-row" x="0" y="188" width="280" height="12" rx="0"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ department, phone, section_assigned …</text>
+</g>
+
+<!-- ── auth_user_activities ── pos 40,310 ──────────────────── -->
+<g transform="translate(40,310)">
+  <rect class="tbl-bg" width="240" height="140" rx="6"/>
+  <rect class="tbl-header-auth" width="240" height="28" rx="6"/>
+  <rect class="tbl-header-auth" width="240" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">auth_user_activities</text>
+  <rect class="tbl-row" x="0" y="28" width="240" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="160" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="240" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">user_id</text><text class="col-type" x="160" y="62">→ auth_users</text>
+  <rect class="tbl-row" x="0" y="68" width="240" height="20"/>
+  <text class="col-name" x="36" y="82">action</text><text class="col-type" x="160" y="82">VARCHAR(200)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="240" height="20"/>
+  <text class="col-name" x="36" y="102">ip_address</text><text class="col-type" x="160" y="102">VARCHAR(39)</text>
+  <rect class="tbl-row" x="0" y="108" width="240" height="20"/>
+  <text class="col-name" x="36" y="122">timestamp</text><text class="col-type" x="160" y="122">DATETIME(6)</text>
+</g>
+
+<!-- ── auth_password_reset_tokens ── pos 330,310 ──────────── -->
+<g transform="translate(330,310)">
+  <rect class="tbl-bg" width="240" height="140" rx="6"/>
+  <rect class="tbl-header-auth" width="240" height="28" rx="6"/>
+  <rect class="tbl-header-auth" width="240" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">auth_password_reset_tokens</text>
+  <rect class="tbl-row" x="0" y="28" width="240" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="160" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="240" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">user_id</text><text class="col-type" x="160" y="62">→ auth_users</text>
+  <rect class="tbl-row" x="0" y="68" width="240" height="20"/>
+  <text class="col-name" x="36" y="82">token</text><text class="col-type" x="160" y="82">VARCHAR(64) UQ</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="240" height="20"/>
+  <text class="col-name" x="36" y="102">expires_at</text><text class="col-type" x="160" y="102">DATETIME(6)</text>
+  <rect class="tbl-row" x="0" y="108" width="240" height="20"/>
+  <text class="col-name" x="36" y="122">used</text><text class="col-type" x="160" y="122">TINYINT(1)</text>
+</g>
+
+<!-- ── trains ── pos 500,200 ──────────────────────────────── -->
+<g transform="translate(500,200)">
+  <rect class="tbl-bg" width="270" height="200" rx="6"/>
+  <rect class="tbl-header-train" width="270" height="28" rx="6"/>
+  <rect class="tbl-header-train" width="270" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">trains</text>
+  <text x="220" y="19" fill="rgba(255,255,255,0.5)" font-size="9">MODULE 2</text>
+  <rect class="tbl-row" x="0" y="28" width="270" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="170" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="270" height="20"/>
+  <text class="col-name" x="36" y="62">train_number</text><text class="col-type" x="170" y="62">VARCHAR(10) UQ</text>
+  <rect class="tbl-row" x="0" y="68" width="270" height="20"/>
+  <text class="col-name" x="36" y="82">train_name</text><text class="col-type" x="170" y="82">VARCHAR(100)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="270" height="20"/>
+  <text class="col-name" x="36" y="102">train_type</text><text class="col-type" x="170" y="102">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="108" width="270" height="20"/>
+  <text class="col-name" x="36" y="122">priority_level</text><text class="col-type" x="170" y="122">INT</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="270" height="20"/>
+  <text class="col-fk" x="8" y="142">FK</text><text class="col-name" x="36" y="142">source_station_id</text><text class="col-type" x="170" y="142">→ stations</text>
+  <rect class="tbl-row" x="0" y="148" width="270" height="20"/>
+  <text class="col-fk" x="8" y="162">FK</text><text class="col-name" x="36" y="162">destination_station_id</text><text class="col-type" x="170" y="162">→ stations</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="270" height="20"/>
+  <text class="col-name" x="36" y="182">current_status</text><text class="col-type" x="170" y="182">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="188" width="270" height="12"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ speed, current_delay, is_active, created_by_id …</text>
+</g>
+
+<!-- ── stations ── pos 820,60 ─────────────────────────────── -->
+<g transform="translate(820,60)">
+  <rect class="tbl-bg" width="260" height="200" rx="6"/>
+  <rect class="tbl-header-station" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-station" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">stations</text>
+  <text x="210" y="19" fill="rgba(255,255,255,0.5)" font-size="9">MODULE 3</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-name" x="36" y="62">station_code</text><text class="col-type" x="165" y="62">VARCHAR(10) UQ</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-name" x="36" y="82">station_name</text><text class="col-type" x="165" y="82">VARCHAR(100)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-name" x="36" y="102">station_type</text><text class="col-type" x="165" y="102">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">zone / division</text><text class="col-type" x="165" y="122">VARCHAR</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">latitude / longitude</text><text class="col-type" x="165" y="142">DOUBLE</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">total_platforms</text><text class="col-type" x="165" y="162">INT</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="20"/>
+  <text class="col-name" x="36" y="182">is_junction</text><text class="col-type" x="165" y="182">TINYINT(1)</text>
+  <rect class="tbl-row" x="0" y="188" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ city, state, elevation_m, is_active …</text>
+</g>
+
+<!-- ── platforms ── pos 820,310 ───────────────────────────── -->
+<g transform="translate(820,310)">
+  <rect class="tbl-bg" width="240" height="160" rx="6"/>
+  <rect class="tbl-header-station" width="240" height="28" rx="6"/>
+  <rect class="tbl-header-station" width="240" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">platforms</text>
+  <rect class="tbl-row" x="0" y="28" width="240" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="155" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="240" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">station_id</text><text class="col-type" x="155" y="62">→ stations</text>
+  <rect class="tbl-row" x="0" y="68" width="240" height="20"/>
+  <text class="col-name" x="36" y="82">platform_number</text><text class="col-type" x="155" y="82">INT</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="240" height="20"/>
+  <text class="col-name" x="36" y="102">length_meters</text><text class="col-type" x="155" y="102">INT</text>
+  <rect class="tbl-row" x="0" y="108" width="240" height="20"/>
+  <text class="col-name" x="36" y="122">current_status</text><text class="col-type" x="155" y="122">VARCHAR(20)</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="240" height="20"/>
+  <text class="col-name" x="36" y="142">platform_type</text><text class="col-type" x="155" y="142">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="148" width="240" height="12"/>
+  <text fill="#8b949e" x="8" y="158" font-size="9">+ is_covered, has_pit_line, is_active …</text>
+</g>
+
+<!-- ── routes ── pos 1100,240 ─────────────────────────────── -->
+<g transform="translate(1100,240)">
+  <rect class="tbl-bg" width="250" height="180" rx="6"/>
+  <rect class="tbl-header-station" width="250" height="28" rx="6"/>
+  <rect class="tbl-header-station" width="250" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">routes</text>
+  <rect class="tbl-row" x="0" y="28" width="250" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="160" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="250" height="20"/>
+  <text class="col-name" x="36" y="62">route_code</text><text class="col-type" x="160" y="62">VARCHAR(20) UQ</text>
+  <rect class="tbl-row" x="0" y="68" width="250" height="20"/>
+  <text class="col-fk" x="8" y="82">FK</text><text class="col-name" x="36" y="82">source_station_id</text><text class="col-type" x="160" y="82">→ stations</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="250" height="20"/>
+  <text class="col-fk" x="8" y="102">FK</text><text class="col-name" x="36" y="102">dest_station_id</text><text class="col-type" x="160" y="102">→ stations</text>
+  <rect class="tbl-row" x="0" y="108" width="250" height="20"/>
+  <text class="col-name" x="36" y="122">total_distance_km</text><text class="col-type" x="160" y="122">DECIMAL(8,2)</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="250" height="20"/>
+  <text class="col-name" x="36" y="142">max_speed_kmh</text><text class="col-type" x="160" y="142">INT</text>
+  <rect class="tbl-row" x="0" y="148" width="250" height="12"/>
+  <text fill="#8b949e" x="8" y="158" font-size="9">+ route_type, gauge, electrification …</text>
+</g>
+
+<!-- ── track_sections ── pos 1100,470 ─────────────────────── -->
+<g transform="translate(1100,470)">
+  <rect class="tbl-bg" width="260" height="200" rx="6"/>
+  <rect class="tbl-header-station" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-station" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">track_sections</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">route_id</text><text class="col-type" x="165" y="62">→ routes</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-fk" x="8" y="82">FK</text><text class="col-name" x="36" y="82">from_station_id</text><text class="col-type" x="165" y="82">→ stations</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-fk" x="8" y="102">FK</text><text class="col-name" x="36" y="102">to_station_id</text><text class="col-type" x="165" y="102">→ stations</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">distance_km</text><text class="col-type" x="165" y="122">DECIMAL(8,2)</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">current_status</text><text class="col-type" x="165" y="142">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">max_speed_kmh</text><text class="col-type" x="165" y="162">INT</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="20"/>
+  <text class="col-name" x="36" y="182">capacity_trains_per_hr</text><text class="col-type" x="165" y="182">INT</text>
+  <rect class="tbl-row" x="0" y="188" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ section_code, section_type, is_electrified …</text>
+</g>
+
+<!-- ── schedules ── pos 680,490 ───────────────────────────── -->
+<g transform="translate(680,490)">
+  <rect class="tbl-bg" width="270" height="240" rx="6"/>
+  <rect class="tbl-header" width="270" height="28" rx="6"/>
+  <rect class="tbl-header" width="270" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">schedules</text>
+  <text x="215" y="19" fill="rgba(255,255,255,0.5)" font-size="9">MODULE 5</text>
+  <rect class="tbl-row" x="0" y="28" width="270" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="170" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="270" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">train_id</text><text class="col-type" x="170" y="62">→ trains</text>
+  <rect class="tbl-row" x="0" y="68" width="270" height="20"/>
+  <text class="col-fk" x="8" y="82">FK</text><text class="col-name" x="36" y="82">station_id</text><text class="col-type" x="170" y="82">→ stations</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="270" height="20"/>
+  <text class="col-fk" x="8" y="102">FK</text><text class="col-name" x="36" y="102">platform_id</text><text class="col-type" x="170" y="102">→ platforms</text>
+  <rect class="tbl-row" x="0" y="108" width="270" height="20"/>
+  <text class="col-fk" x="8" y="122">FK</text><text class="col-name" x="36" y="122">track_section_id</text><text class="col-type" x="170" y="122">→ track_sections</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="270" height="20"/>
+  <text class="col-name" x="36" y="142">scheduled_date</text><text class="col-type" x="170" y="142">DATE</text>
+  <rect class="tbl-row" x="0" y="148" width="270" height="20"/>
+  <text class="col-name" x="36" y="162">scheduled_arrival</text><text class="col-type" x="170" y="162">DATETIME(6)</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="270" height="20"/>
+  <text class="col-name" x="36" y="182">arrival_delay</text><text class="col-type" x="170" y="182">INT</text>
+  <rect class="tbl-row" x="0" y="188" width="270" height="20"/>
+  <text class="col-name" x="36" y="202">status</text><text class="col-type" x="170" y="202">VARCHAR(20)</text>
+  <rect class="tbl-row-alt" x="0" y="208" width="270" height="12"/>
+  <text fill="#8b949e" x="8" y="218" font-size="9">+ stop_sequence, actual times, halt_duration …</text>
+</g>
+
+<!-- ── section_occupancy ── pos 980,780 ───────────────────── -->
+<g transform="translate(980,780)">
+  <rect class="tbl-bg" width="240" height="140" rx="6"/>
+  <rect class="tbl-header" width="240" height="28" rx="6"/>
+  <rect class="tbl-header" width="240" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">section_occupancy</text>
+  <rect class="tbl-row" x="0" y="28" width="240" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="155" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="240" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">track_section_id</text><text class="col-type" x="155" y="62">→ track_sections</text>
+  <rect class="tbl-row" x="0" y="68" width="240" height="20"/>
+  <text class="col-fk" x="8" y="82">FK</text><text class="col-name" x="36" y="82">train_id</text><text class="col-type" x="155" y="82">→ trains</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="240" height="20"/>
+  <text class="col-name" x="36" y="102">entry_time</text><text class="col-type" x="155" y="102">DATETIME(6)</text>
+  <rect class="tbl-row" x="0" y="108" width="240" height="20"/>
+  <text class="col-name" x="36" y="122">expected_exit_time</text><text class="col-type" x="155" y="122">DATETIME(6)</text>
+</g>
+
+<!-- ── conflicts ── pos 380,570 ───────────────────────────── -->
+<g transform="translate(380,570)">
+  <rect class="tbl-bg" width="260" height="220" rx="6"/>
+  <rect class="tbl-header-conflict" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-conflict" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">conflicts</text>
+  <text x="210" y="19" fill="rgba(255,255,255,0.5)" font-size="9">MODULE 6</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-name" x="36" y="62">conflict_type</text><text class="col-type" x="165" y="62">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-name" x="36" y="82">severity</text><text class="col-type" x="165" y="82">VARCHAR(20)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-fk" x="8" y="102">FK</text><text class="col-name" x="36" y="102">train_a_id</text><text class="col-type" x="165" y="102">→ trains</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-fk" x="8" y="122">FK</text><text class="col-name" x="36" y="122">train_b_id</text><text class="col-type" x="165" y="122">→ trains</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-fk" x="8" y="142">FK</text><text class="col-name" x="36" y="142">track_section_id</text><text class="col-type" x="165" y="142">→ track_sections</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">conflict_time</text><text class="col-type" x="165" y="162">DATETIME(6)</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="20"/>
+  <text class="col-name" x="36" y="182">status</text><text class="col-type" x="165" y="182">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="188" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ description, resolved_at, resolved_by_id …</text>
+</g>
+
+<!-- ── conflict_recommendations ── pos 380,840 ─────────────── -->
+<g transform="translate(380,840)">
+  <rect class="tbl-bg" width="260" height="160" rx="6"/>
+  <rect class="tbl-header-conflict" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-conflict" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">conflict_recommendations</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">conflict_id</text><text class="col-type" x="165" y="62">→ conflicts</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-fk" x="8" y="82">FK</text><text class="col-name" x="36" y="82">primary_train_id</text><text class="col-type" x="165" y="82">→ trains</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-name" x="36" y="102">recommendation_type</text><text class="col-type" x="165" y="102">VARCHAR(30)</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">priority_score</text><text class="col-type" x="165" y="122">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">confidence</text><text class="col-type" x="165" y="142">DOUBLE</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="158" font-size="9">+ title, description, reasoning, is_accepted …</text>
+</g>
+
+<!-- ── ai_recommendations ── pos 1320,570 ─────────────────── -->
+<g transform="translate(1320,570)">
+  <rect class="tbl-bg" width="260" height="180" rx="6"/>
+  <rect class="tbl-header-ai" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-ai" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19" fill="#0d1117">ai_recommendations</text>
+  <text x="195" y="19" fill="rgba(0,0,0,0.4)" font-size="9">MODULE 7</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">primary_train_id</text><text class="col-type" x="165" y="62">→ trains</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-fk" x="8" y="82">FK</text><text class="col-name" x="36" y="82">affected_section_id</text><text class="col-type" x="165" y="82">→ track_sections</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-name" x="36" y="102">recommendation_type</text><text class="col-type" x="165" y="102">VARCHAR(30)</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">priority_score</text><text class="col-type" x="165" y="122">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">confidence</text><text class="col-type" x="165" y="142">DOUBLE</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">is_accepted</text><text class="col-type" x="165" y="162">TINYINT(1)</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="178" font-size="9">+ title, description, reasoning …</text>
+</g>
+
+<!-- ── delay_predictions ── pos 1580,590 ─────────────────── -->
+<g transform="translate(1580,590)">
+  <rect class="tbl-bg" width="260" height="220" rx="6"/>
+  <rect class="tbl-header-ml" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-ml" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19" fill="#0d1117">delay_predictions</text>
+  <text x="195" y="19" fill="rgba(0,0,0,0.4)" font-size="9">MODULE 8</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">train_id</text><text class="col-type" x="165" y="62">→ trains</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-name" x="36" y="82">predicted_delay_minutes</text><text class="col-type" x="185" y="82">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-name" x="36" y="102">risk_level</text><text class="col-type" x="165" y="102">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">confidence_score</text><text class="col-type" x="165" y="122">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">weather_code</text><text class="col-type" x="165" y="142">INT</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">traffic_density</text><text class="col-type" x="165" y="162">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="20"/>
+  <text class="col-name" x="36" y="182">predicted_at</text><text class="col-type" x="165" y="182">DATETIME(6)</text>
+  <rect class="tbl-row" x="0" y="188" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ day_of_week, hour_of_day, model_version …</text>
+</g>
+
+<!-- ── simulation_scenarios ── pos 1760,360 ───────────────── -->
+<g transform="translate(1760,360)">
+  <rect class="tbl-bg" width="260" height="200" rx="6"/>
+  <rect class="tbl-header-sim" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-sim" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19" fill="#0d1117">simulation_scenarios</text>
+  <text x="190" y="19" fill="rgba(0,0,0,0.4)" font-size="9">MODULE 9</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">created_by_id</text><text class="col-type" x="165" y="62">→ auth_users</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-name" x="36" y="82">scenario_type</text><text class="col-type" x="165" y="82">VARCHAR(30)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-name" x="36" y="102">status</text><text class="col-type" x="165" y="102">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">throughput_impact</text><text class="col-type" x="165" y="122">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">delay_minutes</text><text class="col-type" x="165" y="142">INT</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">duration_hours</text><text class="col-type" x="165" y="162">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="178" font-size="9">+ result_summary, recommendations …</text>
+</g>
+
+<!-- ── analytics_snapshots ── pos 1760,610 ────────────────── -->
+<g transform="translate(1760,610)">
+  <rect class="tbl-bg" width="260" height="200" rx="6"/>
+  <rect class="tbl-header-analytics" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-analytics" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19" fill="#0d1117">analytics_snapshots</text>
+  <text x="190" y="19" fill="rgba(0,0,0,0.4)" font-size="9">MODULE 11</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-name" x="36" y="62">date</text><text class="col-type" x="165" y="62">DATE UQ</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-name" x="36" y="82">total_trains</text><text class="col-type" x="165" y="82">INT</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-name" x="36" y="102">avg_delay_minutes</text><text class="col-type" x="165" y="102">DOUBLE</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">punctuality_rate</text><text class="col-type" x="165" y="122">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">section_throughput</text><text class="col-type" x="165" y="142">DOUBLE</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">conflicts_detected</text><text class="col-type" x="165" y="162">INT</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="20"/>
+  <text class="col-name" x="36" y="182">platform_utilization</text><text class="col-type" x="165" y="182">DOUBLE</text>
+  <rect class="tbl-row" x="0" y="188" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ trains_delayed, track_utilization …</text>
+</g>
+
+<!-- ── notifications ── pos 1800,900 ──────────────────────── -->
+<g transform="translate(1800,900)">
+  <rect class="tbl-bg" width="260" height="200" rx="6"/>
+  <rect class="tbl-header-notif" width="260" height="28" rx="6"/>
+  <rect class="tbl-header-notif" width="260" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19" fill="#0d1117">notifications</text>
+  <text x="208" y="19" fill="rgba(0,0,0,0.4)" font-size="9">MODULE 12</text>
+  <rect class="tbl-row" x="0" y="28" width="260" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="165" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="260" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">user_id</text><text class="col-type" x="165" y="62">→ auth_users (NULL)</text>
+  <rect class="tbl-row" x="0" y="68" width="260" height="20"/>
+  <text class="col-name" x="36" y="82">notification_type</text><text class="col-type" x="165" y="82">VARCHAR(20)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="260" height="20"/>
+  <text class="col-name" x="36" y="102">priority</text><text class="col-type" x="165" y="102">VARCHAR(20)</text>
+  <rect class="tbl-row" x="0" y="108" width="260" height="20"/>
+  <text class="col-name" x="36" y="122">title</text><text class="col-type" x="165" y="122">VARCHAR(200)</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="260" height="20"/>
+  <text class="col-name" x="36" y="142">is_read</text><text class="col-type" x="165" y="142">TINYINT(1)</text>
+  <rect class="tbl-row" x="0" y="148" width="260" height="20"/>
+  <text class="col-name" x="36" y="162">is_broadcast</text><text class="col-type" x="165" y="162">TINYINT(1)</text>
+  <rect class="tbl-row-alt" x="0" y="168" width="260" height="20"/>
+  <text class="col-name" x="36" y="182">created_at</text><text class="col-type" x="165" y="182">DATETIME(6)</text>
+  <rect class="tbl-row" x="0" y="188" width="260" height="12"/>
+  <text fill="#8b949e" x="8" y="198" font-size="9">+ message, link, read_at …</text>
+</g>
+
+<!-- ── reports ── pos 2000,1330 ───────────────────────────── -->
+<g transform="translate(2000,1330)">
+  <rect class="tbl-bg" width="240" height="140" rx="6"/>
+  <rect class="tbl-header-report" width="240" height="28" rx="6"/>
+  <rect class="tbl-header-report" width="240" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19">reports</text>
+  <text x="198" y="19" fill="rgba(255,255,255,0.5)" font-size="9">MODULE 13</text>
+  <rect class="tbl-row" x="0" y="28" width="240" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="155" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="240" height="20"/>
+  <text class="col-fk" x="8" y="62">FK</text><text class="col-name" x="36" y="62">generated_by_id</text><text class="col-type" x="155" y="62">→ auth_users</text>
+  <rect class="tbl-row" x="0" y="68" width="240" height="20"/>
+  <text class="col-name" x="36" y="82">report_type</text><text class="col-type" x="155" y="82">VARCHAR(20)</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="240" height="20"/>
+  <text class="col-name" x="36" y="102">from_date</text><text class="col-type" x="155" y="102">DATE</text>
+  <rect class="tbl-row" x="0" y="108" width="240" height="20"/>
+  <text class="col-name" x="36" y="122">to_date</text><text class="col-type" x="155" y="122">DATE</text>
+</g>
+
+<!-- ── ml_model_versions ── pos 1580,870 ─────────────────── -->
+<g transform="translate(1580,870)">
+  <rect class="tbl-bg" width="240" height="160" rx="6"/>
+  <rect class="tbl-header-ml" width="240" height="28" rx="6"/>
+  <rect class="tbl-header-ml" width="240" height="14" y="14"/>
+  <text class="tbl-title" x="10" y="19" fill="#0d1117">ml_model_versions</text>
+  <rect class="tbl-row" x="0" y="28" width="240" height="20"/>
+  <text class="col-pk" x="8" y="42">PK</text><text class="col-name" x="36" y="42">id</text><text class="col-type" x="155" y="42">BIGINT AI</text>
+  <rect class="tbl-row-alt" x="0" y="48" width="240" height="20"/>
+  <text class="col-name" x="36" y="62">version</text><text class="col-type" x="155" y="62">VARCHAR(20) UQ</text>
+  <rect class="tbl-row" x="0" y="68" width="240" height="20"/>
+  <text class="col-name" x="36" y="82">r2_score</text><text class="col-type" x="155" y="82">DOUBLE</text>
+  <rect class="tbl-row-alt" x="0" y="88" width="240" height="20"/>
+  <text class="col-name" x="36" y="102">mean_absolute_error</text><text class="col-type" x="155" y="102">DOUBLE</text>
+  <rect class="tbl-row" x="0" y="108" width="240" height="20"/>
+  <text class="col-name" x="36" y="122">training_samples</text><text class="col-type" x="155" y="122">INT</text>
+  <rect class="tbl-row-alt" x="0" y="128" width="240" height="20"/>
+  <text class="col-name" x="36" y="142">is_active</text><text class="col-type" x="155" y="142">TINYINT(1)</text>
+</g>
+
+<!-- ══════════════════ LEGEND ══════════════════ -->
+<g transform="translate(40,1580)">
+  <rect class="legend-box" width="700" height="80" rx="6"/>
+  <text fill="#8b949e" x="14" y="20" font-size="10" font-weight="600" text-anchor="start">LEGEND</text>
+  <rect fill="#388bfd" x="14" y="28" width="12" height="12" rx="2"/>
+  <text fill="#e6edf3" x="32" y="38" font-size="9">FK — Foreign Key (references another table)</text>
+  <rect fill="#f0883e" x="220" y="28" width="12" height="12" rx="2"/>
+  <text fill="#e6edf3" x="238" y="38" font-size="9">PK — Primary Key (AUTO_INCREMENT BIGINT)</text>
+  <line x1="14" y1="54" x2="80" y2="54" class="rel-line rel-pk" marker-end="url(#arrow-green)"/>
+  <text fill="#e6edf3" x="86" y="58" font-size="9">One → Many (parent to child)</text>
+  <line x1="240" y1="54" x2="306" y2="54" class="rel-line rel-fk" marker-end="url(#arrow-blue)"/>
+  <text fill="#e6edf3" x="312" y="58" font-size="9">Many → One (FK to parent)</text>
+  <text fill="#8b949e" x="14" y="74" font-size="9">All tables: ENGINE=InnoDB, CHARSET=utf8mb4, COLLATE=utf8mb4_unicode_ci</text>
+</g>
+
+<!-- Title -->
+<text x="1200" y="40" fill="#e6edf3" font-size="16" font-weight="700" text-anchor="middle">Railway Control System — Entity Relationship Diagram</text>
+<text x="1200" y="58" fill="#8b949e" font-size="10" text-anchor="middle">13 tables · 45+ foreign key constraints · InnoDB · Railway Control System v1.0 · BBDNIIT Lucknow 2024-25</text>
+
+</svg>
+</div>
+
+<script>
+let scale = 1;
+function zoom(factor) {
+  scale *= factor;
+  scale = Math.min(Math.max(scale, 0.3), 3);
+  const svg = document.getElementById('erd');
+  svg.style.transform = `scale(${scale})`;
+  svg.style.transformOrigin = 'top left';
+}
+function resetZoom() {
+  scale = 1;
+  const svg = document.getElementById('erd');
+  svg.style.transform = 'scale(1)';
+}
+</script>
+</body>
+</html>

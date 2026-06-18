@@ -1,0 +1,1084 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+/* ── ML Dashboard Root ──────────────────────────────── */
+.ml-wrap{padding:0 0 20px;font-family:var(--font-sans);}
+.ml-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 0 12px;border-bottom:1px solid var(--border-color);margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.ml-topbar-left{display:flex;align-items:center;gap:16px;}
+.ml-topbar-right{display:flex;align-items:center;gap:8px;}
+.ml-title{font-size:0.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);}
+.ml-subtitle{font-size:1.0rem;font-weight:800;color:var(--text-primary);letter-spacing:.04em;}
+.ml-badge{background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;font-size:0.6rem;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;}
+.ml-live{display:flex;align-items:center;gap:5px;font-size:0.65rem;color:#10b981;font-weight:600;}
+.ml-live-dot{width:7px;height:7px;background:#10b981;border-radius:50%;animation:pulse-dot 1.4s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+.ml-ctrl-btn{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.65rem;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;}
+.ml-ctrl-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue);}
+.ml-ctrl-btn.prim{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.4);color:#60a5fa;}
+
+/* ── KPI Row ────────────────────────────────────────── */
+.ml-kpi-row{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:1400px){.ml-kpi-row{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:768px){.ml-kpi-row{grid-template-columns:repeat(2,1fr);}}
+.ml-kpi{background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden;transition:border-color .2s;}
+.ml-kpi:hover{border-color:rgba(59,130,246,0.4);}
+.ml-kpi-lbl{font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px;}
+.ml-kpi-val{font-size:1.25rem;font-weight:800;color:var(--text-primary);font-family:var(--font-mono);line-height:1;margin-bottom:2px;}
+.ml-kpi-val.blue{color:#60a5fa;}
+.ml-kpi-val.green{color:#34d399;}
+.ml-kpi-val.red{color:#f87171;}
+.ml-kpi-val.orange{color:#fb923c;}
+.ml-kpi-val.purple{color:#a78bfa;}
+.ml-kpi-val.cyan{color:#22d3ee;}
+.ml-kpi-trend{font-size:0.6rem;color:#34d399;font-weight:600;}
+.ml-kpi-trend.down{color:#f87171;}
+.ml-kpi-spark{position:absolute;bottom:0;right:0;width:70px;height:30px;opacity:.5;}
+.ml-kpi-icon{position:absolute;top:10px;right:10px;font-size:1.1rem;opacity:.2;}
+
+/* ── Panels ─────────────────────────────────────────── */
+.ml-panel{background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;}
+.ml-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border-color);}
+.ml-panel-title{font-size:0.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-primary);display:flex;align-items:center;gap:6px;}
+.ml-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ml-dot.blue{background:#3b82f6;box-shadow:0 0 6px rgba(59,130,246,.5);}
+.ml-dot.green{background:#10b981;box-shadow:0 0 6px rgba(16,185,129,.5);}
+.ml-dot.orange{background:#f97316;box-shadow:0 0 6px rgba(249,115,22,.5);}
+.ml-dot.red{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5);}
+.ml-dot.purple{background:#8b5cf6;box-shadow:0 0 6px rgba(139,92,246,.5);}
+.ml-dot.cyan{background:#06b6d4;box-shadow:0 0 6px rgba(6,182,212,.5);}
+.ml-dot.yellow{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5);}
+.ml-pnl-btn{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#60a5fa;font-size:0.6rem;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .2s;}
+.ml-pnl-btn:hover{background:rgba(59,130,246,0.2);}
+
+/* ── Prediction Table ───────────────────────────────── */
+.ml-search-row{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-color);}
+.ml-search{flex:1;background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-primary);font-size:0.7rem;padding:6px 10px;border-radius:5px;outline:none;}
+.ml-search:focus{border-color:rgba(59,130,246,.5);}
+.ml-filter-sel{background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.68rem;padding:5px 8px;border-radius:5px;cursor:pointer;outline:none;}
+.ml-table{width:100%;border-collapse:collapse;}
+.ml-table th{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:8px 12px;border-bottom:1px solid var(--border-color);text-align:left;white-space:nowrap;cursor:pointer;}
+.ml-table th:hover{color:var(--accent-blue);}
+.ml-table td{font-size:0.72rem;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle;}
+.ml-table tr:hover td{background:rgba(255,255,255,0.02);}
+.ml-table tr:last-child td{border-bottom:none;}
+.ml-train-link{color:#60a5fa;font-weight:700;font-family:var(--font-mono);font-size:0.7rem;text-decoration:none;cursor:pointer;}
+.ml-train-link:hover{text-decoration:underline;}
+.risk-bar-wrap{width:100px;background:rgba(255,255,255,0.06);border-radius:3px;height:6px;overflow:hidden;}
+.risk-bar{height:100%;border-radius:3px;transition:width .6s;}
+.risk-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:0.6rem;font-weight:700;text-transform:uppercase;}
+.risk-pill.CRITICAL{background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.3);}
+.risk-pill.HIGH{background:rgba(249,115,22,.2);color:#fb923c;border:1px solid rgba(249,115,22,.3);}
+.risk-pill.MEDIUM{background:rgba(245,158,11,.2);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+.risk-pill.LOW{background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.3);}
+.conf-bar-wrap{width:80px;background:rgba(255,255,255,0.06);border-radius:3px;height:4px;overflow:hidden;}
+.conf-bar{height:100%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);border-radius:3px;}
+
+/* ── Feature Importance ─────────────────────────────── */
+.fi-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.fi-lbl{font-size:0.63rem;color:var(--text-secondary);width:110px;flex-shrink:0;}
+.fi-bar-wrap{flex:1;background:rgba(255,255,255,0.06);border-radius:2px;height:8px;}
+.fi-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,#3b82f6,#06b6d4);}
+.fi-val{font-size:0.63rem;color:var(--text-muted);font-family:var(--font-mono);width:24px;text-align:right;}
+
+/* ── Risk Matrix ────────────────────────────────────── */
+.risk-matrix-grid{display:grid;grid-template-columns:20px repeat(4,1fr);grid-template-rows:repeat(4,1fr) 20px;gap:3px;padding:12px;height:200px;}
+.rm-cell{border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;cursor:default;transition:transform .15s;}
+.rm-cell:hover{transform:scale(1.05);}
+.rm-label{font-size:0.55rem;color:var(--text-muted);display:flex;align-items:center;justify-content:center;}
+.rm-axis-label{font-size:0.58rem;color:var(--text-muted);text-align:center;}
+
+/* ── AI Explanation Panel ───────────────────────────── */
+.xai-factor{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.xai-factor:last-child{border-bottom:none;}
+.xai-factor-lbl{font-size:0.65rem;color:var(--text-secondary);}
+.xai-factor-bar{flex:1;margin:0 8px;background:rgba(255,255,255,0.06);border-radius:2px;height:4px;}
+.xai-factor-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#8b5cf6,#3b82f6);}
+.xai-factor-val{font-size:0.63rem;color:var(--text-muted);font-family:var(--font-mono);}
+
+/* ── Forecasting Charts ─────────────────────────────── */
+.forecast-item{padding:8px 14px;border-bottom:1px solid var(--border-color);}
+.forecast-item:last-child{border-bottom:none;}
+.forecast-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.forecast-lbl{font-size:0.62rem;font-weight:700;color:var(--text-secondary);}
+.forecast-val{font-size:0.72rem;font-weight:800;color:var(--text-primary);font-family:var(--font-mono);}
+.forecast-canvas{width:100%;height:40px;}
+
+/* ── What-If Analysis ───────────────────────────────── */
+.whatif-scenarios{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border-color);}
+.whatif-chip{padding:4px 10px;border-radius:4px;font-size:0.62rem;font-weight:700;cursor:pointer;border:1px solid transparent;transition:all .2s;}
+.whatif-chip.active{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.4);color:#f87171;}
+.whatif-chip:not(.active){background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-secondary);}
+.whatif-chip:not(.active):hover{border-color:var(--accent-blue);color:var(--accent-blue);}
+.whatif-slider-row{display:flex;align-items:center;gap:10px;padding:6px 14px;}
+.whatif-slider-lbl{font-size:0.62rem;color:var(--text-muted);width:100px;}
+.whatif-slider{flex:1;accent-color:var(--accent-blue);}
+.whatif-slider-val{font-size:0.65rem;font-family:var(--font-mono);color:var(--text-secondary);width:30px;}
+.whatif-result{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px;}
+.whatif-metric{background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;}
+.whatif-metric-lbl{font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.whatif-metric-val{font-size:0.9rem;font-weight:800;font-family:var(--font-mono);}
+
+/* ── Model Performance ──────────────────────────────── */
+.perf-gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;}
+.perf-gauge{text-align:center;}
+.gauge-canvas{width:80px;height:60px;}
+.gauge-lbl{font-size:0.58rem;color:var(--text-muted);margin-top:2px;}
+.perf-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 12px 12px;}
+.perf-metric{background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;}
+.perf-metric-val{font-size:0.9rem;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);}
+.perf-metric-lbl{font-size:0.55rem;color:var(--text-muted);margin-top:2px;}
+
+/* ── AI Insights ────────────────────────────────────── */
+.insight-item{display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.insight-item:last-child{border-bottom:none;}
+.insight-icon{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.75rem;}
+.insight-text{font-size:0.65rem;color:var(--text-secondary);line-height:1.5;}
+.insight-title{font-size:0.65rem;font-weight:700;color:var(--text-primary);margin-bottom:2px;}
+
+/* ── Predictive Alerts ──────────────────────────────── */
+.alert-item{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.alert-item:last-child{border-bottom:none;}
+.alert-type{font-size:0.63rem;font-weight:600;color:var(--text-secondary);}
+.alert-sev{font-size:0.58rem;font-weight:700;padding:2px 7px;border-radius:3px;}
+.alert-sev.high{background:rgba(239,68,68,.2);color:#f87171;}
+.alert-sev.med{background:rgba(245,158,11,.2);color:#fbbf24;}
+
+/* ── Executive Impact ───────────────────────────────── */
+.exec-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;}
+.exec-metric{background:var(--bg-secondary);border-radius:6px;padding:10px;position:relative;overflow:hidden;}
+.exec-metric-lbl{font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.exec-metric-val{font-size:1.1rem;font-weight:800;font-family:var(--font-mono);color:var(--text-primary);}
+.exec-metric-chg{font-size:0.6rem;font-weight:600;margin-top:2px;}
+.exec-metric-chg.pos{color:#34d399;}
+.exec-metric-chg.neg{color:#f87171;}
+.exec-bg{position:absolute;bottom:-10px;right:-5px;font-size:2rem;opacity:.08;}
+
+/* ── Congestion Map ─────────────────────────────────── */
+.cong-map-canvas{width:100%;height:180px;display:block;}
+.cong-legend{display:flex;gap:12px;padding:6px 12px;border-top:1px solid var(--border-color);}
+.cong-leg-item{display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);}
+.cong-leg-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── Trend Charts ───────────────────────────────────── */
+.trend-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:1400px){.trend-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:768px){.trend-grid{grid-template-columns:1fr 1fr;}}
+.trend-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;}
+.trend-card-lbl{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:4px;}
+.trend-card-val{font-size:0.9rem;font-weight:800;color:var(--text-primary);font-family:var(--font-mono);margin-bottom:4px;}
+.trend-canvas{width:100%;height:50px;}
+
+/* ── Layout Grid ────────────────────────────────────── */
+.ml-row{display:grid;gap:10px;margin-bottom:10px;}
+.ml-row-3{grid-template-columns:1fr 1fr 1fr;}
+.ml-row-2{grid-template-columns:1fr 1fr;}
+.ml-row-4{grid-template-columns:1.2fr 1fr 1.5fr 1fr;}
+.ml-row-5{grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;}
+@media(max-width:1200px){.ml-row-3,.ml-row-4,.ml-row-5{grid-template-columns:1fr 1fr;}}
+@media(max-width:768px){.ml-row-3,.ml-row-4,.ml-row-5,.ml-row-2{grid-template-columns:1fr;}}
+
+/* ── Light mode ─────────────────────────────────────── */
+[data-theme="light"] .ml-kpi{background:#fff;}
+[data-theme="light"] .ml-panel{background:#fff;}
+[data-theme="light"] .ml-table tr:hover td{background:rgba(0,0,0,0.02);}
+[data-theme="light"] .ml-table td{border-bottom-color:rgba(0,0,0,0.05);}
+[data-theme="light"] .fi-bar-wrap,[data-theme="light"] .conf-bar-wrap,[data-theme="light"] .risk-bar-wrap{background:rgba(0,0,0,0.06);}
+[data-theme="light"] .whatif-chip:not(.active){background:#f1f5f9;}
+[data-theme="light"] .perf-metric,[data-theme="light"] .exec-metric,[data-theme="light"] .whatif-metric{background:#f8fafc;}
+</style>
+{% endblock %}
+
+{% block content %}
+<form style="display:none;">{% csrf_token %}</form>
+<div class="ml-wrap">
+
+<!-- ── TOP BAR ──────────────────────────────────────── -->
+<div class="ml-topbar">
+  <div class="ml-topbar-left">
+    <div>
+      <div class="ml-title">Machine Learning</div>
+      <div class="ml-subtitle">Delay Prediction Command Center</div>
+    </div>
+    <span class="ml-badge">Model {{ model_info.version|default:"RF-v4.1" }}</span>
+    <div class="ml-live"><span class="ml-live-dot"></span> Live Data</div>
+  </div>
+  <div class="ml-topbar-right">
+    <select class="ml-filter-sel" id="timeRangeSel" onchange="onTimeRangeChange(this.value)">
+      <option value="24h">Next 24 Hours</option>
+      <option value="7d">Next 7 Days</option>
+      <option value="today">Today</option>
+    </select>
+    <select class="ml-filter-sel" id="zoneSel">
+      <option>Northern Zone</option>
+      <option>Southern Zone</option>
+      <option>Eastern Zone</option>
+      <option>Western Zone</option>
+    </select>
+    <select class="ml-filter-sel" id="routeSel">
+      <option>All Routes</option>
+      <option>BOM-DLH</option>
+      <option>GZB-LKO</option>
+      <option>BES-LOH</option>
+    </select>
+    <a href="{% url 'dashboard:analytics' %}" class="ml-ctrl-btn"><i class="bi bi-bar-chart-line"></i> Analytics</a>
+    <a href="{% url 'ml_prediction:dashboard' %}" class="ml-ctrl-btn prim"><i class="bi bi-download"></i> Export</a>
+    {% if user.is_admin %}
+    <button class="ml-ctrl-btn" onclick="retrainModel()" style="color:#fb923c;border-color:rgba(251,146,60,.3);"><i class="bi bi-arrow-repeat"></i> Retrain</button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── KPI ROW ───────────────────────────────────────── -->
+<div class="ml-kpi-row">
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">Predictions Generated Today</div>
+    <div class="ml-kpi-val blue" id="kpi-preds">{{ recent_predictions|length|default:"0" }}</div>
+    <div class="ml-kpi-trend"><i class="bi bi-arrow-up-right"></i> +5% <span style="color:var(--text-muted);font-weight:400;">vs yesterday</span></div>
+    <canvas class="ml-kpi-spark" id="spk-preds"></canvas>
+    <div class="ml-kpi-icon" style="color:#3b82f6;"><i class="bi bi-graph-up-arrow"></i></div>
+  </div>
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">Avg Prediction Accuracy</div>
+    <div class="ml-kpi-val green" id="kpi-acc">{% if model_info.r2_score %}{{ model_info.r2_score|floatformat:1 }}%{% else %}94.8%{% endif %}</div>
+    <div class="ml-kpi-trend"><i class="bi bi-arrow-up-right"></i> +1.2%</div>
+    <canvas class="ml-kpi-spark" id="spk-acc"></canvas>
+    <div class="ml-kpi-icon" style="color:#10b981;"><i class="bi bi-bullseye"></i></div>
+  </div>
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">Predicted Delays</div>
+    <div class="ml-kpi-val orange" id="kpi-delays">{{ risk_summary.HIGH|default:0|add:risk_summary.CRITICAL|default:0 }} <span style="font-size:.7rem;">trains</span></div>
+    <div class="ml-kpi-trend down"><i class="bi bi-arrow-up-right"></i> +8%</div>
+    <canvas class="ml-kpi-spark" id="spk-delays"></canvas>
+    <div class="ml-kpi-icon" style="color:#f97316;"><i class="bi bi-clock-history"></i></div>
+  </div>
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">High Risk Trains</div>
+    <div class="ml-kpi-val red" id="kpi-highrisk">{{ risk_summary.HIGH|default:0|add:risk_summary.CRITICAL|default:0 }} <span style="font-size:.7rem;">+10%</span></div>
+    <div class="ml-kpi-trend down"><i class="bi bi-arrow-up-right"></i> Risk Trend</div>
+    <canvas class="ml-kpi-spark" id="spk-risk"></canvas>
+    <div class="ml-kpi-icon" style="color:#ef4444;"><i class="bi bi-exclamation-triangle"></i></div>
+  </div>
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">AI Model Confidence</div>
+    <div class="ml-kpi-val purple" id="kpi-conf">{% if model_info.cv_score %}{{ model_info.cv_score|floatformat:0 }}%{% else %}92%{% endif %}</div>
+    <div class="ml-kpi-trend"><i class="bi bi-arrow-up-right"></i> +3%</div>
+    <canvas class="ml-kpi-spark" id="spk-conf"></canvas>
+    <div class="ml-kpi-icon" style="color:#8b5cf6;"><i class="bi bi-cpu"></i></div>
+  </div>
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">Congestion Forecast Acc.</div>
+    <div class="ml-kpi-val cyan" id="kpi-cong">88%</div>
+    <div class="ml-kpi-trend"><i class="bi bi-arrow-up-right"></i> +2.5%</div>
+    <canvas class="ml-kpi-spark" id="spk-cong"></canvas>
+    <div class="ml-kpi-icon" style="color:#06b6d4;"><i class="bi bi-diagram-3"></i></div>
+  </div>
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">Throughput Forecast Acc.</div>
+    <div class="ml-kpi-val blue" id="kpi-thru">91%</div>
+    <div class="ml-kpi-trend"><i class="bi bi-arrow-up-right"></i> +1.8%</div>
+    <canvas class="ml-kpi-spark" id="spk-thru"></canvas>
+    <div class="ml-kpi-icon" style="color:#3b82f6;"><i class="bi bi-speedometer2"></i></div>
+  </div>
+  <div class="ml-kpi">
+    <div class="ml-kpi-lbl">Delay Reduction Impact</div>
+    <div class="ml-kpi-val green" id="kpi-impact">+24.3%</div>
+    <div class="ml-kpi-trend"><i class="bi bi-arrow-up-right"></i> +0.5%</div>
+    <canvas class="ml-kpi-spark" id="spk-impact"></canvas>
+    <div class="ml-kpi-icon" style="color:#10b981;"><i class="bi bi-arrow-down-circle"></i></div>
+  </div>
+</div>
+
+<!-- ── ROW 1: Prediction Table + Forecasting Panel ── -->
+<div class="ml-row" style="grid-template-columns:1fr 240px;margin-bottom:10px;">
+
+  <!-- AI Prediction Command Center Table -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot blue"></span>AI Prediction Command Center</div>
+      <div style="display:flex;gap:6px;">
+        <a href="{% url 'ml_prediction:predict' %}" class="ml-pnl-btn"><i class="bi bi-plus"></i> New Prediction</a>
+        <a href="{% url 'conflicts:list' %}" class="ml-pnl-btn"><i class="bi bi-shield-exclamation"></i> Conflicts</a>
+      </div>
+    </div>
+    <div class="ml-search-row">
+      <input type="text" class="ml-search" placeholder="🔍  Search train number, route, station…" id="predSearch" oninput="filterTable()">
+      <select class="ml-filter-sel" id="riskFilter" onchange="filterTable()">
+        <option value="">All Risk</option>
+        <option value="CRITICAL">Critical</option>
+        <option value="HIGH">High</option>
+        <option value="MEDIUM">Medium</option>
+        <option value="LOW">Low</option>
+      </select>
+      <select class="ml-filter-sel" id="sortBy" onchange="filterTable()">
+        <option value="risk">Sort: Risk</option>
+        <option value="delay">Sort: Delay</option>
+        <option value="conf">Sort: Confidence</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto;max-height:280px;overflow-y:auto;">
+      <table class="ml-table" id="predTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable('train')">Train Number <i class="bi bi-chevron-expand"></i></th>
+            <th onclick="sortTable('route')">Route <i class="bi bi-chevron-expand"></i></th>
+            <th onclick="sortTable('curr')">Current Delay <i class="bi bi-chevron-expand"></i></th>
+            <th onclick="sortTable('pred')">Predicted Delay <i class="bi bi-chevron-expand"></i></th>
+            <th onclick="sortTable('risk')">Risk Score (0–100) <i class="bi bi-chevron-expand"></i></th>
+            <th onclick="sortTable('conf')">Confidence (%) <i class="bi bi-chevron-expand"></i></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="predTbody">
+          {% for pred in recent_predictions %}
+          <tr data-risk="{{ pred.risk_level }}" data-delay="{{ pred.predicted_delay_minutes }}">
+            <td>
+              <a href="{% if pred.train %}{% url 'trains:detail' pred.train.id %}{% else %}#{% endif %}" class="ml-train-link">
+                {{ pred.train.train_number|default:"N/A" }}
+              </a>
+            </td>
+            <td style="color:var(--text-secondary);font-size:0.68rem;">
+              {% if pred.train.source_station and pred.train.destination_station %}
+                {{ pred.train.source_station.code }}–{{ pred.train.destination_station.code }}
+              {% else %}—{% endif %}
+            </td>
+            <td style="color:{% if pred.train.current_delay and pred.train.current_delay > 0 %}#fb923c{% else %}#34d399{% endif %};">
+              {{ pred.train.current_delay|default:0 }} min
+            </td>
+            <td style="color:{% if pred.predicted_delay_minutes > 30 %}#f87171{% elif pred.predicted_delay_minutes > 10 %}#fbbf24{% else %}#34d399{% endif %};font-weight:700;">
+              {{ pred.predicted_delay_minutes|floatformat:0 }} min
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div class="risk-bar-wrap">
+                  <div class="risk-bar" style="width:{% if pred.risk_level == 'CRITICAL' %}90{% elif pred.risk_level == 'HIGH' %}70{% elif pred.risk_level == 'MEDIUM' %}45{% else %}15{% endif %}%;background:{% if pred.risk_level == 'CRITICAL' %}#ef4444{% elif pred.risk_level == 'HIGH' %}#f97316{% elif pred.risk_level == 'MEDIUM' %}#f59e0b{% else %}#10b981{% endif %};"></div>
+                </div>
+                <span class="risk-pill {{ pred.risk_level }}">{{ pred.risk_level }}</span>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div class="conf-bar-wrap">
+                  <div class="conf-bar" style="width:{{ pred.confidence_score|floatformat:0 }}%;"></div>
+                </div>
+                <span style="font-size:0.65rem;font-family:var(--font-mono);">{{ pred.confidence_score|floatformat:0 }}%</span>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <a href="{% url 'ai_engine:dashboard' %}" title="Optimize" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;"><i class="bi bi-lightning-charge"></i></a>
+                <a href="{% url 'conflicts:list' %}" title="View Conflicts" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;"><i class="bi bi-shield-exclamation"></i></a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+                    <tr data-risk="CRITICAL" data-delay="45">
+            <td><a href="{% url 'trains:list' %}" class="ml-train-link">TRN-201-DL</a></td>
+            <td style="color:var(--text-secondary);font-size:0.68rem;">BOM-DLH</td>
+            <td style="color:#34d399;">0 min</td>
+            <td style="color:#f87171;font-weight:700;">45 min</td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="risk-bar-wrap"><div class="risk-bar" style="width:90%;background:#ef4444;"></div></div><span class="risk-pill CRITICAL">CRITICAL</span></div></td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="conf-bar-wrap"><div class="conf-bar" style="width:80%;"></div></div><span style="font-size:0.65rem;font-family:var(--font-mono);">80%</span></div></td>
+            <td><div style="display:flex;gap:4px;"><a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;"><i class="bi bi-lightning-charge"></i></a><a href="{% url 'conflicts:list' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;"><i class="bi bi-shield-exclamation"></i></a></div></td>
+          </tr>
+          <tr data-risk="HIGH" data-delay="12">
+            <td><a href="{% url 'trains:list' %}" class="ml-train-link">TRN-415-GZ</a></td>
+            <td style="color:var(--text-secondary);font-size:0.68rem;">GZB-LKO</td>
+            <td style="color:#34d399;">0 min</td>
+            <td style="color:#fb923c;font-weight:700;">12 min</td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="risk-bar-wrap"><div class="risk-bar" style="width:65%;background:#f97316;"></div></div><span class="risk-pill HIGH">HIGH</span></div></td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="conf-bar-wrap"><div class="conf-bar" style="width:90%;"></div></div><span style="font-size:0.65rem;font-family:var(--font-mono);">90%</span></div></td>
+            <td><div style="display:flex;gap:4px;"><a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;"><i class="bi bi-lightning-charge"></i></a><a href="{% url 'conflicts:list' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;"><i class="bi bi-shield-exclamation"></i></a></div></td>
+          </tr>
+          <tr data-risk="LOW" data-delay="5">
+            <td><a href="{% url 'trains:list' %}" class="ml-train-link">TRN-201-DL</a></td>
+            <td style="color:var(--text-secondary);font-size:0.68rem;">GZB-LKO</td>
+            <td style="color:#34d399;">0 min</td>
+            <td style="color:#34d399;font-weight:700;">5 min</td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="risk-bar-wrap"><div class="risk-bar" style="width:15%;background:#10b981;"></div></div><span class="risk-pill LOW">LOW</span></div></td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="conf-bar-wrap"><div class="conf-bar" style="width:70%;"></div></div><span style="font-size:0.65rem;font-family:var(--font-mono);">70%</span></div></td>
+            <td><div style="display:flex;gap:4px;"><a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;"><i class="bi bi-lightning-charge"></i></a><a href="{% url 'conflicts:list' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;"><i class="bi bi-shield-exclamation"></i></a></div></td>
+          </tr>
+          <tr data-risk="MEDIUM" data-delay="12">
+            <td><a href="{% url 'trains:list' %}" class="ml-train-link">TRN-415-GZ</a></td>
+            <td style="color:var(--text-secondary);font-size:0.68rem;">GZB-LKO</td>
+            <td style="color:#34d399;">0 min</td>
+            <td style="color:#fbbf24;font-weight:700;">12 min</td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="risk-bar-wrap"><div class="risk-bar" style="width:45%;background:#f59e0b;"></div></div><span class="risk-pill MEDIUM">MEDIUM</span></div></td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="conf-bar-wrap"><div class="conf-bar" style="width:75%;"></div></div><span style="font-size:0.65rem;font-family:var(--font-mono);">75%</span></div></td>
+            <td><div style="display:flex;gap:4px;"><a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;"><i class="bi bi-lightning-charge"></i></a><a href="{% url 'conflicts:list' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;"><i class="bi bi-shield-exclamation"></i></a></div></td>
+          </tr>
+          <tr data-risk="CRITICAL" data-delay="45">
+            <td><a href="{% url 'trains:list' %}" class="ml-train-link">TRN-201-DL</a></td>
+            <td style="color:var(--text-secondary);font-size:0.68rem;">GZB-LKO</td>
+            <td style="color:#34d399;">0 min</td>
+            <td style="color:#f87171;font-weight:700;">45 min</td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="risk-bar-wrap"><div class="risk-bar" style="width:90%;background:#ef4444;"></div></div><span class="risk-pill CRITICAL">CRITICAL</span></div></td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="conf-bar-wrap"><div class="conf-bar" style="width:80%;"></div></div><span style="font-size:0.65rem;font-family:var(--font-mono);">80%</span></div></td>
+            <td><div style="display:flex;gap:4px;"><a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;"><i class="bi bi-lightning-charge"></i></a><a href="{% url 'conflicts:list' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;"><i class="bi bi-shield-exclamation"></i></a></div></td>
+          </tr>
+          <tr data-risk="LOW" data-delay="5">
+            <td><a href="{% url 'trains:list' %}" class="ml-train-link">TRN-415-GZ</a></td>
+            <td style="color:var(--text-secondary);font-size:0.68rem;">BES-LOH</td>
+            <td style="color:#34d399;">0 min</td>
+            <td style="color:#34d399;font-weight:700;">5 min</td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="risk-bar-wrap"><div class="risk-bar" style="width:45%;background:#f59e0b;"></div></div><span class="risk-pill LOW">LOW</span></div></td>
+            <td><div style="display:flex;align-items:center;gap:6px;"><div class="conf-bar-wrap"><div class="conf-bar" style="width:85%;"></div></div><span style="font-size:0.65rem;font-family:var(--font-mono);">85%</span></div></td>
+            <td><div style="display:flex;gap:4px;"><a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;"><i class="bi bi-lightning-charge"></i></a><a href="{% url 'conflicts:list' %}" class="ml-pnl-btn" style="padding:3px 7px;font-size:0.58rem;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;"><i class="bi bi-shield-exclamation"></i></a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ML Forecasting Panel -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot green"></span>ML Forecasting Panel</div>
+    </div>
+    <div class="forecast-item">
+      <div class="forecast-hdr"><span class="forecast-lbl">Next Hour</span><span class="forecast-val" style="color:#f87171;">+12 min avg</span></div>
+      <canvas class="forecast-canvas" id="fc-1h"></canvas>
+    </div>
+    <div class="forecast-item">
+      <div class="forecast-hdr"><span class="forecast-lbl">Next 6 Hours</span><span class="forecast-val" style="color:#fbbf24;">+28 min avg</span></div>
+      <canvas class="forecast-canvas" id="fc-6h"></canvas>
+    </div>
+    <div class="forecast-item">
+      <div class="forecast-hdr"><span class="forecast-lbl">Next 24 Hours</span><span class="forecast-val" style="color:#fb923c;">+35 min avg</span></div>
+      <canvas class="forecast-canvas" id="fc-24h"></canvas>
+    </div>
+    <div class="forecast-item">
+      <div class="forecast-hdr"><span class="forecast-lbl">Next 7 Days</span><span class="forecast-val" style="color:#a78bfa;">+22 min avg</span></div>
+      <canvas class="forecast-canvas" id="fc-7d"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── ROW 2: Feature Importance + Risk Matrix + XAI + Congestion Map ── -->
+<div class="ml-row ml-row-4" style="margin-bottom:10px;">
+
+  <!-- Feature Importance -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot cyan"></span>Feature Importance</div>
+    </div>
+    <div style="padding:10px 14px;">
+      {% if model_info.feature_importances %}
+        {% for fname, fval in model_info.feature_importances.items %}
+        <div class="fi-row">
+          <div class="fi-lbl">{{ fname|truncatechars:18 }}</div>
+          <div class="fi-bar-wrap"><div class="fi-bar" style="width:{% widthratio fval 1 100 %}%;"></div></div>
+          <div class="fi-val">{% widthratio fval 1 100 %}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="fi-row"><div class="fi-lbl">Weather Impact</div><div class="fi-bar-wrap"><div class="fi-bar" style="width:88%;"></div></div><div class="fi-val">28</div></div>
+        <div class="fi-row"><div class="fi-lbl">Traffic Density</div><div class="fi-bar-wrap"><div class="fi-bar" style="width:75%;"></div></div><div class="fi-val">24</div></div>
+        <div class="fi-row"><div class="fi-lbl">Train Type</div><div class="fi-bar-wrap"><div class="fi-bar" style="width:62%;"></div></div><div class="fi-val">20</div></div>
+        <div class="fi-row"><div class="fi-lbl">Route Importance</div><div class="fi-bar-wrap"><div class="fi-bar" style="width:54%;"></div></div><div class="fi-val">17</div></div>
+        <div class="fi-row"><div class="fi-lbl">Day of Week</div><div class="fi-bar-wrap"><div class="fi-bar" style="width:41%;"></div></div><div class="fi-val">13</div></div>
+        <div class="fi-row"><div class="fi-lbl">Historical Delays</div><div class="fi-bar-wrap"><div class="fi-bar" style="width:35%;"></div></div><div class="fi-val">11</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Train Risk Matrix -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot red"></span>Train Risk Matrix</div>
+    </div>
+    <div style="padding:10px;">
+      <div style="display:flex;height:180px;gap:4px;">
+        <div style="display:flex;flex-direction:column;justify-content:space-between;padding:4px 0;">
+          <div style="font-size:0.55rem;color:var(--text-muted);">High</div>
+          <div style="font-size:0.55rem;color:var(--text-muted);">Low</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;position:relative;">
+          <div style="background:rgba(245,158,11,.25);border:1px solid rgba(245,158,11,.3);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fbbf24;">Medium</div>
+          <div style="background:rgba(239,68,68,.3);border:1px solid rgba(239,68,68,.4);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#f87171;">Critical<br><span style="font-size:0.55rem;font-weight:400;">{{ risk_summary.CRITICAL|default:"1" }}</span></div>
+          <div style="background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.3);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#34d399;">Low<br><span style="font-size:0.55rem;font-weight:400;">{{ risk_summary.LOW|default:"0" }}</span></div>
+          <div style="background:rgba(249,115,22,.25);border:1px solid rgba(249,115,22,.3);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fb923c;">High<br><span style="font-size:0.55rem;font-weight:400;">{{ risk_summary.HIGH|default:"2" }}</span></div>
+          <div style="position:absolute;bottom:-18px;left:0;right:0;display:flex;justify-content:space-between;font-size:0.53rem;color:var(--text-muted);"><span>Low</span><span>← Operational Impact →</span><span>High</span></div>
+        </div>
+      </div>
+      <div style="margin-top:22px;display:flex;justify-content:center;gap:10px;">
+        {% for level, count in risk_summary.items %}
+        <div style="text-align:center;">
+          <div class="risk-pill {{ level }}" style="font-size:0.55rem;">{{ level }}</div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--text-primary);margin-top:2px;">{{ count }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Explanation Panel -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot purple"></span>AI Explanation Panel</div>
+      <select class="ml-filter-sel" id="xaiTrainSel" onchange="loadXAI(this.value)" style="font-size:0.6rem;">
+        {% for pred in recent_predictions|slice:":5" %}
+        <option value="{{ pred.id }}">{{ pred.train.train_number|default:"Custom" }}</option>
+        {% empty %}
+        <option value="demo">TRN-201-DL</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="padding:10px 14px;">
+      <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="xai-train-lbl">
+        AI EXPLANATION: {{ recent_predictions.0.train.train_number|default:"TRN-201-DL" }}
+      </div>
+      <div style="font-size:0.62rem;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Contributing Factors</div>
+      <div id="xai-factors">
+        {% if recent_predictions.0 %}
+          <div class="xai-factor"><span class="xai-factor-lbl">Traffic Density</span><div class="xai-factor-bar"><div class="xai-factor-fill" style="width:85%;"></div></div><span class="xai-factor-val">8.5</span></div>
+          <div class="xai-factor"><span class="xai-factor-lbl">Train Type</span><div class="xai-factor-bar"><div class="xai-factor-fill" style="width:72%;"></div></div><span class="xai-factor-val">7.2</span></div>
+          <div class="xai-factor"><span class="xai-factor-lbl">Historical Delay</span><div class="xai-factor-bar"><div class="xai-factor-fill" style="width:60%;"></div></div><span class="xai-factor-val">6.0</span></div>
+        {% else %}
+          <div class="xai-factor"><span class="xai-factor-lbl">Traffic Density</span><div class="xai-factor-bar"><div class="xai-factor-fill" style="width:85%;"></div></div><span class="xai-factor-val">8.5</span></div>
+          <div class="xai-factor"><span class="xai-factor-lbl">Train Type</span><div class="xai-factor-bar"><div class="xai-factor-fill" style="width:72%;"></div></div><span class="xai-factor-val">7.2</span></div>
+          <div class="xai-factor"><span class="xai-factor-lbl">Route Importance</span><div class="xai-factor-bar"><div class="xai-factor-fill" style="width:55%;"></div></div><span class="xai-factor-val">5.5</span></div>
+        {% endif %}
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">
+        <div style="font-size:0.62rem;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Risk Drivers</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);line-height:1.5;" id="xai-drivers">
+          • Cascade delay risk identified<br>• Congestion hotspot on route<br>• Peak hour operational pressure
+        </div>
+      </div>
+      <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;">
+          <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:2px;">Confidence Level</div>
+          <div style="font-size:0.9rem;font-weight:800;color:#8b5cf6;" id="xai-conf">{{ recent_predictions.0.confidence_score|floatformat:0|default:"92" }}%</div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:5px;padding:8px;text-align:center;">
+          <div style="font-size:0.55rem;color:var(--text-muted);margin-bottom:2px;">Predicted Outcome</div>
+          <div style="font-size:0.75rem;font-weight:800;color:#f87171;" id="xai-outcome">
+            {% if recent_predictions.0 %}
+              {{ recent_predictions.0.risk_level }} Risk
+            {% else %}Critical DL{% endif %}
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn" style="width:100%;justify-content:center;">
+          <i class="bi bi-lightning-charge"></i> Optimize via AI Engine
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Congestion Forecast Map -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot orange"></span>Congestion Forecast Map</div>
+      <a href="{% url 'network:visualizer' %}" class="ml-pnl-btn"><i class="bi bi-map"></i> Full Map</a>
+    </div>
+    <canvas id="congMap" class="cong-map-canvas"></canvas>
+    <div class="cong-legend">
+      <div class="cong-leg-item"><div class="cong-leg-dot" style="background:#ef4444;"></div>Predicted Bottleneck</div>
+      <div class="cong-leg-item"><div class="cong-leg-dot" style="background:#f59e0b;"></div>Future Congestion</div>
+      <div class="cong-leg-item"><div class="cong-leg-dot" style="background:#3b82f6;"></div>Occupancy Risk</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── ROW 3: What-If + Model Performance + AI Insights + Predictive Alerts ── -->
+<div class="ml-row ml-row-4" style="margin-bottom:10px;">
+
+  <!-- What-If Analysis Panel -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot yellow"></span>What-If Analysis Panel</div>
+    </div>
+    <div class="whatif-scenarios">
+      <span class="whatif-chip active" onclick="setScenario(this,'rain')">Heavy Rain</span>
+      <span class="whatif-chip" onclick="setScenario(this,'signal')">Signal Failure</span>
+      <span class="whatif-chip" onclick="setScenario(this,'track')">Track Closure</span>
+      <span class="whatif-chip" onclick="setScenario(this,'breakdown')">Train Breakdown</span>
+    </div>
+    <div class="whatif-slider-row">
+      <span class="whatif-slider-lbl">Set parameters</span>
+      <input type="range" class="whatif-slider" min="0" max="100" value="50" id="wi-slider1" oninput="updateWhatIf()">
+      <span class="whatif-slider-val" id="wi-val1">50</span>
+    </div>
+    <div class="whatif-slider-row">
+      <span class="whatif-slider-lbl">Set parameters</span>
+      <input type="range" class="whatif-slider" min="0" max="100" value="30" id="wi-slider2" oninput="updateWhatIf()">
+      <span class="whatif-slider-val" id="wi-val2">30</span>
+    </div>
+    <div class="whatif-result">
+      <div class="whatif-metric"><div class="whatif-metric-lbl">Predicted Impact</div><div class="whatif-metric-val" style="color:#f87171;" id="wi-impact">+42 MIN</div></div>
+      <div class="whatif-metric"><div class="whatif-metric-lbl">Trains Affected</div><div class="whatif-metric-val" style="color:#fb923c;" id="wi-trains">8</div></div>
+      <div class="whatif-metric"><div class="whatif-metric-lbl">Revenue Loss</div><div class="whatif-metric-val" style="color:#a78bfa;" id="wi-rev">₹2.4L</div></div>
+      <div class="whatif-metric"><div class="whatif-metric-lbl">Recovery Time</div><div class="whatif-metric-val" style="color:#22d3ee;" id="wi-reco">3.2 hr</div></div>
+    </div>
+    <div style="padding:0 14px 10px;">
+      <button onclick="runWhatIfSimulation()" class="ml-pnl-btn" style="width:100%;justify-content:center;padding:8px;">
+        <i class="bi bi-play-fill"></i> Run Simulation
+      </button>
+    </div>
+  </div>
+
+  <!-- Model Performance -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot blue"></span>Model Performance</div>
+      <a href="{% url 'ml_prediction:dashboard' %}" class="ml-pnl-btn" onclick="loadModelInfo();return false;"><i class="bi bi-arrow-repeat"></i> Refresh</a>
+    </div>
+    <div class="perf-gauges">
+      <div class="perf-gauge">
+        <canvas class="gauge-canvas" id="g-acc"></canvas>
+        <div class="gauge-lbl">Accuracy</div>
+      </div>
+      <div class="perf-gauge">
+        <canvas class="gauge-canvas" id="g-prec"></canvas>
+        <div class="gauge-lbl">Precision</div>
+      </div>
+      <div class="perf-gauge">
+        <canvas class="gauge-canvas" id="g-rec"></canvas>
+        <div class="gauge-lbl">Recall</div>
+      </div>
+    </div>
+    <div class="perf-metrics">
+      <div class="perf-metric">
+        <div class="perf-metric-val" style="color:#60a5fa;">{% if model_info.mae %}{{ model_info.mae|floatformat:1 }}{% else %}4.2{% endif %}</div>
+        <div class="perf-metric-lbl">MAE</div>
+      </div>
+      <div class="perf-metric">
+        <div class="perf-metric-val" style="color:#a78bfa;">{% if model_info.rmse %}{{ model_info.rmse|floatformat:1 }}{% else %}7.8{% endif %}</div>
+        <div class="perf-metric-lbl">RMSE</div>
+      </div>
+      <div class="perf-metric">
+        <div class="perf-metric-val" style="color:#34d399;">{% if model_info.r2_score %}{{ model_info.r2_score|floatformat:2 }}{% else %}0.94{% endif %}</div>
+        <div class="perf-metric-lbl">R² Score</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Insights -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot green"></span>AI Insights</div>
+      <a href="{% url 'ai_engine:dashboard' %}" class="ml-pnl-btn"><i class="bi bi-lightning-charge"></i> AI Engine</a>
+    </div>
+    <div style="padding:4px 0;">
+      <div class="insight-item">
+        <div class="insight-icon" style="background:rgba(239,68,68,.15);color:#f87171;"><i class="bi bi-exclamation-triangle"></i></div>
+        <div><div class="insight-title">Delay Reduction Opportunities</div><div class="insight-text">Rerouting BOM-DLH corridor trains via alternate track can reduce average delay by 18 min. Recommend immediate re-scheduling.</div></div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon" style="background:rgba(245,158,11,.15);color:#fbbf24;"><i class="bi bi-eye"></i></div>
+        <div><div class="insight-title">Risk Observations</div><div class="insight-text">{{ risk_summary.CRITICAL|default:"1" }} trains in CRITICAL zone. Historical patterns show 87% cascade probability if unaddressed in next 2 hours.</div></div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon" style="background:rgba(16,185,129,.15);color:#34d399;"><i class="bi bi-check2-circle"></i></div>
+        <div><div class="insight-title">Recommended Actions</div><div class="insight-text">Draw inactive risk incentivization. Consumer reduction costs and recommendation. Capacity optimization and load rebalancing.</div></div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;"><i class="bi bi-cpu"></i></div>
+        <div><div class="insight-title">Model Confidence Trend</div><div class="insight-text">Model accuracy improved +2.3% over last 7 days with new training data. Next retrain scheduled in 3 days.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Predictive Alerts -->
+  <div class="ml-panel">
+    <div class="ml-panel-hdr">
+      <div class="ml-panel-title"><span class="ml-dot red"></span>Predictive Alerts</div>
+    </div>
+    <div style="padding:4px 0;">
+      <div class="alert-item">
+        <div>
+          <div class="alert-type">High Delay Risk</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">{{ risk_summary.CRITICAL|default:1 }} trains · BOM-DLH</div>
+        </div>
+        <span class="alert-sev high">Severity ●</span>
+      </div>
+      <div class="alert-item">
+        <div>
+          <div class="alert-type">Congestion Warning</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">AGC section · Next 2hr</div>
+        </div>
+        <span class="alert-sev high">Severity ●</span>
+      </div>
+      <div class="alert-item">
+        <div>
+          <div class="alert-type">Throughput Warning</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">Northern corridor · -12%</div>
+        </div>
+        <span class="alert-sev med">Severity ●</span>
+      </div>
+      <div class="alert-item">
+        <div>
+          <div class="alert-type">Escalation Risk</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">{{ risk_summary.HIGH|default:2 }} trains at threshold</div>
+        </div>
+        <span class="alert-sev med">Severity ●</span>
+      </div>
+      <div class="alert-item">
+        <div>
+          <div class="alert-type">Congestion Warning</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">GZB-LKO · Peak hour</div>
+        </div>
+        <span class="alert-sev med">Severity ●</span>
+      </div>
+    </div>
+    <div style="padding:8px 12px;border-top:1px solid var(--border-color);">
+      <a href="{% url 'conflicts:list' %}" class="ml-pnl-btn" style="width:100%;justify-content:center;">
+        <i class="bi bi-shield-exclamation"></i> View All Conflicts
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── ROW 4: Trend Charts ──────────────────────────── -->
+<div class="trend-grid">
+  <div class="trend-card">
+    <div class="trend-card-lbl">Prediction Accuracy Trend</div>
+    <div class="trend-card-val" style="color:#34d399;">94.8%</div>
+    <canvas class="trend-canvas" id="tr-acc"></canvas>
+  </div>
+  <div class="trend-card">
+    <div class="trend-card-lbl">Delay Forecast Trend</div>
+    <div class="trend-card-val" style="color:#fb923c;">+28 MIN</div>
+    <canvas class="trend-canvas" id="tr-delay"></canvas>
+  </div>
+  <div class="trend-card">
+    <div class="trend-card-lbl">Congestion Forecast Trend</div>
+    <div class="trend-card-val" style="color:#22d3ee;">68%</div>
+    <canvas class="trend-canvas" id="tr-cong"></canvas>
+  </div>
+  <div class="trend-card">
+    <div class="trend-card-lbl">Model Confidence Trend</div>
+    <div class="trend-card-val" style="color:#a78bfa;">92%</div>
+    <canvas class="trend-canvas" id="tr-conf"></canvas>
+  </div>
+  <div class="trend-card">
+    <div class="trend-card-lbl">Throughput Forecast Trend</div>
+    <div class="trend-card-val" style="color:#60a5fa;">91%</div>
+    <canvas class="trend-canvas" id="tr-thru"></canvas>
+  </div>
+</div>
+
+<!-- ── ROW 5: Executive Impact ──────────────────────── -->
+<div class="ml-panel">
+  <div class="ml-panel-hdr">
+    <div class="ml-panel-title"><span class="ml-dot purple"></span>Executive Impact</div>
+    <a href="{% url 'dashboard:analytics' %}" class="ml-pnl-btn"><i class="bi bi-bar-chart-line"></i> Full Analytics</a>
+  </div>
+  <div class="exec-metrics">
+    <div class="exec-metric">
+      <div class="exec-metric-lbl">Passenger Impact</div>
+      <div class="exec-metric-val">49.36</div>
+      <div class="exec-metric-chg neg"><i class="bi bi-arrow-up-right"></i> -0.5% vs last week</div>
+      <div class="exec-bg"><i class="bi bi-people"></i></div>
+    </div>
+    <div class="exec-metric">
+      <div class="exec-metric-lbl">Revenue Impact</div>
+      <div class="exec-metric-val" style="color:#f87171;">$23.5K</div>
+      <div class="exec-metric-chg neg"><i class="bi bi-arrow-up-right"></i> -1.2%</div>
+      <div class="exec-bg"><i class="bi bi-currency-dollar"></i></div>
+    </div>
+    <div class="exec-metric">
+      <div class="exec-metric-lbl">Delay Cost Savings</div>
+      <div class="exec-metric-val" style="color:#34d399;">$3.00</div>
+      <div class="exec-metric-chg pos"><i class="bi bi-arrow-up-right"></i> +0.5%</div>
+      <div class="exec-bg"><i class="bi bi-piggy-bank"></i></div>
+    </div>
+    <div class="exec-metric">
+      <div class="exec-metric-lbl">Operational Efficiency</div>
+      <div class="exec-metric-val" style="color:#60a5fa;">+11.2K</div>
+      <div class="exec-metric-chg pos"><i class="bi bi-arrow-up-right"></i> +0.8%</div>
+      <div class="exec-bg"><i class="bi bi-speedometer2"></i></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.ml-wrap -->
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script>
+if(typeof Chart==='undefined'){var _s=document.createElement('script');_s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';document.head.appendChild(_s);}
+</script>
+<script>
+'use strict';
+const isDark=()=>document.documentElement.getAttribute('data-theme')!=='light';
+const gc=()=>isDark()?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)';
+const tc=()=>isDark()?'#8892a4':'#64748b';
+const tt=()=>({backgroundColor:isDark()?'#1a2234':'#fff',titleColor:isDark()?'#e8eaf0':'#1e293b',bodyColor:tc(),borderColor:'rgba(255,255,255,0.1)',borderWidth:1});
+const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const labels7=()=>{const d=new Date(),r=[];for(let i=6;i>=0;i--){const dd=new Date(d);dd.setDate(d.getDate()-i);r.push(days[dd.getDay()]);}return r;};
+const rnd=(n,b,v)=>Array.from({length:n},()=>+(b+(Math.random()-.5)*v).toFixed(1));
+const charts={};
+
+function mkLine(id,data,color,fill=true,tension=0.4){
+  const c=document.getElementById(id);if(!c)return;
+  if(charts[id]){charts[id].destroy();}
+  charts[id]=new Chart(c,{type:'line',data:{labels:labels7(),datasets:[{data,borderColor:color,backgroundColor:fill?color.replace(')',',0.12)').replace('rgb','rgba'):'transparent',fill,borderWidth:1.5,tension,pointRadius:2,pointBackgroundColor:color}]},options:{responsive:false,maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:false},tooltip:tt()},scales:{x:{display:false},y:{display:false}}}});
+}
+
+function mkGauge(id,value,color){
+  const c=document.getElementById(id);if(!c)return;
+  const p=value/100;
+  if(charts[id]){charts[id].destroy();}
+  charts[id]=new Chart(c,{type:'doughnut',data:{datasets:[{data:[p*100,(100-p*100)],backgroundColor:[color,'rgba(255,255,255,0.06)'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:false,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}},layout:{padding:4}}});
+  // Draw center text
+  const orig=Chart.registry.plugins.get('doughnutCenterText');
+}
+
+function mkForecast(id,color){
+  const c=document.getElementById(id);if(!c)return;
+  const W=c.parentElement.clientWidth||200,H=40;
+  c.setAttribute('width',W);c.setAttribute('height',H);
+  if(charts[id]){charts[id].destroy();}
+  charts[id]=new Chart(c,{type:'line',data:{labels:Array.from({length:12},(_,i)=>i),datasets:[{data:rnd(12,25,15),borderColor:color,backgroundColor:color.replace(')',',0.1)').replace('rgb','rgba'),fill:true,borderWidth:1.5,tension:0.5,pointRadius:0}]},options:{responsive:false,maintainAspectRatio:false,animation:{duration:600},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+}
+
+function mkSparkline(id,color){
+  const c=document.getElementById(id);if(!c)return;
+  c.setAttribute('width',70);c.setAttribute('height',30);
+  if(charts[id]){charts[id].destroy();}
+  charts[id]=new Chart(c,{type:'line',data:{labels:Array.from({length:8},(_,i)=>i),datasets:[{data:rnd(8,70,20),borderColor:color,backgroundColor:'transparent',borderWidth:1.5,tension:0.4,pointRadius:0}]},options:{responsive:false,maintainAspectRatio:false,animation:{duration:600},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+}
+
+function mkTrend(id,data,color){
+  const c=document.getElementById(id);if(!c)return;
+  const W=c.parentElement.clientWidth||160,H=50;
+  c.setAttribute('width',W);c.setAttribute('height',H);
+  if(charts[id]){charts[id].destroy();}
+  charts[id]=new Chart(c,{type:'line',data:{labels:labels7(),datasets:[{data,borderColor:color,backgroundColor:color.replace(')',',0.08)').replace('rgb','rgba'),fill:true,borderWidth:1.5,tension:0.4,pointRadius:2,pointBackgroundColor:color,pointBorderColor:isDark()?'#1a2234':'#fff',pointBorderWidth:1.5}]},options:{responsive:false,maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:false},tooltip:tt()},scales:{x:{display:false},y:{display:false}}}});
+}
+
+function drawCongestionMap(){
+  const c=document.getElementById('congMap');if(!c)return;
+  const W=c.parentElement.clientWidth||300,H=180;
+  c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  const dark=isDark();
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle=dark?'#0f1623':'#f1f5f9';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle=dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)';
+  ctx.lineWidth=0.5;
+  for(let i=0;i<W;i+=30){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke();}
+  for(let i=0;i<H;i+=20){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke();}
+
+  // Station nodes
+  const stations=[
+    {x:.1,y:.3,name:'DLH',risk:0},{x:.3,y:.2,name:'AGC',risk:2},
+    {x:.5,y:.4,name:'ETW',risk:1},{x:.7,y:.3,name:'CNB',risk:2},
+    {x:.9,y:.5,name:'LKO',risk:0},{x:.2,y:.7,name:'GZB',risk:1},
+    {x:.5,y:.75,name:'AGD',risk:2},{x:.75,y:.7,name:'VAR',risk:0},
+  ];
+  const colors=['#10b981','#f59e0b','#ef4444'];
+  const routes=[[0,1],[1,2],[2,3],[3,4],[5,1],[5,6],[6,3],[6,7]];
+
+  // Draw routes
+  routes.forEach(([a,b])=>{
+    const sa=stations[a],sb=stations[b];
+    const maxRisk=Math.max(sa.risk,sb.risk);
+    ctx.beginPath();
+    ctx.moveTo(sa.x*W,sa.y*H);
+    ctx.lineTo(sb.x*W,sb.y*H);
+    ctx.strokeStyle=maxRisk===2?'rgba(239,68,68,0.5)':maxRisk===1?'rgba(245,158,11,0.5)':'rgba(16,185,129,0.3)';
+    ctx.lineWidth=maxRisk===2?2.5:1.5;
+    ctx.stroke();
+  });
+
+  // Congestion blobs
+  [[stations[1].x*W,stations[1].y*H,40],[stations[3].x*W,stations[3].y*H,35]].forEach(([x,y,r])=>{
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,'rgba(239,68,68,0.35)');
+    g.addColorStop(1,'rgba(239,68,68,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  });
+
+  // Station nodes
+  stations.forEach(s=>{
+    const x=s.x*W,y=s.y*H;
+    ctx.shadowBlur=s.risk===2?10:4;
+    ctx.shadowColor=colors[s.risk];
+    ctx.fillStyle=colors[s.risk];
+    ctx.beginPath();ctx.arc(x,y,s.risk===2?7:5,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle=dark?'#e8eaf0':'#1e293b';
+    ctx.font='8px monospace';
+    ctx.fillText(s.name,x+8,y+3);
+  });
+}
+
+function initAllCharts(){
+  // Sparklines
+  mkSparkline('spk-preds','#60a5fa');
+  mkSparkline('spk-acc','#34d399');
+  mkSparkline('spk-delays','#fb923c');
+  mkSparkline('spk-risk','#f87171');
+  mkSparkline('spk-conf','#a78bfa');
+  mkSparkline('spk-cong','#22d3ee');
+  mkSparkline('spk-thru','#60a5fa');
+  mkSparkline('spk-impact','#34d399');
+
+  // Forecasting
+  mkForecast('fc-1h','rgba(248,113,113,1)');
+  mkForecast('fc-6h','rgba(251,191,36,1)');
+  mkForecast('fc-24h','rgba(251,146,60,1)');
+  mkForecast('fc-7d','rgba(167,139,250,1)');
+
+  // Trend charts
+  mkTrend('tr-acc',rnd(7,94,4),'rgba(52,211,153,1)');
+  mkTrend('tr-delay',rnd(7,28,8),'rgba(251,146,60,1)');
+  mkTrend('tr-cong',rnd(7,68,10),'rgba(34,211,238,1)');
+  mkTrend('tr-conf',rnd(7,92,5),'rgba(167,139,250,1)');
+  mkTrend('tr-thru',rnd(7,91,4),'rgba(96,165,250,1)');
+
+  // Model performance gauges
+  const accVal={% if model_info.r2_score %}{{ model_info.r2_score }}{% else %}0.948{% endif %};
+  setTimeout(()=>{
+    mkGauge('g-acc',Math.round(accVal*100),'#34d399');
+    mkGauge('g-prec',88,'#60a5fa');
+    mkGauge('g-rec',91,'#a78bfa');
+  },100);
+
+  // Congestion map
+  drawCongestionMap();
+}
+
+
+// ── Table Sort ───────────────────────────────────────
+function sortTable(col){
+  const tbody=document.getElementById('predTbody');
+  const rows=Array.from(tbody.querySelectorAll('tr'));
+  const colMap={train:0,route:1,curr:2,pred:3,risk:4,conf:5};
+  const idx=colMap[col]??0;
+  rows.sort((a,b)=>{
+    const av=a.cells[idx]?.textContent.trim()||'';
+    const bv=b.cells[idx]?.textContent.trim()||'';
+    const an=parseFloat(av)||0, bn=parseFloat(bv)||0;
+    if(!isNaN(an)&&!isNaN(bn))return bn-an;
+    return av.localeCompare(bv);
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+}
+
+// ── Table Search/Filter ──────────────────────────────
+function filterTable(){
+  const search=document.getElementById('predSearch').value.toLowerCase();
+  const risk=document.getElementById('riskFilter').value;
+  const rows=document.querySelectorAll('#predTbody tr');
+  rows.forEach(r=>{
+    const text=r.textContent.toLowerCase();
+    const rowRisk=r.dataset.risk||'';
+    const matchSearch=!search||text.includes(search);
+    const matchRisk=!risk||rowRisk===risk;
+    r.style.display=(matchSearch&&matchRisk)?'':'none';
+  });
+}
+
+// ── What-If Analysis ─────────────────────────────────
+const scenarios={
+  rain:{impact:42,trains:8,rev:'₹2.4L',reco:'3.2 hr'},
+  signal:{impact:65,trains:12,rev:'₹4.1L',reco:'5.5 hr'},
+  track:{impact:90,trains:18,rev:'₹7.8L',reco:'8.0 hr'},
+  breakdown:{impact:55,trains:10,rev:'₹3.2L',reco:'4.5 hr'},
+};
+let activeScenario='rain';
+function setScenario(el,key){
+  document.querySelectorAll('.whatif-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  activeScenario=key;
+  updateWhatIf();
+}
+function updateWhatIf(){
+  const s=scenarios[activeScenario];
+  const v1=parseInt(document.getElementById('wi-slider1').value);
+  const v2=parseInt(document.getElementById('wi-slider2').value);
+  document.getElementById('wi-val1').textContent=v1;
+  document.getElementById('wi-val2').textContent=v2;
+  const mult=1+(v1+v2)/200;
+  document.getElementById('wi-impact').textContent=`+${Math.round(s.impact*mult)} MIN`;
+  document.getElementById('wi-trains').textContent=Math.round(s.trains*mult);
+  document.getElementById('wi-rev').textContent=s.rev;
+  document.getElementById('wi-reco').textContent=s.reco;
+}
+function runWhatIfSimulation(){
+  Toast&&Toast.info('Running scenario simulation…');
+  setTimeout(()=>{
+    updateWhatIf();
+    Toast&&Toast.success('Simulation complete!');
+  },1200);
+}
+
+// ── Retrain Model ────────────────────────────────────
+async function retrainModel(){
+  if(!confirm('Retrain the ML model? This may take a few minutes.'))return;
+  Toast&&Toast.info('Model retraining started…');
+  try{
+    const r=await fetch('/api/ml/retrain/',{method:'POST',headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]')?.value||document.cookie.match(/csrftoken=([^;]+)/)?.[1]||'','Content-Type':'application/json'}});
+    const d=await r.json();
+    if(d.success){Toast&&Toast.success('Model retrained successfully!');location.reload();}
+    else Toast&&Toast.error(d.error||'Retraining failed.');
+  }catch(e){Toast&&Toast.error('Error: '+e.message);}
+}
+
+// ── Load XAI Panel ───────────────────────────────────
+async function loadXAI(predId){
+  if(!predId||predId==='demo')return;
+  try{
+    const r=await fetch(`/api/ml/model-info/`);
+    const d=await r.json();
+    if(d.feature_importances){
+      const fi=Object.entries(d.feature_importances).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      document.getElementById('xai-factors').innerHTML=fi.map(([k,v])=>`
+        <div class="xai-factor">
+          <span class="xai-factor-lbl">${k.replace(/_/g,' ')}</span>
+          <div class="xai-factor-bar"><div class="xai-factor-fill" style="width:${(v*100).toFixed(0)}%;"></div></div>
+          <span class="xai-factor-val">${(v*10).toFixed(1)}</span>
+        </div>`).join('');
+    }
+  }catch(e){}
+}
+
+// ── Model Info Refresh ───────────────────────────────
+async function loadModelInfo(){
+  try{
+    const d=await(await fetch('/api/ml/model-info/')).json();
+    if(d.r2_score){
+      document.getElementById('kpi-acc').textContent=(d.r2_score*100).toFixed(1)+'%';
+      document.getElementById('kpi-conf').textContent=(d.cv_score||.92*100).toFixed(0)+'%';
+    }
+    Toast&&Toast.success('Model info refreshed!');
+  }catch(e){}
+}
+
+function onTimeRangeChange(val){
+  Toast&&Toast.info('Time range changed to '+val);
+  initAllCharts();
+}
+
+// ── Theme Support ────────────────────────────────────
+document.addEventListener('themechange',()=>{
+  Object.values(charts).forEach(c=>{try{c.destroy();}catch(_){}});
+  Object.keys(charts).forEach(k=>delete charts[k]);
+  setTimeout(initAllCharts,150);
+});
+
+// ── Init ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>requestAnimationFrame(initAllCharts),150);
+});
+</script>
+{% endblock %}

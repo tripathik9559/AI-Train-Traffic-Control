@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title"><i class="bi bi-speedometer2"></i> Throughput Optimizer</div>
+    <div class="page-subtitle">AI-driven section throughput analysis and recommendations</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'ai_engine:dashboard' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+{% for item in section_data %}
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <div>
+      <div style="font-weight:700;color:var(--text-primary);">{{ item.section.from_station.code }} → {{ item.section.to_station.code }}</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);">{{ item.section.name }} · {{ item.section.length }} km · {{ item.section.number_of_lines }} line(s)</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div style="text-align:center;">
+        <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--accent-blue);">{{ item.train_count }}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">trains today</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);{% if item.utilization > 80 %}color:var(--accent-red){% elif item.utilization > 60 %}color:var(--accent-yellow){% else %}color:var(--accent-green){% endif %}">{{ item.utilization }}%</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">utilization</div>
+      </div>
+      <span class="badge badge-{% if item.section.status == 'CLEAR' %}running{% elif item.section.status == 'OCCUPIED' %}delayed{% else %}cancelled{% endif %}">{{ item.section.status }}</span>
+    </div>
+  </div>
+  <div class="score-bar" style="height:10px;margin-bottom:12px;">
+    <div class="score-bar-fill {% if item.utilization > 80 %}low{% elif item.utilization > 60 %}medium{% else %}high{% endif %}" style="width:{{ item.utilization }}%;"></div>
+  </div>
+  {% for rec in item.recommendations %}
+  <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:10px;margin-top:8px;">
+    <div style="font-size:0.78rem;font-weight:700;color:var(--accent-red);">⚠️ {{ rec.title }}</div>
+    <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">{{ rec.detail }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-title">📊 Simulation: {{ simulation.name }}</div>
+    <div class="page-subtitle">{{ simulation.get_scenario_type_display }} · {{ simulation.created_at|date:"d M Y H:i" }}</div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'simulation:index' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px;">
+  <div class="kpi-card red">
+    <div class="kpi-top"><div class="kpi-label">Throughput Impact</div><div class="kpi-icon red"><i class="bi bi-graph-down"></i></div></div>
+    <div class="kpi-value">{% if simulation.throughput_impact %}-{{ simulation.throughput_impact }}%{% else %}—{% endif %}</div>
+  </div>
+  <div class="kpi-card yellow">
+    <div class="kpi-top"><div class="kpi-label">Trains Affected</div><div class="kpi-icon yellow"><i class="bi bi-train-front"></i></div></div>
+    <div class="kpi-value">{{ simulation.trains_affected_count|default:"—" }}</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-top"><div class="kpi-label">Recovery Time</div><div class="kpi-icon blue"><i class="bi bi-clock"></i></div></div>
+    <div class="kpi-value">{% if simulation.estimated_recovery_time %}{{ simulation.estimated_recovery_time }}'{% else %}—{% endif %}</div>
+  </div>
+  <div class="kpi-card {% if simulation.status == 'COMPLETED' %}green{% elif simulation.status == 'RUNNING' %}blue{% else %}red{% endif %}">
+    <div class="kpi-top"><div class="kpi-label">Status</div><div class="kpi-icon {% if simulation.status == 'COMPLETED' %}green{% else %}blue{% endif %}"><i class="bi bi-check-circle"></i></div></div>
+    <div class="kpi-value" style="font-size:1.2rem;">{{ simulation.status }}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+  <!-- Summary -->
+  <div class="card">
+    <div class="card-header"><div class="card-title">📋 Simulation Summary</div></div>
+    <pre style="font-size:0.78rem;color:var(--text-secondary);white-space:pre-wrap;font-family:var(--font-mono);background:var(--bg-secondary);padding:14px;border-radius:var(--radius-md);">{{ simulation.result_summary }}</pre>
+  </div>
+  <!-- Recovery Plan -->
+  <div class="card">
+    <div class="card-header"><div class="card-title">🔧 Recovery Plan</div></div>
+    <pre style="font-size:0.78rem;color:var(--text-secondary);white-space:pre-wrap;font-family:var(--font-mono);background:var(--bg-secondary);padding:14px;border-radius:var(--radius-md);">{{ simulation.recommendations }}</pre>
+  </div>
+</div>
+
+<!-- Per-Train Results -->
+<div class="card">
+  <div class="card-header"><div class="card-title">🚂 Per-Train Impact Analysis</div></div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead><tr><th>Train</th><th>Simulated Delay</th><th>Cascade Delay</th><th>Total Impact</th><th>Platform Conflict</th><th>Track Conflict</th><th>Recommended Action</th></tr></thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td>
+            <div style="font-family:var(--font-mono);font-weight:700;color:var(--accent-blue);">{{ r.train.train_number }}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);">{{ r.train.train_name|truncatechars:20 }}</div>
+          </td>
+          <td><span style="font-family:var(--font-mono);color:var(--accent-red);font-weight:700;">+{{ r.simulated_delay }}'</span></td>
+          <td><span style="font-family:var(--font-mono);color:var(--accent-orange);">+{{ r.cascaded_delay }}'</span></td>
+          <td><span style="font-family:var(--font-mono);font-weight:800;color:{% if r.simulated_delay|add:r.cascaded_delay > 30 %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">+{{ r.simulated_delay|add:r.cascaded_delay }}'</span></td>
+          <td>{% if r.platform_conflict %}<span style="color:var(--accent-red);">⚠️ Yes</span>{% else %}<span style="color:var(--accent-green);">✓ No</span>{% endif %}</td>
+          <td>{% if r.track_conflict %}<span style="color:var(--accent-red);">⚠️ Yes</span>{% else %}<span style="color:var(--accent-green);">✓ No</span>{% endif %}</td>
+          <td style="font-size:0.78rem;color:var(--text-secondary);max-width:260px;">{{ r.recommended_action|truncatechars:120 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No per-train results available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
