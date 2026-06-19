@@ -66,7 +66,7 @@
 .sr-code{font-family:var(--font-mono);font-size:0.68rem;color:#60a5fa;font-weight:700;}
 
 /* ── Network Topology Map ───────────────────────────── */
-#topoCanvas{width:100%;display:block;cursor:grab;flex:1;min-height:200px;}
+#topoCanvas{width:100%;height:100%;display:block;cursor:grab;position:absolute;top:0;left:0;}
 #topoCanvas:active{cursor:grabbing;}
 .topo-controls{display:flex;gap:6px;padding:6px 12px;border-bottom:1px solid var(--border-color);}
 .topo-ctrl-btn{background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary);font-size:0.62rem;padding:3px 8px;border-radius:4px;cursor:pointer;transition:all .2s;}
@@ -362,7 +362,9 @@
       <button class="topo-ctrl-btn" onclick="topoReset()"><i class="bi bi-arrows-fullscreen"></i> Reset</button>
       <button class="topo-ctrl-btn" onclick="window.location='{% url 'network:visualizer' %}'"><i class="bi bi-diagram-3"></i> Full Network</button>
     </div>
-    <canvas id="topoCanvas" height="300"></canvas>
+    <div style="position:relative;height:300px;overflow:visible;">
+      <canvas id="topoCanvas" height="300"></canvas>
+    </div>
     <div style="display:flex;gap:12px;padding:6px 12px;border-top:1px solid var(--border-color);flex-wrap:wrap;">
       <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span>Clear</div>
       <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>Occupied</div>
@@ -871,9 +873,10 @@ let topoScale=1,toPan={x:0,y:0},topoIsDrag=false,dragStart={x:0,y:0};
 function drawTopo(){
   const canvas=document.getElementById('topoCanvas');
   if(!canvas)return;
-  const W=canvas.clientWidth||canvas.parentElement.clientWidth||600;
-  const H=Math.max(200,canvas.clientHeight||300);
-  if(W<20||H<20){requestAnimationFrame(()=>setTimeout(drawTopo,100));return;}  // layout not ready yet — retry
+  const wrapper=canvas.parentElement;
+  const W=wrapper.clientWidth||600;
+  const H=300;
+  if(W<20){requestAnimationFrame(()=>setTimeout(drawTopo,100));return;}  // layout not ready yet — retry
   canvas.width=W;canvas.height=H;
   const ctx=canvas.getContext('2d');
   const dark=isDark();
