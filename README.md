@@ -8,6 +8,7 @@
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![DRF](https://img.shields.io/badge/DRF-REST%20API-red?style=for-the-badge&logo=django&logoColor=white)
+![SIH](https://img.shields.io/badge/Smart%20India%20Hackathon-2025-FF6B00?style=for-the-badge)
 
 <br/>
 
@@ -33,7 +34,7 @@
 
 A **comprehensive railway operations management system** designed to simulate how Indian Railways could leverage AI and machine learning for real-time traffic control, delay prediction, conflict resolution, and scheduling optimization.
 
-Built as a **B.Tech Final Year Project** at BBDNIIT, Lucknow — but engineered to production standards.
+Originally conceived as a **Smart India Hackathon (SIH) 2025** problem statement, this project is now being independently developed and expanded as a **B.Tech Final Year Project** at BBDNIIT, Lucknow — engineered well beyond the hackathon prototype stage, toward production-grade standards.
 
 ---
 
@@ -135,8 +136,8 @@ railway_control/
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/yourusername/railway-control-system.git
-cd railway-control-system
+git clone https://github.com/tripathik9559/AI-Train-Traffic-Control.git
+cd AI-Train-Traffic-Control
 
 # 2. Create virtual environment
 python -m venv venv
@@ -258,6 +259,12 @@ GET    /api/analytics/summary/   → System analytics summary
 - [ ] CI/CD pipeline
 - [ ] Mobile-responsive polish
 - [ ] Live deployment (Render / Railway)
+
+---
+
+## 🏆 Origin Story
+
+This project began as a problem statement for **Smart India Hackathon (SIH) 2025**, focused on AI-driven solutions for railway traffic management. Post-hackathon, development has continued independently — rebuilding the core architecture, adding the ML prediction pipeline, expanding to 14 dashboards, and containerizing the full stack with Docker — as an ongoing B.Tech final-year project.
 
 ---
 
