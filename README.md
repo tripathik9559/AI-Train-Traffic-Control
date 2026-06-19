@@ -1,259 +1,282 @@
-# 🚆 AI-Assisted Train Traffic Control & Section Throughput Optimization System
+# 🚂 Indian Railways AI Control System
 
-**Final Year B.Tech Project | BBDNIIT Lucknow | 2024–2025**  
-**Branch:** Computer Science & Engineering  
-**Tech Stack:** Django · MySQL · Scikit-Learn · Cytoscape.js · Chart.js · Docker
+<div align="center">
 
----
+![Django](https://img.shields.io/badge/Django-4.2-092E20?style=for-the-badge&logo=django&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![DRF](https://img.shields.io/badge/DRF-REST%20API-red?style=for-the-badge&logo=django&logoColor=white)
+![SIH](https://img.shields.io/badge/Smart%20India%20Hackathon-2025-FF6B00?style=for-the-badge)
 
-## 📋 Project Overview
+<br/>
 
-A production-grade intelligent railway traffic management and decision-support system that helps section controllers:
+> **A production-grade, AI-powered Railway Traffic Control & Operations Management Platform**  
+> Built with Django 4.2 · Machine Learning · Real-time Dashboards · Multi-role Access
 
-- Manage train movements across a realistic simulated railway section
-- Detect operational conflicts (track, platform, crossing, headway violations)
-- Optimize train precedence using an AI-based multi-factor priority scoring engine
-- Predict delays using a trained Random Forest Regressor (R² = 0.83, MAE = 5.3 min)
-- Run disruption scenario simulations and compute cascade impacts
-- Visualize the railway network interactively with Cytoscape.js
-- Generate automated daily, conflict, and train-performance reports (PDF + CSV)
-
----
-
-## 🏗️ Module Breakdown
-
-| # | Module | Description |
-|---|--------|-------------|
-| 1 | Authentication & Roles | Login, register, RBAC (Admin / Section Controller / Supervisor) |
-| 2 | Train Management | Full CRUD, search, filter, status updates |
-| 3 | Station & Route Management | Stations, platforms, routes, track sections |
-| 4 | Railway Network Visualizer | Interactive Cytoscape.js graph with zoom/pan/click |
-| 5 | Train Scheduling Engine | Schedule CRUD, occupancy tracking, delay recording |
-| 6 | Conflict Detection Engine | Automatic time-space analysis for 4 conflict types |
-| 7 | AI Priority Engine | Weighted 5-factor scoring, rank at conflict point |
-| 8 | ML Delay Prediction | Random Forest with 9 features, visual breakdown |
-| 9 | Scenario Simulation | 8 scenario types, cascade analysis, recovery plan |
-| 10 | Real-Time Operations Simulator | Animated live train positions and section heatmap |
-| 11 | Analytics Dashboard | 6 Chart.js charts, live KPIs, section heatmap |
-| 12 | Notification Centre | Broadcast alerts, conflict notifications, read/unread |
-| 13 | Reporting System | Daily/conflict/train reports with PDF + CSV export |
+</div>
 
 ---
 
-## 🚀 Quick Start (Docker — Recommended)
+> [!WARNING]
+> ## 🚧 WORK IN PROGRESS — DO NOT USE IN PRODUCTION 🚧
+>
+> **This project is actively under development. Features are incomplete, APIs may change without notice, and the codebase is being refactored regularly.**
+>
+> **I push updates daily as I build and improve this system — this is a live, evolving project.**
+>
+> ⚠️ Not ready for real-world railway operations. For educational/portfolio purposes only.
+
+---
+
+## 📌 What Is This?
+
+A **comprehensive railway operations management system** designed to simulate how Indian Railways could leverage AI and machine learning for real-time traffic control, delay prediction, conflict resolution, and scheduling optimization.
+
+Originally conceived as a **Smart India Hackathon (SIH) 2025** problem statement, this project is now being independently developed and expanded as a **B.Tech Final Year Project** at BBDNIIT, Lucknow — engineered well beyond the hackathon prototype stage, toward production-grade standards.
+
+---
+
+## ✨ Features
+
+### 🤖 AI / Machine Learning
+- **Delay Prediction Engine** — Random Forest Regressor (R² = 0.84) trained on Indian Railways data
+- **AI Priority Engine** — Smart train prioritization based on delay, type, and route importance
+- **Conflict Detection** — Automated detection of scheduling and track conflicts
+- **What-If Scenario Analysis** — Simulate impact of rain, signal failure, track closure, breakdowns
+- **Feature Importance Visualization** — Understand which factors drive delays
+
+### 📊 14 Operational Dashboards
+| Dashboard | Description |
+|-----------|-------------|
+| 🏠 Home | System overview & live KPIs |
+| 🚂 Train Fleet | Real-time fleet status & management |
+| 🏛️ Stations | Station capacity & platform control |
+| 📅 Scheduling | Train schedule management & conflict-free planning |
+| ⚡ Conflict Management | Active conflict detection & resolution |
+| 🤖 AI Priority Engine | AI-driven train prioritization |
+| 📈 Analytics | Operational analytics & trends |
+| 🔮 ML Prediction | Delay prediction command center |
+| 🌐 Network Visualizer | Live network map & bottleneck visualization |
+| 📋 Reports | Automated reporting & exports |
+| 🔔 Notifications | Real-time alerts & notifications |
+| 🎮 Simulation | Traffic simulation environment |
+| 👤 Authentication | Role-based access control |
+| ⚙️ Settings | System configuration |
+
+### 🛡️ Role-Based Access Control
+| Role | Access |
+|------|--------|
+| Admin | Full system control |
+| Controller | Train operations & conflict management |
+| Dispatcher | Scheduling & assignments |
+| Analyst | Analytics & reports (read-only) |
+
+### 🔌 REST API
+- JWT Authentication
+- Train, Station, Scheduling, Prediction endpoints
+- CORS-enabled for external integrations
+
+---
+
+## 🏗️ Project Structure
+
+```
+railway_control/
+├── manage.py
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+│
+├── railway_control/          # Django project config
+│   └── settings.py
+│
+└── apps/
+    ├── authentication/       # Login, roles, JWT
+    ├── trains/               # Train fleet & network visualizer
+    ├── stations/             # Station & platform management
+    ├── scheduling/           # Schedule engine
+    ├── conflicts/            # Conflict detection & resolution
+    ├── ai_engine/            # AI priority & optimization
+    ├── ml_prediction/        # ML delay prediction (Random Forest)
+    ├── analytics/            # Data analytics & trends
+    ├── notifications/        # Alert system
+    ├── reporting/            # PDF/CSV report generation
+    └── simulation/           # Traffic simulation
+```
+
+---
+
+## 🔧 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Django 4.2 + Django REST Framework |
+| ML / AI | scikit-learn, pandas, numpy, joblib |
+| Frontend | HTML5, CSS3, Chart.js, Bootstrap Icons |
+| Database | SQLite (dev) / MySQL 8.0 (prod) |
+| Auth | JWT (djangorestframework-simplejwt) |
+| Server | Gunicorn + WhiteNoise |
+| Reports | ReportLab (PDF generation) |
+| Visualizations | Matplotlib, Seaborn, Chart.js |
+| Containerisation | Docker + docker-compose |
+
+---
+
+## 🚀 Quick Start (Local — SQLite)
 
 ### Prerequisites
-- Docker Desktop 24+
-- Docker Compose v2
+- Python 3.10+
+- pip
+- Git
 
 ### Steps
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/tripathik9559/railway-control-system.git
-cd railway-control-system
+# 1. Clone the repo
+git clone https://github.com/tripathik9559/AI-Train-Traffic-Control.git
+cd AI-Train-Traffic-Control
 
-# 2. Copy environment file
-cp .env.example .env
-# Edit .env if needed (defaults work out of the box)
-
-# 3. Start all services
-docker-compose up --build
-
-# 4. Open in browser
-# App:   http://localhost:80
-# Admin: http://localhost:8000/admin/
-```
-
-The entrypoint script automatically:
-- Waits for MySQL to be ready
-- Runs all migrations
-- Trains the ML model (first run ~10 seconds)
-- Seeds demo data (stations, trains, conflicts, notifications)
-
-### Demo Credentials
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | `admin` | `Admin@2024` |
-| Section Controller | `controller1` | `Pass@2024` |
-| Section Controller | `controller2` | `Pass@2024` |
-
----
-
-## 🛠️ Local Development (Without Docker)
-
-### Requirements
-- Python 3.11+
-- MySQL 8.0 (or SQLite for quick dev)
-
-### Setup
-
-```bash
-# 1. Create and activate virtual environment
+# 2. Create virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 
-# 2. Install dependencies
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Configure environment
+# 4. Set up environment variables
 cp .env.example .env
-# For SQLite dev (no MySQL needed):
-# Set DB_ENGINE=django.db.backends.sqlite3
-# Set DB_NAME=./db_dev.sqlite3
+# Edit .env — set SECRET_KEY at minimum
 
-# 4. Run migrations
-python manage.py migrate --run-syncdb
+# 5. Run migrations
+python manage.py migrate
 
-# 5. Train ML model
-python manage.py train_ml_model
-
-# 6. Load seed data
+# 6. Load seed data (Indian Railways stations & trains)
 python manage.py seed_data
 
-# 7. Start development server
+# 7. Train the ML model
+python manage.py train_model
+
+# 8. Create a superuser
+python manage.py createsuperuser
+
+# 9. Start the development server
 python manage.py runserver
 ```
 
+Open **http://127.0.0.1:8000** in your browser.
+
 ---
 
-## 🧪 Running Tests
+## 🐳 Docker Deployment (MySQL)
 
 ```bash
-python manage.py test apps
+# 1. Copy and configure environment
+cp .env.example .env
+# Edit .env with your SECRET_KEY, DB credentials
+
+# 2. Build and start containers
+docker-compose up --build -d
+
+# 3. Run migrations inside container
+docker-compose exec web python manage.py migrate
+docker-compose exec web python manage.py seed_data
+docker-compose exec web python manage.py createsuperuser
+```
+
+App available at **http://localhost:8000**
+
+---
+
+## ⚙️ Environment Variables
+
+```env
+# Core
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database (leave blank for SQLite)
+DB_ENGINE=django.db.backends.mysql
+DB_NAME=railway_control
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_HOST=localhost
+DB_PORT=3306
 ```
 
 ---
 
-## 📁 Project Structure
+## 🤖 ML Model Details
 
-```
-railway_control/
-├── apps/
-│   ├── authentication/     # Custom User model, login, RBAC
-│   ├── trains/             # Train CRUD + network visualizer
-│   ├── stations/           # Stations, platforms, routes, track sections
-│   ├── scheduling/         # Schedule engine, occupancy tracking
-│   ├── conflicts/          # Conflict detection engine + services
-│   ├── ai_engine/          # AI priority scoring engine
-│   ├── ml_prediction/      # Random Forest delay predictor
-│   │   └── ml/             # trainer.py + predictor.py
-│   ├── simulation/         # Scenario simulation engine
-│   ├── analytics/          # Dashboard KPIs + chart APIs
-│   ├── notifications/      # Notification centre + context processor
-│   └── reporting/          # PDF/CSV report generation
-├── railway_control/        # Django project config (settings, urls, wsgi)
-├── templates/              # All HTML templates (36 files)
-├── static/
-│   ├── css/main.css        # Design system (dark/light, glassmorphism)
-│   └── js/                 # app.js + charts.js
-├── ml_models/              # Saved .pkl model files
-├── data/                   # Sample CSV datasets
-├── scripts/
-│   ├── entrypoint.sh       # Docker startup script
-│   ├── init.sql            # MySQL DB initialization
-│   └── nginx.conf          # Nginx reverse proxy config
-├── docs/
-│   └── ARCHITECTURE.md     # System architecture diagrams
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── .env.example
+| Metric | Value |
+|--------|-------|
+| Algorithm | Random Forest Regressor |
+| R² Score | 0.84 |
+| Training Data | Indian Railways seed dataset |
+| Features | Weather, Traffic Density, Train Type, Route, Day of Week, Historical Delays |
+| Output | Predicted delay (minutes) + Risk Level (LOW / MEDIUM / HIGH / CRITICAL) |
+
+```bash
+# Train the model manually
+python manage.py train_model
+
+# Or trigger via admin panel: ML Prediction → Retrain Model
 ```
 
 ---
 
-## 🤖 AI Priority Engine
+## 📡 API Endpoints (Partial — WIP)
 
-The priority score is computed using 5 weighted factors:
+```
+POST   /api/auth/login/          → JWT token
+GET    /api/trains/              → List all trains
+GET    /api/stations/            → List all stations
+POST   /api/ml/predict/          → Predict delay for a train
+GET    /api/ml/model-info/       → Current model metrics
+GET    /api/analytics/summary/   → System analytics summary
+```
 
-| Factor | Weight | Description |
-|--------|--------|-------------|
-| Train Type | 30% | Vande Bharat/Rajdhani score 10, Freight scores 2 |
-| Delay Urgency | 25% | Scaled 0–10 based on current delay minutes |
-| Operational Priority | 20% | Admin-set priority level (1–5) scaled to 10 |
-| Speed Capability | 15% | Max speed normalized to 0–10 |
-| Route Importance | 10% | Major city-pair routes score higher |
-
-Trains with score ≥ 8.5 receive **IMMEDIATE PRIORITY**; score < 3.5 means **DEFER**.
-
----
-
-## 🧠 ML Delay Prediction
-
-**Algorithm:** Random Forest Regressor (200 estimators, max_depth=12)
-
-**Features (9):**
-1. `train_type_encoded` — categorical type (0–8)
-2. `day_of_week` — 0 (Mon) to 6 (Sun)
-3. `hour_of_day` — 0–23
-4. `weather_code` — 0=Clear, 1=Light Rain, 2=Heavy Rain, 3=Fog, 4=Extreme
-5. `traffic_density` — 0.0–1.0
-6. `historical_avg_delay` — minutes
-7. `section_congestion` — 0.0–1.0
-8. `is_peak_hour` — binary
-9. `scheduled_distance` — km
-
-**Performance on 5000 synthetic samples:**
-- R² = 0.84
-- MAE = 5.3 minutes
-- RMSE = 7.0 minutes
-- 5-fold Cross-Val R² = 0.83
-
-Risk classification: LOW (<10 min), MEDIUM (10–30), HIGH (30–60), CRITICAL (>60)
+> Full API documentation coming soon.
 
 ---
 
-## 🐳 Docker Services
+## 🗺️ Roadmap
 
-| Service | Image | Port | Description |
-|---------|-------|------|-------------|
-| `db` | mysql:8.0 | 3307 | MySQL database |
-| `web` | custom | 8000 | Django + Gunicorn |
-| `nginx` | nginx:alpine | 80 | Reverse proxy |
-
----
-
-## 🔌 REST API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/trains/` | GET | List all active trains |
-| `/api/trains/<id>/status/` | POST | Update train status/delay |
-| `/api/stations/` | GET | All stations JSON |
-| `/api/stations/sections/` | GET | All track sections |
-| `/api/stations/sections/<id>/status/` | POST | Update section status |
-| `/api/scheduling/today/` | GET | Today's schedules |
-| `/api/conflicts/detect/` | POST | Run conflict detection |
-| `/api/conflicts/report/` | GET | Conflict stats report |
-| `/api/ai-engine/rank/` | POST | Rank trains by priority |
-| `/api/ai-engine/priority/<id>/` | GET | Single train priority score |
-| `/api/ml/predict/` | POST | Predict delay |
-| `/api/ml/model-info/` | GET | Model metadata |
-| `/api/ml/retrain/` | POST | Retrain ML model |
-| `/api/simulation/run/` | POST | Run scenario simulation |
-| `/api/simulation/state/` | GET | Live simulator state |
-| `/api/analytics/delay-trend/` | GET | 14-day delay trend |
-| `/api/analytics/throughput/` | GET | Hourly throughput chart |
-| `/api/analytics/kpis/` | GET | Live KPI summary |
-| `/api/notifications/unread-count/` | GET | Unread count |
+- [x] Core Django project structure with 11 apps
+- [x] Authentication & role-based access
+- [x] Train & Station management
+- [x] ML delay prediction (Random Forest)
+- [x] AI Priority Engine
+- [x] Conflict detection
+- [x] 14 dashboards (ongoing refinement)
+- [x] Docker setup
+- [ ] WebSocket real-time updates
+- [ ] Complete REST API documentation
+- [ ] Unit & integration tests
+- [ ] CI/CD pipeline
+- [ ] Mobile-responsive polish
+- [ ] Live deployment (Render / Railway)
 
 ---
 
-## 🗄️ Database Schema (14 Tables)
+## 🏆 Origin Story
 
-`auth_users` · `auth_user_activities` · `trains` · `stations` · `platforms` · `routes` · `track_sections` · `schedules` · `track_occupancies` · `conflicts` · `recommendations` · `delay_predictions` · `simulations` · `simulation_results` · `notifications` · `analytics_snapshots` · `reports`
-
----
-
-## 👨‍💻 Authors
-
-**Kartikey Tripathi** — Backend, ML, DevOps  
-GitHub: [@tripathik9559](https://github.com/tripathik9559)  
-Institution: BBDNIIT Lucknow, B.Tech CSE 2022–2026
+This project began as a problem statement for **Smart India Hackathon (SIH) 2025**, focused on AI-driven solutions for railway traffic management. Post-hackathon, development has continued independently — rebuilding the core architecture, adding the ML prediction pipeline, expanding to 14 dashboards, and containerizing the full stack with Docker — as an ongoing B.Tech final-year project.
 
 ---
 
-## 📜 License
+## 👨‍💻 Author
 
-MIT License — Free to use for academic and portfolio purposes.
+**Kartikey**  
+B.Tech CSE — BBDNIIT, Lucknow (2026 Batch)  
+Building this daily. Commits = progress.
+
+---
+
+## 📝 License
+
+© BBDNIIT — For educational and portfolio purposes only.  
+Not affiliated with Indian Railways.
