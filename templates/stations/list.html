@@ -117,13 +117,7 @@
 .dt-lbl{font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
 .dt-val{font-size:0.8rem;font-weight:800;font-family:var(--font-mono);margin-top:2px;}
 
-/* ── Resource Allocation ────────────────────────────── */
-.ra-section{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.04);}
-.ra-section:last-child{border-bottom:none;}
-.ra-lbl{font-size:0.6rem;font-weight:700;color:var(--text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;}
-.ra-bar-wrap{background:rgba(255,255,255,.06);border-radius:3px;height:8px;overflow:hidden;margin-bottom:2px;}
-.ra-bar{height:100%;border-radius:3px;transition:width .8s;}
-.ra-meta{font-size:0.58rem;color:var(--text-muted);display:flex;justify-content:space-between;}
+
 
 /* ── AI Insights ────────────────────────────────────── */
 .ai-ins-item{display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);}
@@ -182,8 +176,7 @@
 [data-theme="light"] .sr-kpi,[data-theme="light"] .sr-panel,[data-theme="light"] .station-detail-panel{background:#fff;}
 [data-theme="light"] .sr-table tr:hover td{background:rgba(0,0,0,.02);}
 [data-theme="light"] .sr-table td,[data-theme="light"] .sr-table th{border-bottom-color:rgba(0,0,0,.06);}
-[data-theme="light"] .dt-cell,[data-theme="light"] .ra-bar-wrap{background:#f8fafc;}
-[data-theme="light"] .analytics-card{background:#fff;}
+[data-theme="light"] .dt-cell{background:#f8fafc;}
 </style>
 {% endblock %}
 
@@ -362,7 +355,7 @@
       <button class="topo-ctrl-btn" onclick="topoReset()"><i class="bi bi-arrows-fullscreen"></i> Reset</button>
       <button class="topo-ctrl-btn" onclick="window.location='{% url 'network:visualizer' %}'"><i class="bi bi-diagram-3"></i> Full Network</button>
     </div>
-    <div style="position:relative;height:300px;overflow:visible;">
+    <div style="position:relative;height:300px;overflow:visible;flex-shrink:0;">
       <canvas id="topoCanvas" height="300"></canvas>
     </div>
     <div style="display:flex;gap:12px;padding:6px 12px;border-top:1px solid var(--border-color);flex-wrap:wrap;">
@@ -447,11 +440,11 @@
         <span style="font-size:0.58rem;color:var(--text-muted);">{{ total_platforms }} total · {{ avail_platforms }} available</span>
       </div>
     </div>
-    <div style="padding:8px 14px 4px;display:flex;gap:10px;flex-wrap:wrap;flex:1;align-content:flex-start;">
-      {% for station in all_stations|slice:":4" %}
-      <div style="flex:1;min-width:80px;">
+    <div style="padding:8px 14px 4px;display:flex;gap:14px;flex-wrap:wrap;flex:1;align-content:flex-start;overflow-y:auto;max-height:200px;">
+      {% for station in all_stations %}
+      <div style="min-width:80px;">
         <div style="font-size:0.6rem;font-weight:700;color:#60a5fa;margin-bottom:4px;font-family:var(--font-mono);">{{ station.code }}</div>
-        <div style="display:flex;gap:2px;flex-wrap:wrap;">
+        <div style="display:flex;gap:2px;flex-wrap:wrap;max-width:160px;">
           {% for i in station.active_platforms %}
           <div class="plat-cell {{ i.status }}" title="{{ station.code }}-P{{ i.platform_number }} · {{ i.status }}">{{ i.platform_number }}</div>
           {% empty %}
@@ -542,11 +535,12 @@
 
 </div>
 
-<!-- ── BOTTOM ROW: Bottom Analytics + Executive + Digital Twin + Resource + AI + Live Feed ── -->
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+<!-- ── BOTTOM ROW: Bottom Analytics + Executive + Digital Twin + Live Feed/AI Insights ── -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;align-items:start;">
+
 
   <!-- Bottom Analytics Summary -->
-  <div class="sr-panel">
+  <div class="sr-panel" style="height:auto;">
     <div class="sr-panel-hdr">
       <div class="sr-panel-title"><span class="sr-dot blue"></span>Bottom Analytics</div>
       <a href="{% url 'dashboard:analytics' %}" class="sr-pnl-btn">Full Analytics</a>
@@ -578,7 +572,7 @@
   </div>
 
   <!-- Executive Insights -->
-  <div class="sr-panel">
+  <div class="sr-panel" style="height:auto;">
     <div class="sr-panel-hdr">
       <div class="sr-panel-title"><span class="sr-dot purple"></span>Executive Insights</div>
     </div>
@@ -611,7 +605,7 @@
   </div>
 
   <!-- Digital Twin Infrastructure State -->
-  <div class="sr-panel">
+  <div class="sr-panel" style="height:auto;">
     <div class="sr-panel-hdr">
       <div class="sr-panel-title"><span class="sr-dot cyan"></span>Digital Twin State</div>
       <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn"><i class="bi bi-display"></i> 3D View</a>
@@ -649,28 +643,47 @@
     </div>
   </div>
 
-  <!-- Resource Allocation + AI Insights + Live Feed stacked -->
-  <div style="display:flex;flex-direction:column;gap:10px;height:100%;">
+  <!-- Live Event Feed + AI Insights stacked -->
+  <div style="display:flex;flex-direction:column;gap:10px;height:auto;">
 
-    <!-- Resource Allocation -->
-    <div class="sr-panel">
+    <!-- Live Event Feed -->
+    <div class="sr-panel" style="height:auto;">
       <div class="sr-panel-hdr">
-        <div class="sr-panel-title"><span class="sr-dot yellow"></span>Resource Allocation</div>
+        <div class="sr-panel-title"><span class="sr-dot green" style="animation:pulse-dot 1.4s infinite;"></span>Live Event Feed</div>
+        <button class="sr-pnl-btn" onclick="refreshEvents()"><i class="bi bi-arrow-repeat"></i></button>
       </div>
-      <div class="ra-section">
-        <div class="ra-lbl">Stations</div>
-        <div class="ra-bar-wrap"><div class="ra-bar" style="width:{{ network_health }}%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);"></div></div>
-        <div class="ra-meta"><span>{{ active_stations }} active</span><span>{{ network_health }}%</span></div>
+      <div id="eventFeed" style="overflow-y:auto;max-height:160px;">
+        {% for station in all_stations|slice:":3" %}
+        <div class="event-item">
+          <div class="event-dot" style="background:#ef4444;"></div>
+          <div>
+            <div class="event-title">Station Status: {{ station.code }} {% if station.station_type == 'MAJOR' %}Critical{% else %}Active{% endif %}</div>
+            <div class="event-text">{{ station.station_type }} station operational</div>
+            <div class="event-time">Today</div>
+          </div>
+        </div>
+        {% endfor %}
+        {% for sec in sections|slice:":2" %}
+        <div class="event-item">
+          <div class="event-dot" style="background:{% if sec.status == 'CLEAR' %}#10b981{% else %}#f59e0b{% endif %};"></div>
+          <div>
+            <div class="event-title">Route Updated: {{ sec.from_station.code }}–{{ sec.to_station.code }}</div>
+            <div class="event-text">Section status: {{ sec.status }}</div>
+            <div class="event-time">Recent</div>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="event-item">
+          <div class="event-dot" style="background:#fbbf24;"></div>
+          <div>
+            <div class="event-title">Maintenance Activity</div>
+            <div class="event-text">Scheduled track inspection on northern corridor</div>
+            <div class="event-time">Upcoming</div>
+          </div>
+        </div>
       </div>
-      <div class="ra-section">
-        <div class="ra-lbl">Tracks</div>
-        <div class="ra-bar-wrap"><div class="ra-bar" style="width:{% if total_sections %}{% widthratio clear_sections total_sections 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,#10b981,#06b6d4);"></div></div>
-        <div class="ra-meta"><span>{{ clear_sections }} clear</span><span>{% if total_sections %}{% widthratio clear_sections total_sections 100 %}{% else %}0{% endif %}%</span></div>
-      </div>
-      <div class="ra-section">
-        <div class="ra-lbl">Platforms</div>
-        <div class="ra-bar-wrap"><div class="ra-bar" style="width:{% if total_platforms %}{% widthratio avail_platforms total_platforms 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,#f59e0b,#f97316);"></div></div>
-        <div class="ra-meta"><span>{{ avail_platforms }} avail</span><span>{% if total_platforms %}{% widthratio avail_platforms total_platforms 100 %}{% else %}0{% endif %}%</span></div>
+      <div style="padding:8px 14px;border-top:1px solid var(--border-color);">
+        <a href="{% url 'conflicts:list' %}" class="sr-pnl-btn" style="width:100%;justify-content:center;"><i class="bi bi-shield-exclamation"></i> View All Conflicts</a>
       </div>
     </div>
 
@@ -698,75 +711,6 @@
           <div><div class="ai-ins-title">Platform Recommendations</div><div class="ai-ins-text">NDLS platform 14-16 utilization suboptimal. Rebalance advised.</div></div>
         </div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ── LIVE EVENT FEED + Trend Charts ──────────────── -->
-<div style="display:grid;grid-template-columns:280px 1fr;gap:10px;margin-bottom:10px;">
-
-  <!-- Live Event Feed -->
-  <div class="sr-panel">
-    <div class="sr-panel-hdr">
-      <div class="sr-panel-title"><span class="sr-dot green" style="animation:pulse-dot 1.4s infinite;"></span>Live Event Feed</div>
-      <button class="sr-pnl-btn" onclick="refreshEvents()"><i class="bi bi-arrow-repeat"></i></button>
-    </div>
-    <div id="eventFeed" style="overflow-y:auto;max-height:180px;">
-      {% for station in all_stations|slice:":3" %}
-      <div class="event-item">
-        <div class="event-dot" style="background:#ef4444;"></div>
-        <div>
-          <div class="event-title">Station Status: {{ station.code }} {% if station.station_type == 'MAJOR' %}Critical{% else %}Active{% endif %}</div>
-          <div class="event-text">{{ station.station_type }} station operational</div>
-          <div class="event-time">Today</div>
-        </div>
-      </div>
-      {% endfor %}
-      {% for sec in sections|slice:":2" %}
-      <div class="event-item">
-        <div class="event-dot" style="background:{% if sec.status == 'CLEAR' %}#10b981{% else %}#f59e0b{% endif %};"></div>
-        <div>
-          <div class="event-title">Route Updated: {{ sec.from_station.code }}–{{ sec.to_station.code }}</div>
-          <div class="event-text">Section status: {{ sec.status }}</div>
-          <div class="event-time">Recent</div>
-        </div>
-      </div>
-      {% endfor %}
-      <div class="event-item">
-        <div class="event-dot" style="background:#fbbf24;"></div>
-        <div>
-          <div class="event-title">Maintenance Activity</div>
-          <div class="event-text">Scheduled track inspection on northern corridor</div>
-          <div class="event-time">Upcoming</div>
-        </div>
-      </div>
-    </div>
-    <div style="padding:8px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
-      <a href="{% url 'conflicts:list' %}" class="sr-pnl-btn" style="width:100%;justify-content:center;"><i class="bi bi-shield-exclamation"></i> View All Conflicts</a>
-    </div>
-  </div>
-
-  <!-- Trend Charts -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-    <div class="analytics-card">
-      <div class="analytics-lbl">Route Utilization Trend</div>
-      <div class="analytics-val" style="color:#60a5fa;">78%</div>
-      <canvas class="analytics-canvas" id="tr-route"></canvas>
-    </div>
-    <div class="analytics-card">
-      <div class="analytics-lbl">Station Activity Trend</div>
-      <div class="analytics-val" style="color:#34d399;">+12%</div>
-      <canvas class="analytics-canvas" id="tr-activity"></canvas>
-    </div>
-    <div class="analytics-card">
-      <div class="analytics-lbl">Capacity Trend</div>
-      <div class="analytics-val" style="color:#fb923c;">{{ network_health }}%</div>
-      <canvas class="analytics-canvas" id="tr-capacity"></canvas>
-    </div>
-    <div class="analytics-card">
-      <div class="analytics-lbl">Infrastructure Health Trend</div>
-      <div class="analytics-val" style="color:#a78bfa;">{{ network_health }}%</div>
-      <canvas class="analytics-canvas" id="tr-infra"></canvas>
     </div>
   </div>
 </div>
@@ -845,24 +789,30 @@ const labels7=()=>{const d=new Date(),r=[];for(let i=6;i>=0;i--){const dd=new Da
 const charts={};
 
 function mkSparkline(id,color){
-  const c=document.getElementById(id);if(!c)return;
-  c.setAttribute('width',70);c.setAttribute('height',30);
-  if(charts[id])charts[id].destroy();
-  charts[id]=new Chart(c,{type:'line',data:{labels:Array.from({length:8},(_,i)=>i),datasets:[{data:rnd(8,70,20),borderColor:color,backgroundColor:'transparent',borderWidth:1.5,tension:0.4,pointRadius:0}]},options:{responsive:false,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+  try{
+    const c=document.getElementById(id);if(!c)return;
+    c.setAttribute('width',70);c.setAttribute('height',30);
+    if(charts[id])charts[id].destroy();
+    charts[id]=new Chart(c,{type:'line',data:{labels:Array.from({length:8},(_,i)=>i),datasets:[{data:rnd(8,70,20),borderColor:color,backgroundColor:'transparent',borderWidth:1.5,tension:0.4,pointRadius:0}]},options:{responsive:false,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+  }catch(e){console.warn('mkSparkline failed for',id,e);}
 }
 
 function mkTrend(id,data,color){
-  const c=document.getElementById(id);if(!c)return;
-  const W=c.parentElement.clientWidth||160,H=55;
-  c.setAttribute('width',W);c.setAttribute('height',H);
-  if(charts[id])charts[id].destroy();
-  charts[id]=new Chart(c,{type:'line',data:{labels:labels7(),datasets:[{data,borderColor:color,backgroundColor:color.replace('rgb','rgba').replace(')',',0.08)'),fill:true,borderWidth:1.5,tension:0.4,pointRadius:2,pointBackgroundColor:color,pointBorderColor:isDark()?'#1a2234':'#fff',pointBorderWidth:1.5}]},options:{responsive:false,maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:false},tooltip:tt()},scales:{x:{display:false},y:{display:false}}}});
+  try{
+    const c=document.getElementById(id);if(!c)return;
+    const W=c.parentElement.clientWidth||160,H=55;
+    c.setAttribute('width',W);c.setAttribute('height',H);
+    if(charts[id])charts[id].destroy();
+    charts[id]=new Chart(c,{type:'line',data:{labels:labels7(),datasets:[{data,borderColor:color,backgroundColor:color.replace('rgb','rgba').replace(')',',0.08)'),fill:true,borderWidth:1.5,tension:0.4,pointRadius:2,pointBackgroundColor:color,pointBorderColor:isDark()?'#1a2234':'#fff',pointBorderWidth:1.5}]},options:{responsive:false,maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:false},tooltip:tt()},scales:{x:{display:false},y:{display:false}}}});
+  }catch(e){console.warn('mkTrend failed for',id,e);}
 }
 
 function mkGauge(id,value,color){
-  const c=document.getElementById(id);if(!c)return;
-  if(charts[id])charts[id].destroy();
-  charts[id]=new Chart(c,{type:'doughnut',data:{datasets:[{data:[value,100-value],backgroundColor:[color,'rgba(255,255,255,0.06)'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:false,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+  try{
+    const c=document.getElementById(id);if(!c)return;
+    if(charts[id])charts[id].destroy();
+    charts[id]=new Chart(c,{type:'doughnut',data:{datasets:[{data:[value,100-value],backgroundColor:[color,'rgba(255,255,255,0.06)'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:false,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+  }catch(e){console.warn('mkGauge failed for',id,e);}
 }
 
 // ── Network Topology Map ─────────────────────────────
@@ -1087,8 +1037,7 @@ function exportData(){
       ]);
     }
   });
-  const csv=rows.map(r=>r.map(v=>'"'+v+'"').join(',')).join('
-');
+  const csv=rows.map(r=>r.map(v=>'"'+v+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -1116,6 +1065,15 @@ async function updateSectionStatus(sectionId, newStatus){
 
 // ── Init All Charts ──────────────────────────────────
 function initCharts(){
+  // Topology map uses raw Canvas API (not Chart.js) — always safe to run
+  drawTopo();
+
+  // Everything below needs the Chart.js library — wait until it's actually loaded
+  if(typeof Chart==='undefined'){
+    setTimeout(initCharts,200);
+    return;
+  }
+
   // Sparklines
   mkSparkline('spk-stations','#60a5fa');
   mkSparkline('spk-active','#34d399');
@@ -1125,11 +1083,6 @@ function initCharts(){
   mkSparkline('spk-util','#a78bfa');
   mkSparkline('spk-cap','#60a5fa');
   mkSparkline('spk-health','#34d399');
-  // Trend charts
-  mkTrend('tr-route',rnd(7,78,8),'rgb(96,165,250)');
-  mkTrend('tr-activity',rnd(7,65,12),'rgb(52,211,153)');
-  mkTrend('tr-capacity',rnd(7,80,6),'rgb(251,146,60)');
-  mkTrend('tr-infra',rnd(7,90,4),'rgb(167,139,250)');
   // Health gauges
   setTimeout(()=>{
     mkGauge('g-route',92,'#34d399');
@@ -1137,8 +1090,6 @@ function initCharts(){
     mkGauge('g-platform',85,'#a78bfa');
     mkGauge('g-infra',{{ network_health }},'#fb923c');
   },100);
-  // Topology map
-  drawTopo();
 }
 
 // ── Theme ────────────────────────────────────────────
