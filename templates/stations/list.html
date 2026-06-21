@@ -432,38 +432,31 @@
 <!-- ── MID GRID: Platform | Route Mgmt | Track Sections ── -->
 <div class="sr-grid-mid">
 
-  <!-- Platform Management -->
+  <!-- AI Infrastructure Insights -->
   <div class="sr-panel">
     <div class="sr-panel-hdr">
-      <div class="sr-panel-title"><span class="sr-dot cyan"></span>Platform Management</div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <span style="font-size:0.58rem;color:var(--text-muted);">{{ total_platforms }} total · {{ avail_platforms }} available</span>
+      <div class="sr-panel-title"><span class="sr-dot green"></span>AI Infrastructure Insights</div>
+      <a href="{% url 'ai_engine:dashboard' %}" class="sr-pnl-btn"><i class="bi bi-lightning-charge"></i></a>
+    </div>
+    <div style="overflow-y:auto;max-height:180px;flex:1;">
+      <div class="ai-ins-item">
+        <div class="ai-ins-icon" style="background:rgba(239,68,68,.15);color:#f87171;"><i class="bi bi-exclamation-triangle"></i></div>
+        <div><div class="ai-ins-title">Capacity Bottlenecks</div><div class="ai-ins-text">{{ active_stations }} stations near capacity threshold. AGC section at 94% load.</div></div>
+      </div>
+      <div class="ai-ins-item">
+        <div class="ai-ins-icon" style="background:rgba(245,158,11,.15);color:#fbbf24;"><i class="bi bi-shield-exclamation"></i></div>
+        <div><div class="ai-ins-title">Infrastructure Risks</div><div class="ai-ins-text">{{ total_sections|add:"-1" }} sections need maintenance review in next 30 days.</div></div>
+      </div>
+      <div class="ai-ins-item">
+        <div class="ai-ins-icon" style="background:rgba(16,185,129,.15);color:#34d399;"><i class="bi bi-arrow-repeat"></i></div>
+        <div><div class="ai-ins-title">Route Optimization</div><div class="ai-ins-text">Rerouting via MTJ can reduce LKO congestion by 18%.</div></div>
+      </div>
+      <div class="ai-ins-item">
+        <div class="ai-ins-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;"><i class="bi bi-columns-gap"></i></div>
+        <div><div class="ai-ins-title">Platform Recommendations</div><div class="ai-ins-text">NDLS platform 14-16 utilization suboptimal. Rebalance advised.</div></div>
       </div>
     </div>
-    <div style="padding:8px 14px 4px;display:flex;gap:14px;flex-wrap:wrap;flex:1;align-content:flex-start;overflow-y:auto;max-height:200px;">
-      {% for station in all_stations %}
-      <div style="min-width:80px;">
-        <div style="font-size:0.6rem;font-weight:700;color:#60a5fa;margin-bottom:4px;font-family:var(--font-mono);">{{ station.code }}</div>
-        <div style="display:flex;gap:2px;flex-wrap:wrap;max-width:160px;">
-          {% for i in station.active_platforms %}
-          <div class="plat-cell {{ i.status }}" title="{{ station.code }}-P{{ i.platform_number }} · {{ i.status }}">{{ i.platform_number }}</div>
-          {% empty %}
-          <div class="plat-cell AVAILABLE" title="{{ station.code }}-P1">1</div>
-          <div class="plat-cell OCCUPIED" title="{{ station.code }}-P2">2</div>
-          <div class="plat-cell AVAILABLE" title="{{ station.code }}-P3">3</div>
-          <div class="plat-cell MAINTENANCE" title="{{ station.code }}-P4">4</div>
-          <div class="plat-cell AVAILABLE" title="{{ station.code }}-P5">5</div>
-          {% endfor %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    <div style="padding:6px 14px 10px;display:flex;gap:10px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:8px;height:8px;border-radius:2px;background:rgba(16,185,129,.3);border:1px solid #34d399;display:inline-block;"></span>Available</div>
-      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:8px;height:8px;border-radius:2px;background:rgba(245,158,11,.3);border:1px solid #fbbf24;display:inline-block;"></span>Occupied</div>
-      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-muted);"><span style="width:8px;height:8px;border-radius:2px;background:rgba(59,130,246,.2);border:1px solid #60a5fa;display:inline-block;"></span>Maintenance</div>
-    </div>
-    <div style="padding:0 14px 10px;margin-top:auto;">
+    <div style="padding:8px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
       <a href="{% url 'stations:list' %}" class="sr-pnl-btn" style="width:100%;justify-content:center;">
         <i class="bi bi-columns-gap"></i> View All Platforms
       </a>
@@ -481,7 +474,7 @@
         <span>Key Routes</span><span>Dist.</span><span>Time</span><span>Thru.</span><span>Util%</span><span>Health</span>
       </div>
     </div>
-    <div style="overflow-y:auto;max-height:160px;flex:1;">
+    <div style="overflow-y:auto;max-height:180px;flex:1;">
       {% for route in routes %}
       <div onclick="window.location='{% url 'network:visualizer' %}?focus={{ route.source_station.code }}'" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:4px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;font-size:0.65rem;align-items:center;" onmouseover="this.style.background='rgba(59,130,246,.04)'" onmouseout="this.style.background=''">
         <span style="font-family:var(--font-mono);color:#60a5fa;font-weight:700;">{{ route.source_station.code }}–{{ route.destination_station.code }}</span>
@@ -514,7 +507,7 @@
         <span>Route</span><span>Status</span><span>Occ.</span><span>Cong.</span><span>Maint.</span>
       </div>
     </div>
-    <div style="overflow-y:auto;max-height:160px;flex:1;">
+    <div style="overflow-y:auto;max-height:180px;flex:1;">
       {% for sec in sections %}
       <div onclick="window.location='{% url 'network:visualizer' %}?focus={{ sec.from_station.code }}'" style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;padding:6px 14px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;font-size:0.63rem;align-items:center;" onmouseover="this.style.background='rgba(255,255,255,.02)'" onmouseout="this.style.background=''">
         <span style="font-family:var(--font-mono);color:#60a5fa;font-weight:700;">{{ sec.from_station.code }}–{{ sec.to_station.code }}</span>
@@ -536,11 +529,11 @@
 </div>
 
 <!-- ── BOTTOM ROW: Bottom Analytics + Executive + Digital Twin + Live Feed/AI Insights ── -->
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;align-items:start;">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
 
 
   <!-- Bottom Analytics Summary -->
-  <div class="sr-panel" style="height:auto;">
+  <div class="sr-panel">
     <div class="sr-panel-hdr">
       <div class="sr-panel-title"><span class="sr-dot blue"></span>Bottom Analytics</div>
       <a href="{% url 'dashboard:analytics' %}" class="sr-pnl-btn">Full Analytics</a>
@@ -572,7 +565,7 @@
   </div>
 
   <!-- Executive Insights -->
-  <div class="sr-panel" style="height:auto;">
+  <div class="sr-panel">
     <div class="sr-panel-hdr">
       <div class="sr-panel-title"><span class="sr-dot purple"></span>Executive Insights</div>
     </div>
@@ -605,7 +598,7 @@
   </div>
 
   <!-- Digital Twin Infrastructure State -->
-  <div class="sr-panel" style="height:auto;">
+  <div class="sr-panel">
     <div class="sr-panel-hdr">
       <div class="sr-panel-title"><span class="sr-dot cyan"></span>Digital Twin State</div>
       <a href="{% url 'network:visualizer' %}" class="sr-pnl-btn"><i class="bi bi-display"></i> 3D View</a>
@@ -643,74 +636,44 @@
     </div>
   </div>
 
-  <!-- Live Event Feed + AI Insights stacked -->
-  <div style="display:flex;flex-direction:column;gap:10px;height:auto;">
-
-    <!-- Live Event Feed -->
-    <div class="sr-panel" style="height:auto;">
-      <div class="sr-panel-hdr">
-        <div class="sr-panel-title"><span class="sr-dot green" style="animation:pulse-dot 1.4s infinite;"></span>Live Event Feed</div>
-        <button class="sr-pnl-btn" onclick="refreshEvents()"><i class="bi bi-arrow-repeat"></i></button>
-      </div>
-      <div id="eventFeed" style="overflow-y:auto;max-height:160px;">
-        {% for station in all_stations|slice:":3" %}
-        <div class="event-item">
-          <div class="event-dot" style="background:#ef4444;"></div>
-          <div>
-            <div class="event-title">Station Status: {{ station.code }} {% if station.station_type == 'MAJOR' %}Critical{% else %}Active{% endif %}</div>
-            <div class="event-text">{{ station.station_type }} station operational</div>
-            <div class="event-time">Today</div>
-          </div>
-        </div>
-        {% endfor %}
-        {% for sec in sections|slice:":2" %}
-        <div class="event-item">
-          <div class="event-dot" style="background:{% if sec.status == 'CLEAR' %}#10b981{% else %}#f59e0b{% endif %};"></div>
-          <div>
-            <div class="event-title">Route Updated: {{ sec.from_station.code }}–{{ sec.to_station.code }}</div>
-            <div class="event-text">Section status: {{ sec.status }}</div>
-            <div class="event-time">Recent</div>
-          </div>
-        </div>
-        {% endfor %}
-        <div class="event-item">
-          <div class="event-dot" style="background:#fbbf24;"></div>
-          <div>
-            <div class="event-title">Maintenance Activity</div>
-            <div class="event-text">Scheduled track inspection on northern corridor</div>
-            <div class="event-time">Upcoming</div>
-          </div>
+  <!-- Live Event Feed -->
+  <div class="sr-panel">
+    <div class="sr-panel-hdr">
+      <div class="sr-panel-title"><span class="sr-dot green" style="animation:pulse-dot 1.4s infinite;"></span>Live Event Feed</div>
+      <button class="sr-pnl-btn" onclick="refreshEvents()"><i class="bi bi-arrow-repeat"></i></button>
+    </div>
+    <div id="eventFeed" style="overflow-y:auto;max-height:180px;flex:1;">
+      {% for station in all_stations|slice:":3" %}
+      <div class="event-item">
+        <div class="event-dot" style="background:#ef4444;"></div>
+        <div>
+          <div class="event-title">Station Status: {{ station.code }} {% if station.station_type == 'MAJOR' %}Critical{% else %}Active{% endif %}</div>
+          <div class="event-text">{{ station.station_type }} station operational</div>
+          <div class="event-time">Today</div>
         </div>
       </div>
-      <div style="padding:8px 14px;border-top:1px solid var(--border-color);">
-        <a href="{% url 'conflicts:list' %}" class="sr-pnl-btn" style="width:100%;justify-content:center;"><i class="bi bi-shield-exclamation"></i> View All Conflicts</a>
+      {% endfor %}
+      {% for sec in sections|slice:":2" %}
+      <div class="event-item">
+        <div class="event-dot" style="background:{% if sec.status == 'CLEAR' %}#10b981{% else %}#f59e0b{% endif %};"></div>
+        <div>
+          <div class="event-title">Route Updated: {{ sec.from_station.code }}–{{ sec.to_station.code }}</div>
+          <div class="event-text">Section status: {{ sec.status }}</div>
+          <div class="event-time">Recent</div>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="event-item">
+        <div class="event-dot" style="background:#fbbf24;"></div>
+        <div>
+          <div class="event-title">Maintenance Activity</div>
+          <div class="event-text">Scheduled track inspection on northern corridor</div>
+          <div class="event-time">Upcoming</div>
+        </div>
       </div>
     </div>
-
-    <!-- AI Infrastructure Insights -->
-    <div class="sr-panel" style="flex:1;">
-      <div class="sr-panel-hdr">
-        <div class="sr-panel-title"><span class="sr-dot green"></span>AI Infrastructure Insights</div>
-        <a href="{% url 'ai_engine:dashboard' %}" class="sr-pnl-btn"><i class="bi bi-lightning-charge"></i></a>
-      </div>
-      <div>
-        <div class="ai-ins-item">
-          <div class="ai-ins-icon" style="background:rgba(239,68,68,.15);color:#f87171;"><i class="bi bi-exclamation-triangle"></i></div>
-          <div><div class="ai-ins-title">Capacity Bottlenecks</div><div class="ai-ins-text">{{ active_stations }} stations near capacity threshold. AGC section at 94% load.</div></div>
-        </div>
-        <div class="ai-ins-item">
-          <div class="ai-ins-icon" style="background:rgba(245,158,11,.15);color:#fbbf24;"><i class="bi bi-shield-exclamation"></i></div>
-          <div><div class="ai-ins-title">Infrastructure Risks</div><div class="ai-ins-text">{{ total_sections|add:"-1" }} sections need maintenance review in next 30 days.</div></div>
-        </div>
-        <div class="ai-ins-item">
-          <div class="ai-ins-icon" style="background:rgba(16,185,129,.15);color:#34d399;"><i class="bi bi-arrow-repeat"></i></div>
-          <div><div class="ai-ins-title">Route Optimization</div><div class="ai-ins-text">Rerouting via MTJ can reduce LKO congestion by 18%.</div></div>
-        </div>
-        <div class="ai-ins-item">
-          <div class="ai-ins-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;"><i class="bi bi-columns-gap"></i></div>
-          <div><div class="ai-ins-title">Platform Recommendations</div><div class="ai-ins-text">NDLS platform 14-16 utilization suboptimal. Rebalance advised.</div></div>
-        </div>
-      </div>
+    <div style="padding:8px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
+      <a href="{% url 'conflicts:list' %}" class="sr-pnl-btn" style="width:100%;justify-content:center;"><i class="bi bi-shield-exclamation"></i> View All Conflicts</a>
     </div>
   </div>
 </div>
