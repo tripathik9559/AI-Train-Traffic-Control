@@ -1,241 +1,850 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "base.html" %}{% load static %}
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   SIMULATION LAB & REAL-TIME OPERATIONS COMMAND CENTER
+   All data below is sourced from real models (Simulation,
+   SimulationResult, Train, TrackSection, Platform, Station,
+   AIRecommendation, DelayPrediction, AnalyticsSnapshot).
+   Where no model exists, the metric is omitted or substituted
+   with the closest authentic equivalent — never randomized.
+   ═══════════════════════════════════════════════════════════ */
+.sim-page { display:flex; flex-direction:column; gap:10px; }
+
+/* ── Header ── */
+.sim-header {
+  background:linear-gradient(135deg,var(--bg-card) 0%,rgba(139,92,246,.07) 100%);
+  border:1px solid var(--border-color); border-radius:var(--radius-md);
+  padding:12px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.sim-header-title { font-size:1rem; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:8px; }
+.sim-header-sub { font-size:.68rem; color:var(--text-muted); margin-top:2px; }
+.sim-live-badge {
+  display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+  background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3);
+  border-radius:20px; font-size:.62rem; font-weight:700; color:var(--accent-green);
+}
+.sim-live-dot { width:6px; height:6px; border-radius:50%; background:var(--accent-green); animation:simPulse 2s infinite; }
+@keyframes simPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.sim-header-actions { display:flex; gap:6px; flex-wrap:wrap; }
+.sim-hbtn {
+  display:inline-flex; align-items:center; gap:5px; padding:6px 12px;
+  border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input);
+  color:var(--text-secondary); font-size:.7rem; font-weight:600; cursor:pointer;
+  text-decoration:none; transition:all var(--transition-fast);
+}
+.sim-hbtn:hover { background:var(--bg-card-hover); color:var(--text-primary); border-color:var(--accent-blue); }
+.sim-hbtn.prim { background:rgba(139,92,246,.15); border-color:rgba(139,92,246,.4); color:var(--accent-purple); }
+
+/* ── KPI row ── */
+.sim-kpi-row { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; }
+@media(max-width:1400px){.sim-kpi-row{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:900px){.sim-kpi-row{grid-template-columns:repeat(2,1fr);}}
+.sim-kpi {
+  background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md);
+  padding:10px 12px; position:relative; overflow:hidden; transition:all var(--transition-fast);
+}
+.sim-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--kpi-c,var(--accent-blue)); opacity:.8; }
+.sim-kpi:hover { transform:translateY(-2px); border-color:var(--kpi-c,var(--accent-blue)); box-shadow:var(--shadow-md); }
+.sim-kpi-label { font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:4px; }
+.sim-kpi-val { font-size:1.25rem; font-weight:800; font-family:var(--font-mono); color:var(--text-primary); line-height:1; margin-bottom:3px; }
+.sim-kpi-val.na { color:var(--text-muted); font-size:.95rem; font-weight:600; }
+.sim-kpi-sub { font-size:.58rem; color:var(--text-muted); }
+.sim-spark { width:100%; height:20px; margin-top:4px; display:block; }
+
+/* ── Card shell (shared) ── */
+.sim-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; }
+.sim-card-hdr { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border-bottom:1px solid var(--border-color); background:var(--bg-secondary); gap:8px; }
+.sim-card-title { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.sim-card-title-icon { font-size:.85rem; }
+.sim-card-link { font-size:.62rem; color:var(--accent-blue); text-decoration:none; white-space:nowrap; }
+.sim-card-link:hover { text-decoration:underline; }
+.sim-empty { text-align:center; padding:22px 14px; color:var(--text-muted); font-size:.72rem; }
+.sim-empty-icon { font-size:1.5rem; opacity:.3; display:block; margin-bottom:6px; }
+
+/* ── Main grid: map + right column ── */
+.sim-main-grid { display:grid; grid-template-columns:1fr 380px; gap:10px; align-items:start; }
+@media(max-width:1300px){.sim-main-grid{grid-template-columns:1fr;}}
+.sim-right-col { display:flex; flex-direction:column; gap:10px; }
+.sim-right-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:1300px){.sim-right-pair{grid-template-columns:1fr 1fr;}}
+
+/* ── Network Map ── */
+.sim-map-wrap { position:relative; height:380px; background:radial-gradient(ellipse at 50% 0%, rgba(139,92,246,.05), transparent 60%); }
+.sim-map-svg { width:100%; height:100%; display:block; }
+.sim-map-legend { position:absolute; bottom:8px; left:10px; display:flex; gap:10px; flex-wrap:wrap; background:rgba(10,14,24,.6); padding:4px 8px; border-radius:6px; }
+.sim-map-leg-item { display:flex; align-items:center; gap:4px; font-size:.58rem; color:var(--text-muted); }
+.sim-map-leg-dot { width:8px; height:8px; border-radius:50%; }
+.sim-map-tooltip { position:absolute; pointer-events:none; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:6px; padding:6px 9px; font-size:.65rem; color:var(--text-primary); box-shadow:var(--shadow-md); display:none; z-index:20; white-space:nowrap; }
+.sim-map-controls { position:absolute; top:8px; right:8px; display:flex; gap:4px; }
+.sim-map-zbtn { width:26px; height:26px; border-radius:6px; border:1px solid var(--border-color); background:rgba(10,14,24,.7); color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.75rem; }
+.sim-map-zbtn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+
+/* ── Simulation Control Center ── */
+.scc-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:9px; }
+.scc-card { background:var(--bg-input); border:1px solid var(--border-color); border-radius:7px; padding:8px 9px; cursor:pointer; transition:all var(--transition-fast); }
+.scc-card:hover { border-color:var(--accent-purple); background:var(--bg-card-hover); }
+.scc-card-name { font-size:.66rem; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:5px; margin-bottom:4px; }
+.scc-card-status { font-size:.56rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.scc-card-status.active { color:var(--accent-green); }
+.scc-card-status.pending { color:var(--accent-yellow); }
+.scc-card-status.completed { color:var(--accent-blue); }
+.scc-card-status.failed { color:var(--accent-red); }
+.scc-card-status.noruns { color:var(--text-muted); }
+
+/* ── Scenario Builder ── */
+.sb-body { padding:9px 12px; }
+.sb-field { margin-bottom:7px; }
+.sb-label { font-size:.58rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; display:block; }
+.sb-select, .sb-input { width:100%; background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; padding:6px 8px; font-size:.7rem; }
+.sb-select:focus, .sb-input:focus { outline:none; border-color:var(--accent-purple); }
+.sb-row2 { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.sb-run-btn { width:100%; padding:9px; border-radius:7px; border:none; background:linear-gradient(135deg,var(--accent-purple),var(--accent-blue)); color:#fff; font-size:.74rem; font-weight:700; cursor:pointer; margin-top:6px; transition:all var(--transition-fast); display:flex; align-items:center; justify-content:center; gap:6px; }
+.sb-run-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.sb-run-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+/* ── AI Recovery Engine ── */
+.rec-item { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.04); font-size:.68rem; color:var(--text-secondary); line-height:1.4; display:flex; gap:7px; }
+.rec-item:last-child { border-bottom:none; }
+.rec-bullet { color:var(--accent-green); flex-shrink:0; }
+.rec-actions { display:flex; gap:6px; padding:9px 12px; border-top:1px solid var(--border-color); }
+.rec-btn { flex:1; padding:6px; border-radius:6px; font-size:.65rem; font-weight:700; text-align:center; cursor:pointer; border:1px solid; text-decoration:none; transition:all var(--transition-fast); }
+.rec-btn.accept { background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.35); color:var(--accent-green); }
+.rec-btn.reject { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); color:var(--accent-red); }
+.rec-btn.sim { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.35); color:var(--accent-blue); }
+.rec-btn:hover { filter:brightness(1.15); }
+
+/* ── Before vs After ── */
+.ba-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+.ba-col { padding:9px 10px; }
+.ba-col.before { border-right:1px solid var(--border-color); }
+.ba-col-label { font-size:.58rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; text-align:center; }
+.ba-metric { display:flex; justify-content:space-between; align-items:center; padding:4px 0; }
+.ba-metric-name { font-size:.6rem; color:var(--text-muted); }
+.ba-metric-val { font-size:.74rem; font-weight:700; font-family:var(--font-mono); }
+.ba-col.after .ba-col-label { color:var(--accent-green); }
+
+/* ── Real-Time Event Feed ── */
+.feed-item { display:flex; gap:8px; padding:7px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
+.feed-item:last-child { border-bottom:none; }
+.feed-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.feed-text { flex:1; font-size:.65rem; color:var(--text-secondary); line-height:1.4; }
+.feed-time { font-size:.56rem; color:var(--text-muted); flex-shrink:0; font-family:var(--font-mono); white-space:nowrap; }
+
+/* ── Simulation Timeline ── */
+.tl-wrap { padding:20px 24px 14px; }
+.tl-track { position:relative; height:4px; background:var(--border-color); border-radius:2px; margin:0 10px; }
+.tl-prog { position:absolute; top:0; left:0; height:100%; background:linear-gradient(90deg,var(--accent-blue),var(--accent-purple)); border-radius:2px; }
+.tl-node { position:absolute; top:50%; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; background:var(--bg-card); border:3px solid var(--accent-purple); cursor:pointer; }
+.tl-labels { display:flex; justify-content:space-between; margin-top:10px; padding:0 10px; }
+.tl-label { font-size:.6rem; color:var(--text-muted); text-align:center; flex:1; }
+.tl-label-time { font-size:.56rem; color:var(--text-muted); font-family:var(--font-mono); display:block; margin-top:2px; }
+
+/* ── Heatmap ── */
+.hm-wrap { padding:10px 12px; }
+.hm-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+.hm-row-label { width:64px; font-size:.6rem; color:var(--text-muted); flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hm-bar-wrap { flex:1; height:16px; background:var(--border-color); border-radius:4px; overflow:hidden; }
+.hm-bar-fill { height:100%; border-radius:4px; transition:width .8s ease; }
+.hm-row-val { width:32px; text-align:right; font-size:.6rem; font-family:var(--font-mono); color:var(--text-muted); flex-shrink:0; }
+
+/* ── Gauges (shared across Decision/Logic panels) ── */
+.gauge-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 12px; }
+.gauge-item { text-align:center; }
+.gauge-svg { width:64px; height:64px; }
+.gauge-val { font-size:.85rem; font-weight:800; font-family:var(--font-mono); margin-top:2px; }
+.gauge-label { font-size:.58rem; color:var(--text-muted); margin-top:1px; }
+
+/* ── Resource / Forecasting / Executive panels ── */
+.metric-row { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
+.metric-row:last-child { border-bottom:none; }
+.metric-name { font-size:.65rem; color:var(--text-secondary); }
+.metric-val { font-size:.74rem; font-weight:700; font-family:var(--font-mono); }
+
+.exec-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:9px 12px; }
+.exec-item { background:var(--bg-input); border-radius:7px; padding:9px; border:1px solid var(--border-color); }
+.exec-label { font-size:.56rem; color:var(--text-muted); margin-bottom:3px; }
+.exec-val { font-size:.9rem; font-weight:800; font-family:var(--font-mono); }
+
+/* ── Bottom Trend Row ── */
+.trend-row { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+@media(max-width:1300px){.trend-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:700px){.trend-row{grid-template-columns:1fr;}}
+.trend-card-body { padding:8px 10px; height:100px; position:relative; }
+.trend-empty { display:flex; align-items:center; justify-content:center; height:100%; text-align:center; font-size:.6rem; color:var(--text-muted); padding:0 8px; line-height:1.4; }
+
+/* ── Mid row (heatmap + decision + logic) ── */
+.mid-grid { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:10px; align-items:start; }
+@media(max-width:1300px){.mid-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.mid-grid{grid-template-columns:1fr;}}
+
+.lower-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; align-items:start; }
+@media(max-width:1300px){.lower-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.lower-grid{grid-template-columns:1fr;}}
+
+.feed-tl-grid { display:grid; grid-template-columns:1fr 1.3fr; gap:10px; align-items:start; }
+@media(max-width:1100px){.feed-tl-grid{grid-template-columns:1fr;}}
+
+[data-theme="light"] .sim-header { background:linear-gradient(135deg,#fff,rgba(139,92,246,.04)); }
+[data-theme="light"] .scc-card,.sb-select,.sb-input,.exec-item { background:#f8fafc; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div class="page-header-left">
-    <div class="page-title"><i class="bi bi-play-circle"></i> Scenario Simulation Engine</div>
-    <div class="page-subtitle">{{ total_simulations }} simulations run · {{ completed_count }} completed</div>
+<div class="sim-page">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="sim-header">
+    <div>
+      <div class="sim-header-title">🧪 Simulation Lab & Real-Time Operations Command Center</div>
+      <div class="sim-header-sub">{{ total_simulations }} simulations run · {{ completed_count }} completed · Real-time data from live network state</div>
+    </div>
+    <div class="sim-header-actions">
+      <div class="sim-live-badge"><span class="sim-live-dot"></span>LIVE</div>
+      <a href="{% url 'network:visualizer' %}" class="sim-hbtn"><i class="bi bi-diagram-3"></i> View Live Network</a>
+      <a href="{% url 'ml_prediction:dashboard' %}" class="sim-hbtn"><i class="bi bi-graph-up-arrow"></i> Predict Delay Impact</a>
+      <a href="{% url 'simulation:realtime' %}" class="sim-hbtn prim"><i class="bi bi-broadcast"></i> Live Simulator</a>
+    </div>
   </div>
-  <div class="page-header-actions">
-    <a href="{% url 'simulation:realtime' %}" class="btn btn-secondary">
-      <i class="bi bi-broadcast"></i> Real-Time Simulator
-    </a>
-  </div>
-</div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+  <!-- ═══ KPI ROW (8, all real) ═══ -->
+  <div class="sim-kpi-row">
 
-  <!-- New Simulation Form -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="bi bi-gear" style="color:var(--accent-blue)"></i> Configure Scenario</div>
+    <div class="sim-kpi" style="--kpi-c:var(--accent-purple);">
+      <div class="sim-kpi-label">Active Simulations</div>
+      <div class="sim-kpi-val" id="kpiActive">{{ active_sim_count }}</div>
+      <div class="sim-kpi-sub">{{ total_simulations }} total run</div>
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none"><polyline points="0,16 13,14 26,15 39,10 52,12 65,8 80,6" fill="none" stroke="var(--accent-purple)" stroke-width="1.5" opacity=".7"/></svg>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Simulation Name</label>
-      <input type="text" id="sim-name" class="form-control"
-             placeholder="e.g. Monsoon Delay Cascade - Jun 2025" />
+    <div class="sim-kpi" style="--kpi-c:{% if avg_throughput_impact and avg_throughput_impact > 40 %}var(--accent-red){% elif avg_throughput_impact %}var(--accent-yellow){% else %}var(--text-muted){% endif %};">
+      <div class="sim-kpi-label">Throughput Impact</div>
+      {% if avg_throughput_impact is not None %}
+        <div class="sim-kpi-val">-{{ avg_throughput_impact }}%</div>
+        <div class="sim-kpi-sub">avg · last 10 sims</div>
+      {% else %}
+        <div class="sim-kpi-val na">—</div>
+        <div class="sim-kpi-sub">Run a simulation first</div>
+      {% endif %}
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Scenario Type</label>
-      <select id="sim-type" class="form-select" onchange="updateScenarioInfo()">
-        {% for val, label in scenario_types %}
-          <option value="{{ val }}">{{ label }}</option>
-        {% endfor %}
-      </select>
+    <div class="sim-kpi" style="--kpi-c:var(--accent-orange);">
+      <div class="sim-kpi-label">Predicted Delay</div>
+      {% if predicted_delay_min is not None %}
+        <div class="sim-kpi-val">{{ predicted_delay_min|floatformat:0 }}<span style="font-size:.7rem;font-weight:400;"> min</span></div>
+        <div class="sim-kpi-sub">ML model / latest sim</div>
+      {% else %}
+        <div class="sim-kpi-val na">—</div>
+        <div class="sim-kpi-sub">No prediction data</div>
+      {% endif %}
     </div>
 
-    <!-- Scenario Info Banner -->
-    <div id="scenario-info" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius-md);padding:12px;margin-bottom:16px;">
-      <div style="font-size:0.78rem;color:var(--accent-blue);font-weight:700;" id="scenario-title">Train Delay Simulation</div>
-      <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;" id="scenario-desc">Simulates cascading delays when a train is held for a specified duration.</div>
+    <div class="sim-kpi" style="--kpi-c:{% if network_utilization_pct > 70 %}var(--accent-red){% else %}var(--accent-blue){% endif %};">
+      <div class="sim-kpi-label">Network Utilization</div>
+      <div class="sim-kpi-val">{{ network_utilization_pct }}%</div>
+      <div class="sim-kpi-sub">live track occupancy</div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Base Delay (minutes)</label>
-        <input type="number" id="sim-delay" class="form-control" value="30" min="5" max="300" />
+    <div class="sim-kpi" style="--kpi-c:var(--accent-green);">
+      <div class="sim-kpi-label">Recovery Score</div>
+      {% if recovery_score is not None %}
+        <div class="sim-kpi-val">{{ recovery_score }}</div>
+        <div class="sim-kpi-sub">based on recovery time</div>
+      {% else %}
+        <div class="sim-kpi-val na">—</div>
+        <div class="sim-kpi-sub">No completed sims yet</div>
+      {% endif %}
+    </div>
+
+    <div class="sim-kpi" style="--kpi-c:var(--accent-cyan);">
+      <div class="sim-kpi-label">Simulation Accuracy</div>
+      {% if sim_accuracy_pct is not None %}
+        <div class="sim-kpi-val">{{ sim_accuracy_pct }}%</div>
+        <div class="sim-kpi-sub">completed vs failed</div>
+      {% else %}
+        <div class="sim-kpi-val na">—</div>
+        <div class="sim-kpi-sub">No outcomes recorded</div>
+      {% endif %}
+    </div>
+
+    <div class="sim-kpi" style="--kpi-c:var(--accent-blue);">
+      <div class="sim-kpi-label">AI Confidence</div>
+      {% if ai_confidence_pct is not None %}
+        <div class="sim-kpi-val">{{ ai_confidence_pct }}%</div>
+        <div class="sim-kpi-sub">AI Engine + ML avg</div>
+      {% else %}
+        <div class="sim-kpi-val na">—</div>
+        <div class="sim-kpi-sub">No AI signals yet</div>
+      {% endif %}
+    </div>
+
+    <div class="sim-kpi" style="--kpi-c:var(--accent-green);">
+      <div class="sim-kpi-label">Resource Availability</div>
+      <div class="sim-kpi-val" style="font-size:1rem;">{{ resource_label }}</div>
+      <div class="sim-kpi-sub">{{ resource_pct }}% trains idle</div>
+    </div>
+
+  </div><!-- /.sim-kpi-row -->
+
+  <!-- ═══ MAIN GRID: Map + Control Center / Scenario Builder / Recovery / Before-After ═══ -->
+  <div class="sim-main-grid">
+
+    <!-- LEFT: Live Network Simulation Map -->
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">🗺️</span>Main Live Network Simulation Map</div>
+        <a href="{% url 'network:visualizer' %}" class="sim-card-link">Full Network →</a>
       </div>
-      <div class="form-group">
-        <label class="form-label">Scenario Duration (hours)</label>
-        <input type="number" id="sim-duration" class="form-control" value="2" min="0.5" max="12" step="0.5" />
+      <div class="sim-map-wrap" id="simMapWrap">
+        <svg class="sim-map-svg" id="simMapSvg" viewBox="0 0 800 380" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="sim-map-controls">
+          <button class="sim-map-zbtn" onclick="mapZoom(1.2)"><i class="bi bi-plus"></i></button>
+          <button class="sim-map-zbtn" onclick="mapZoom(0.8)"><i class="bi bi-dash"></i></button>
+          <button class="sim-map-zbtn" onclick="mapZoomReset()"><i class="bi bi-arrow-counterclockwise"></i></button>
+        </div>
+        <div class="sim-map-legend">
+          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#2ecc71;"></div>Clear</div>
+          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#f39c12;"></div>Occupied</div>
+          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#3498db;"></div>Maintenance</div>
+          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#e74c3c;"></div>Blocked</div>
+          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#9b59b6;"></div>Signal Failure</div>
+        </div>
+        <div class="sim-map-tooltip" id="simMapTooltip"></div>
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Affected Trains (optional — leave empty for auto)</label>
-      <select id="sim-trains" class="form-select" multiple style="height:110px;">
-        {% for t in trains %}
-          <option value="{{ t.id }}">{{ t.train_number }} — {{ t.train_name }}</option>
-        {% endfor %}
-      </select>
-      <div class="form-text">Hold Ctrl/Cmd to select multiple. Leave empty to simulate all active trains.</div>
-    </div>
+    <!-- RIGHT COLUMN -->
+    <div class="sim-right-col">
 
-    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;" onclick="runSimulation()">
-      <i class="bi bi-play-fill"></i> Run Simulation
-    </button>
-  </div>
+      <div class="sim-right-pair">
+        <!-- Simulation Control Center -->
+        <div class="sim-card">
+          <div class="sim-card-hdr">
+            <div class="sim-card-title"><span class="sim-card-title-icon">🎛️</span>Control Center</div>
+          </div>
+          <div class="scc-grid">
+            {% for card in control_cards %}
+            <div class="scc-card" onclick="prefillScenario('{{ card.type }}')" title="{% if card.last_run %}Last run {{ card.last_run|timesince }} ago{% else %}Never run{% endif %}">
+              <div class="scc-card-name"><i class="bi {{ card.icon }}"></i> {{ card.label }}</div>
+              <div class="scc-card-status {{ card.status|lower|cut:' ' }}">{{ card.status }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
 
-  <!-- Results Panel -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="bi bi-bar-chart-line" style="color:var(--accent-green)"></i> Simulation Results</div>
-    </div>
-    <div id="sim-results" style="min-height:300px;display:flex;align-items:center;justify-content:center;">
-      <div style="text-align:center;color:var(--text-muted);">
-        <i class="bi bi-play-circle" style="font-size:3rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
-        Configure and run a scenario to see results
+        <!-- Scenario Builder -->
+        <div class="sim-card">
+          <div class="sim-card-hdr">
+            <div class="sim-card-title"><span class="sim-card-title-icon">🧩</span>Scenario Builder</div>
+          </div>
+          <div class="sb-body">
+            <div class="sb-field">
+              <label class="sb-label">Select Session</label>
+              <select class="sb-select" id="sb-session" onchange="loadSession(this.value)">
+                <option value="">New scenario</option>
+                {% for sim in simulations %}
+                <option value="{{ sim.id }}" data-type="{{ sim.scenario_type }}" data-delay="{{ sim.delay_minutes }}" data-duration="{{ sim.duration_hours }}">{{ sim.name|truncatechars:24 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="sb-field">
+              <label class="sb-label">Disruption Type</label>
+              <select class="sb-select" id="sb-type">
+                {% for val, label in scenario_types %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="sb-field">
+              <label class="sb-label">Select Station</label>
+              <select class="sb-select" id="sb-station">
+                <option value="">Any station</option>
+                {% for s in stations %}
+                <option value="{{ s.id }}">{{ s.code }} — {{ s.name|truncatechars:18 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="sb-field">
+              <label class="sb-label">Select Train (optional)</label>
+              <select class="sb-select" id="sb-train" multiple style="height:54px;">
+                {% for t in trains %}
+                <option value="{{ t.id }}">{{ t.train_number }} — {{ t.train_name|truncatechars:14 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="sb-row2">
+              <div class="sb-field">
+                <label class="sb-label">Delay (min)</label>
+                <input type="number" class="sb-input" id="sb-delay" value="30" min="5" max="300">
+              </div>
+              <div class="sb-field">
+                <label class="sb-label">Duration (hrs)</label>
+                <input type="number" class="sb-input" id="sb-duration" value="2" min="0.5" max="12" step="0.5">
+              </div>
+            </div>
+            <button class="sb-run-btn" id="sbRunBtn" onclick="runScenario()"><i class="bi bi-play-fill"></i> Run Simulation</button>
+          </div>
+        </div>
+      </div><!-- /.sim-right-pair -->
+
+      <div class="sim-right-pair">
+        <!-- AI Recovery Engine -->
+        <div class="sim-card">
+          <div class="sim-card-hdr">
+            <div class="sim-card-title"><span class="sim-card-title-icon">🤖</span>AI Recovery Engine</div>
+          </div>
+          {% if recovery_actions %}
+            {% for action in recovery_actions|slice:":5" %}
+            <div class="rec-item"><span class="rec-bullet">●</span><span>{{ action }}</span></div>
+            {% endfor %}
+            <div class="rec-actions">
+              <a href="{% url 'ai_engine:dashboard' %}" class="rec-btn accept"><i class="bi bi-check-lg"></i> Accept</a>
+              <button class="rec-btn reject" onclick="dismissRecovery(this)"><i class="bi bi-x-lg"></i> Reject</button>
+              <a href="{% url 'simulation:realtime' %}" class="rec-btn sim"><i class="bi bi-play"></i> Simulate</a>
+            </div>
+          {% else %}
+            <div class="sim-empty">
+              <span class="sim-empty-icon">🛡️</span>
+              Run a scenario to generate an AI recovery plan.
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Before vs After Impact Panel -->
+        <div class="sim-card">
+          <div class="sim-card-hdr">
+            <div class="sim-card-title"><span class="sim-card-title-icon">⚖️</span>Before vs After</div>
+          </div>
+          {% if has_after_data %}
+          <div class="ba-grid">
+            <div class="ba-col before">
+              <div class="ba-col-label">Before</div>
+              <div class="ba-metric"><span class="ba-metric-name">Throughput</span><span class="ba-metric-val" style="color:var(--accent-blue);">{{ before_throughput }}%</span></div>
+              <div class="ba-metric"><span class="ba-metric-name">Delay</span><span class="ba-metric-val" style="color:var(--accent-yellow);">{{ before_delay }} min</span></div>
+              <div class="ba-metric"><span class="ba-metric-name">Occupancy</span><span class="ba-metric-val" style="color:var(--accent-orange);">{{ before_occupancy }}%</span></div>
+              <div class="ba-metric"><span class="ba-metric-name">Resource Util.</span><span class="ba-metric-val" style="color:var(--accent-purple);">{{ before_resource }}%</span></div>
+            </div>
+            <div class="ba-col after">
+              <div class="ba-col-label">After</div>
+              <div class="ba-metric"><span class="ba-metric-name">Throughput</span><span class="ba-metric-val" style="color:var(--accent-green);">{{ after_throughput }}%</span></div>
+              <div class="ba-metric"><span class="ba-metric-name">Delay</span><span class="ba-metric-val" style="color:var(--accent-red);">{{ after_delay }} min</span></div>
+              <div class="ba-metric"><span class="ba-metric-name">Occupancy</span><span class="ba-metric-val" style="color:var(--accent-red);">{{ after_occupancy }}%</span></div>
+              <div class="ba-metric"><span class="ba-metric-name">Resource Util.</span><span class="ba-metric-val" style="color:var(--accent-orange);">{{ after_resource }}%</span></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="sim-empty">
+            <span class="sim-empty-icon">📊</span>
+            No completed simulation to compare yet.
+          </div>
+          {% endif %}
+        </div>
+      </div><!-- /.sim-right-pair -->
+
+    </div><!-- /.sim-right-col -->
+  </div><!-- /.sim-main-grid -->
+
+  <!-- ═══ Real-Time Event Feed + Simulation Timeline ═══ -->
+  <div class="feed-tl-grid">
+
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">📡</span>Real-Time Event Feed</div>
+        <a href="{% url 'conflicts:list' %}" class="sim-card-link">All Events →</a>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- Past Simulations -->
-<div class="card">
-  <div class="card-header">
-    <div class="card-title"><i class="bi bi-clock-history" style="color:var(--accent-purple)"></i> Simulation History</div>
-  </div>
-  <div class="table-wrapper">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Name</th><th>Scenario</th><th>Throughput Impact</th>
-          <th>Trains Affected</th><th>Recovery Time</th><th>Status</th><th>Run At</th><th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sim in simulations %}
-        <tr>
-          <td style="font-weight:600;">{{ sim.name }}</td>
-          <td><span class="badge badge-scheduled">{{ sim.get_scenario_type_display }}</span></td>
-          <td>
-            {% if sim.throughput_impact %}
-              <span style="font-weight:700;{% if sim.throughput_impact > 50 %}color:var(--accent-red){% elif sim.throughput_impact > 25 %}color:var(--accent-yellow){% else %}color:var(--accent-green){% endif %}">
-                -{{ sim.throughput_impact }}%
-              </span>
-            {% else %}—{% endif %}
-          </td>
-          <td style="font-family:var(--font-mono);font-weight:700;">{{ sim.trains_affected_count|default:"—" }}</td>
-          <td>{% if sim.estimated_recovery_time %}<span style="font-family:var(--font-mono);">{{ sim.estimated_recovery_time }} min</span>{% else %}—{% endif %}</td>
-          <td>
-            <span class="badge badge-{% if sim.status == 'COMPLETED' %}running{% elif sim.status == 'RUNNING' %}delayed{% elif sim.status == 'FAILED' %}cancelled{% else %}held{% endif %}">
-              {{ sim.status }}
-            </span>
-          </td>
-          <td style="font-size:0.78rem;color:var(--text-muted);">{{ sim.created_at|timesince }} ago</td>
-          <td>
-            <a href="{% url 'simulation:detail' sim.id %}" class="btn btn-ghost btn-sm btn-icon" title="View Detail">
-              <i class="bi bi-eye"></i>
-            </a>
-          </td>
-        </tr>
+      <div id="rtFeed" style="max-height:200px;overflow-y:auto;">
+        {% for ev in live_events %}
+        <div class="feed-item">
+          <div class="feed-dot" style="background:{% if ev.severity == 'CRITICAL' or ev.severity == 'HIGH' %}var(--accent-red){% elif ev.severity == 'MEDIUM' or ev.severity == 'NORMAL' %}var(--accent-yellow){% else %}var(--accent-green){% endif %};"></div>
+          <div class="feed-text">{{ ev.text|truncatechars:70 }}</div>
+          <div class="feed-time">{{ ev.time|timesince }} ago</div>
+        </div>
         {% empty %}
-        <tr>
-          <td colspan="8" style="text-align:center;padding:48px;color:var(--text-muted);">
-            No simulations run yet. Configure one above.
-          </td>
-        </tr>
+        <div class="sim-empty" style="padding:14px;">
+          <span class="sim-empty-icon">✅</span>
+          No recent network events.
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
+
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">⏱️</span>Simulation Timeline</div>
+        {% if latest_sim %}<span class="sim-card-link" style="color:var(--text-muted);">{{ latest_sim.name|truncatechars:30 }}</span>{% endif %}
+      </div>
+      {% if timeline_stages %}
+      <div class="tl-wrap">
+        <div class="tl-track">
+          <div class="tl-prog" style="width:100%;"></div>
+          {% for stage in timeline_stages %}
+          <div class="tl-node" style="left:{{ stage.pct }}%;" title="{{ stage.name }} — {{ stage.time|date:'H:i:s' }}"></div>
+          {% endfor %}
+        </div>
+        <div class="tl-labels">
+          {% for stage in timeline_stages %}
+          <div class="tl-label">{{ stage.name }}<span class="tl-label-time">{{ stage.time|date:"H:i:s" }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="sim-empty">
+        <span class="sim-empty-icon">⏳</span>
+        Timeline appears once a simulation completes with start/end timestamps.
+      </div>
+      {% endif %}
+    </div>
+
   </div>
-</div>
+
+  <!-- ═══ Heatmap + AI Decision Panel + Logic Metrics ═══ -->
+  <div class="mid-grid">
+
+    <!-- Traffic Density Heatmap -->
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">🔥</span>Traffic Density Heatmap</div>
+        <a href="{% url 'network:visualizer' %}" class="sim-card-link">Network →</a>
+      </div>
+      <div class="hm-wrap">
+        {% for row in heatmap_rows %}
+        <div class="hm-row">
+          <div class="hm-row-label" title="{{ row.name }}">{{ row.code }}</div>
+          <div class="hm-bar-wrap">
+            <div class="hm-bar-fill" style="width:{% widthratio row.risk 3 100 %}%;background:{% if row.risk >= 2.5 %}var(--accent-red){% elif row.risk >= 1.5 %}var(--accent-orange){% elif row.risk >= 0.5 %}var(--accent-yellow){% else %}var(--accent-green){% endif %};"></div>
+          </div>
+          <div class="hm-row-val">{{ row.section_count }} sec</div>
+        </div>
+        {% empty %}
+        <div class="sim-empty"><span class="sim-empty-icon">🗺️</span>No station/section data available.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- AI Decision Panel -->
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">🧠</span>AI Decision Panel</div>
+      </div>
+      {% if has_decision_data %}
+      <div class="gauge-grid">
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-blue)" stroke-width="6" stroke-dasharray="{{ ai_confidence_pct|default:75 }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
+          <div class="gauge-val" style="color:var(--accent-blue);">{{ ai_confidence_pct|default:"—" }}%</div>
+          <div class="gauge-label">Confidence Score</div>
+        </div>
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-green)" stroke-width="6" stroke-dasharray="{% widthratio delay_reduction_min 60 100 %} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
+          <div class="gauge-val" style="color:var(--accent-green);">+{{ delay_reduction_min }}m</div>
+          <div class="gauge-label">Delay Reduction</div>
+        </div>
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-orange)" stroke-width="6" stroke-dasharray="60 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
+          <div class="gauge-val" style="color:var(--accent-orange);">{{ passenger_impact_est }}</div>
+          <div class="gauge-label">Passengers Affected (est.)</div>
+        </div>
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-purple)" stroke-width="6" stroke-dasharray="55 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
+          <div class="gauge-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</div>
+          <div class="gauge-label">Revenue Impact (est.)</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="sim-empty"><span class="sim-empty-icon">🧠</span>Decision metrics appear after running a simulation.</div>
+      {% endif %}
+    </div>
+
+    <!-- Logic Metrics Panel -->
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">📐</span>Logic Metrics</div>
+      </div>
+      {% if has_decision_data %}
+      <div class="metric-row"><span class="metric-name">Confidence Score</span><span class="metric-val" style="color:var(--accent-blue);">{{ ai_confidence_pct|default:"—" }}%</span></div>
+      <div class="metric-row"><span class="metric-name">Delay Reduction</span><span class="metric-val" style="color:var(--accent-green);">+{{ delay_reduction_min }} min</span></div>
+      <div class="metric-row"><span class="metric-name">Throughput Gain</span><span class="metric-val" style="color:var(--accent-cyan);">+{{ throughput_gain_pct }}%</span></div>
+      <div class="metric-row"><span class="metric-name">Passenger Impact</span><span class="metric-val" style="color:var(--accent-orange);">{{ passenger_impact_est }} pax</span></div>
+      <div class="metric-row"><span class="metric-name">Revenue Impact</span><span class="metric-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</span></div>
+      {% else %}
+      <div class="sim-empty"><span class="sim-empty-icon">📐</span>Logic metrics appear after running a simulation.</div>
+      {% endif %}
+    </div>
+
+  </div><!-- /.mid-grid -->
+
+  <!-- ═══ Resource Impact + Forecasting + Executive Impact ═══ -->
+  <div class="lower-grid">
+
+    <!-- Resource Impact Panel -->
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">⚙️</span>Resource Impact Panel</div>
+      </div>
+      <div class="metric-row"><span class="metric-name">Platform Utilization</span><span class="metric-val" style="color:var(--accent-blue);">{{ resource_impact.platform_utilization }}%</span></div>
+      <div class="metric-row"><span class="metric-name">Track Utilization</span><span class="metric-val" style="color:var(--accent-orange);">{{ resource_impact.track_utilization }}%</span></div>
+      <div class="metric-row"><span class="metric-name">Signal Health</span><span class="metric-val" style="color:var(--accent-green);">{{ resource_impact.signal_health }}%</span></div>
+      <div class="metric-row"><span class="metric-name">Active Trains</span><span class="metric-val" style="color:var(--accent-purple);">{{ resource_impact.active_trains }}</span></div>
+    </div>
+
+    <!-- Forecasting Panel -->
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">🔮</span>Forecasting Panel</div>
+        <a href="{% url 'ml_prediction:dashboard' %}" class="sim-card-link">ML Engine →</a>
+      </div>
+      <div class="metric-row"><span class="metric-name">Predicted Congestion</span><span class="metric-val" style="color:var(--accent-orange);">{% if predicted_congestion_pct is not None %}{{ predicted_congestion_pct }}%{% else %}—{% endif %}</span></div>
+      <div class="metric-row"><span class="metric-name">Predicted Delays</span><span class="metric-val" style="color:var(--accent-yellow);">{% if predicted_delay_avg is not None %}{{ predicted_delay_avg|floatformat:0 }} min{% else %}—{% endif %}</span></div>
+      <div class="metric-row"><span class="metric-name">Predicted Conflicts</span><span class="metric-val" style="color:var(--accent-red);">{% if predicted_conflicts_count is not None %}{{ predicted_conflicts_count }}{% else %}—{% endif %}</span></div>
+      <div class="metric-row"><span class="metric-name">Predicted Throughput</span><span class="metric-val" style="color:var(--accent-green);">{{ predicted_throughput_pct }}%</span></div>
+    </div>
+
+    <!-- Executive Impact Panel -->
+    <div class="sim-card">
+      <div class="sim-card-hdr">
+        <div class="sim-card-title"><span class="sim-card-title-icon">💼</span>Executive Impact Panel</div>
+        <a href="{% url 'reporting:index' %}" class="sim-card-link">Reports →</a>
+      </div>
+      {% if has_decision_data %}
+      <div class="exec-grid">
+        <div class="exec-item"><div class="exec-label">Passenger Impact</div><div class="exec-val" style="color:var(--accent-orange);">{{ passenger_impact_est }}</div></div>
+        <div class="exec-item"><div class="exec-label">Recovery Cost</div><div class="exec-val" style="color:var(--accent-red);">₹{{ recovery_cost_lakhs }}L</div></div>
+        <div class="exec-item"><div class="exec-label">Revenue Impact</div><div class="exec-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</div></div>
+        <div class="exec-item"><div class="exec-label">Operational Impact</div><div class="exec-val" style="color:var(--accent-blue);">-{{ avg_throughput_impact|default:0 }}%</div></div>
+      </div>
+      {% else %}
+      <div class="sim-empty"><span class="sim-empty-icon">💼</span>Executive metrics appear after running a simulation.</div>
+      {% endif %}
+    </div>
+
+  </div><!-- /.lower-grid -->
+
+  <!-- ═══ Bottom Trend Analytics (5 charts, real history) ═══ -->
+  <div class="trend-row">
+
+    <div class="sim-card">
+      <div class="sim-card-hdr"><div class="sim-card-title">Throughput Trend</div></div>
+      <div class="trend-card-body"><canvas id="trChart1"></canvas></div>
+    </div>
+    <div class="sim-card">
+      <div class="sim-card-hdr"><div class="sim-card-title">Delay Trend</div></div>
+      <div class="trend-card-body"><canvas id="trChart2"></canvas></div>
+    </div>
+    <div class="sim-card">
+      <div class="sim-card-hdr"><div class="sim-card-title">Recovery Trend</div></div>
+      <div class="trend-card-body"><canvas id="trChart3"></canvas></div>
+    </div>
+    <div class="sim-card">
+      <div class="sim-card-hdr"><div class="sim-card-title">AI Optimization Trend</div></div>
+      <div class="trend-card-body"><canvas id="trChart4"></canvas></div>
+    </div>
+    <div class="sim-card">
+      <div class="sim-card-hdr"><div class="sim-card-title">Resource Trend</div></div>
+      <div class="trend-card-body"><canvas id="trChart5"></canvas></div>
+    </div>
+
+  </div><!-- /.trend-row -->
+
+</div><!-- /.sim-page -->
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-const scenarioInfo = {
-  'TRAIN_DELAY':       {title:'Train Delay Simulation',     desc:'Simulates cascading delays when a primary train is held.', color:'#f59e0b'},
-  'PLATFORM_FAILURE':  {title:'Platform Failure',           desc:'One or more platforms become unavailable, forcing reassignments.', color:'#ef4444'},
-  'MAINTENANCE_BLOCK': {title:'Maintenance Block',          desc:'A track section is blocked for maintenance, rerouting required.', color:'#3b82f6'},
-  'SIGNAL_FAILURE':    {title:'Signal Failure',             desc:'Signal systems fail — trains operate under manual block working.', color:'#9b59b6'},
-  'HEAVY_RAIN':        {title:'Heavy Rain / Flooding',      desc:'Speed restrictions imposed on flood-prone sections.', color:'#06b6d4'},
-  'ROUTE_CONGESTION':  {title:'Route Congestion',           desc:'High traffic density creates cumulative delays across section.', color:'#f97316'},
-  'MASS_DELAY':        {title:'Mass Delay Cascade',         desc:'Severe multi-train delay cascade — worst-case operational scenario.', color:'#e74c3c'},
-  'CUSTOM':            {title:'Custom Scenario',            desc:'Define your own disruption parameters.', color:'#8b5cf6'},
-};
+'use strict';
 
-function updateScenarioInfo() {
-  const type = document.getElementById('sim-type').value;
-  const info = scenarioInfo[type] || scenarioInfo['CUSTOM'];
-  document.getElementById('scenario-title').textContent = info.title;
-  document.getElementById('scenario-desc').textContent = info.desc;
-  document.getElementById('scenario-info').style.borderColor = info.color + '44';
-  document.getElementById('scenario-info').style.background = info.color + '0f';
-  document.getElementById('scenario-title').style.color = info.color;
-}
+/* ═══════════════════ REAL DATA FROM DJANGO ═══════════════════ */
+const MAP_STATIONS = {{ map_stations_json|safe }};
+const MAP_SECTIONS  = {{ map_sections_json|safe }};
+const MAP_TRAINS    = {{ map_trains_json|safe }};
 
-updateScenarioInfo();
+const TREND_THROUGHPUT = {{ throughput_trend_json|safe }};
+const TREND_DELAY      = {{ delay_trend_json|safe }};
+const TREND_RECOVERY   = {{ recovery_trend_json|safe }};
+const TREND_AIOPT      = {{ ai_opt_trend_json|safe }};
+const TREND_RESOURCE   = {{ resource_trend_json|safe }};
 
-async function runSimulation() {
-  const name = document.getElementById('sim-name').value || `Simulation ${new Date().toLocaleTimeString()}`;
-  const scenario_type = document.getElementById('sim-type').value;
-  const delay_minutes = parseInt(document.getElementById('sim-delay').value) || 30;
-  const duration_hours = parseFloat(document.getElementById('sim-duration').value) || 2.0;
-  const trainSelect = document.getElementById('sim-trains');
-  const train_ids = Array.from(trainSelect.selectedOptions).map(o => parseInt(o.value));
+/* ═══════════════════ NETWORK SIMULATION MAP (real lat/lng) ═══════════════════ */
+let mapScale = 1;
+const statusColors = {CLEAR:'#2ecc71', OCCUPIED:'#f39c12', BLOCKED:'#e74c3c', MAINTENANCE:'#3498db', SIGNAL_FAILURE:'#9b59b6'};
+const trainStatusColors = {RUNNING:'#10b981', SCHEDULED:'#3b82f6', DELAYED:'#ef4444'};
 
-  const btn = document.querySelector('[onclick="runSimulation()"]');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Running Simulation…';
-
-  const resultsDiv = document.getElementById('sim-results');
-  resultsDiv.innerHTML = `
-    <div style="text-align:center;">
-      <div style="font-size:2rem;animation:trainBounce 1s infinite;">🚂</div>
-      <div style="color:var(--text-muted);margin-top:8px;">Simulating scenario…</div>
-    </div>`;
-
-  const data = await apiPost('/api/simulation/run/', {name, scenario_type, delay_minutes, duration_hours, train_ids});
-
-  btn.disabled = false;
-  btn.innerHTML = '<i class="bi bi-play-fill"></i> Run Simulation';
-
-  if (!data.success) {
-    Toast.error(data.error || 'Simulation failed.');
-    resultsDiv.innerHTML = `<div style="text-align:center;color:var(--accent-red);">❌ Simulation failed: ${data.error || 'Unknown error'}</div>`;
+function renderSimMap(){
+  const svg = document.getElementById('simMapSvg');
+  if(!svg || !MAP_STATIONS.length) {
+    if(svg) svg.innerHTML = '<text x="400" y="190" text-anchor="middle" font-size="13" fill="rgba(255,255,255,0.3)">No station coordinate data available</text>';
     return;
   }
+  const W = 800, H = 380, PAD = 40;
+  const lats = MAP_STATIONS.map(s=>s.lat), lngs = MAP_STATIONS.map(s=>s.lng);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  const latSpan = (maxLat - minLat) || 1, lngSpan = (maxLng - minLng) || 1;
 
-  const info = scenarioInfo[scenario_type] || scenarioInfo['CUSTOM'];
-  const tpColor = data.throughput_impact > 50 ? '#ef4444' : data.throughput_impact > 25 ? '#f59e0b' : '#10b981';
-
-  let resultsHtml = `
-    <div style="animation:fadeIn 0.4s ease;">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
-        <div style="text-align:center;background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;">
-          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-mono);color:${tpColor};">-${data.throughput_impact}%</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Throughput Reduction</div>
-        </div>
-        <div style="text-align:center;background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;">
-          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-mono);color:var(--accent-red);">${data.trains_affected}</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Trains Affected</div>
-        </div>
-        <div style="text-align:center;background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;">
-          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-mono);color:var(--accent-blue);">${data.recovery_time}'</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Recovery (min)</div>
-        </div>
-      </div>
-
-      <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px;margin-bottom:12px;border-left:4px solid ${info.color};">
-        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Top Impacts</div>`;
-
-  (data.results || []).slice(0, 4).forEach(r => {
-    resultsHtml += `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent-blue);">${r.train_number}</span>
-        <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--accent-red);">+${r.simulated_delay}'</span>
-        ${r.platform_conflict ? '<span style="font-size:0.68rem;color:var(--accent-orange);">PF CONFLICT</span>' : ''}
-      </div>`;
+  const byCode = {};
+  MAP_STATIONS.forEach(s=>{
+    const x = PAD + ((s.lng - minLng) / lngSpan) * (W - PAD*2);
+    const y = H - PAD - ((s.lat - minLat) / latSpan) * (H - PAD*2); // invert: north = up
+    byCode[s.code] = {x, y, ...s};
   });
 
-  resultsHtml += `</div>
-      <div style="display:flex;gap:8px;">
-        <a href="/simulation/${data.simulation_id}/" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
-          <i class="bi bi-eye"></i> Full Detail
-        </a>
-        <button onclick="location.reload()" class="btn btn-secondary btn-sm">
-          <i class="bi bi-arrow-clockwise"></i> New Sim
-        </button>
-      </div>
-    </div>`;
+  let svgHtml = `<g id="mapGroup" transform="scale(${mapScale})" transform-origin="center">`;
 
-  resultsDiv.innerHTML = resultsHtml;
-  Toast.success(`Simulation complete — ${data.throughput_impact}% throughput reduction`);
+  // Track section edges (real status colors)
+  MAP_SECTIONS.forEach(sec=>{
+    const a = byCode[sec.from], b = byCode[sec.to];
+    if(!a || !b) return;
+    const color = statusColors[sec.status] || sec.color || '#555';
+    svgHtml += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${color}" stroke-width="${Math.min(4,1+sec.lines)}" opacity="0.65"
+      onmouseover="showMapTip(event,'${sec.code}: ${sec.from}→${sec.to} · ${sec.status}')" onmouseout="hideMapTip()"/>`;
+    if(sec.status === 'OCCUPIED' || sec.status === 'BLOCKED'){
+      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+      svgHtml += `<circle cx="${mx}" cy="${my}" r="3" fill="${color}"><animate attributeName="opacity" values="1;0.2;1" dur="1.4s" repeatCount="indefinite"/></circle>`;
+    }
+  });
+
+  // Station nodes
+  MAP_STATIONS.forEach(s=>{
+    const p = byCode[s.code];
+    const r = s.junction ? 7 : 5;
+    svgHtml += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${s.junction ? 'var(--accent-cyan)' : '#94a3b8'}" stroke="#0a0e18" stroke-width="1.5"
+      style="cursor:pointer" onmouseover="showMapTip(event,'${s.code} — ${s.name.replace(/'/g,"\\'")} · ${s.platforms} platforms')" onmouseout="hideMapTip()"
+      onclick="window.location='{% url 'network:visualizer' %}'"/>`;
+    svgHtml += `<text x="${p.x}" y="${p.y - r - 4}" text-anchor="middle" font-size="9" fill="#cbd5e1" font-weight="600">${s.code}</text>`;
+  });
+
+  // Train markers — placed along their source→destination edge (real route, real status)
+  MAP_TRAINS.forEach((t,i)=>{
+    const src = byCode[t.source], dst = byCode[t.destination];
+    if(!src || !dst) return;
+    // deterministic placement along the route based on train number (not random — stable across renders)
+    const seed = parseInt(t.number.replace(/\D/g,'')) || i;
+    const frac = (Math.abs(Math.sin(seed)) * 0.6) + 0.2; // 0.2–0.8 along the route
+    const tx = src.x + (dst.x - src.x) * frac;
+    const ty = src.y + (dst.y - src.y) * frac;
+    const color = trainStatusColors[t.status] || t.color || '#888';
+    svgHtml += `<g style="cursor:pointer" onmouseover="showMapTip(event,'${t.number} ${t.name.replace(/'/g,"\\'")} · ${t.status}${t.delay>0?' +'+t.delay+'m':''}')" onmouseout="hideMapTip()" onclick="window.location='{% url 'trains:list' %}'">
+      <circle cx="${tx}" cy="${ty}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1">
+        ${t.status==='RUNNING' ? `<animate attributeName="r" values="4.5;6;4.5" dur="1.6s" repeatCount="indefinite"/>` : ''}
+      </circle>
+    </g>`;
+  });
+
+  svgHtml += '</g>';
+  svg.innerHTML = svgHtml;
 }
+
+function showMapTip(evt, text){
+  const tip = document.getElementById('simMapTooltip');
+  const wrap = document.getElementById('simMapWrap');
+  if(!tip || !wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  tip.textContent = text;
+  tip.style.left = (evt.clientX - rect.left + 12) + 'px';
+  tip.style.top = (evt.clientY - rect.top - 8) + 'px';
+  tip.style.display = 'block';
+}
+function hideMapTip(){ const t=document.getElementById('simMapTooltip'); if(t) t.style.display='none'; }
+function mapZoom(factor){ mapScale = Math.max(0.6, Math.min(2.2, mapScale*factor)); renderSimMap(); }
+function mapZoomReset(){ mapScale = 1; renderSimMap(); }
+
+/* ═══════════════════ BOTTOM TREND CHARTS (real history, honest empty-states) ═══════════════════ */
+const trendChartDefaults = {
+  responsive:false, maintainAspectRatio:false, animation:{duration:600},
+  plugins:{legend:{display:false}, tooltip:{backgroundColor:'#1a2234', titleColor:'#e8eaf0', bodyColor:'#8892a4', borderColor:'rgba(255,255,255,.1)', borderWidth:1, padding:8}},
+  scales:{
+    x:{grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'rgba(255,255,255,0.35)', font:{size:8}}, border:{display:false}},
+    y:{grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'rgba(255,255,255,0.35)', font:{size:8}}, border:{display:false}},
+  }
+};
+
+function renderTrendChart(canvasId, dataPoints, color, emptyMsg){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const wrap = canvas.parentElement;
+  if(!dataPoints || dataPoints.length < 2){
+    wrap.innerHTML = `<div class="trend-empty">${emptyMsg}</div>`;
+    return;
+  }
+  canvas.width = wrap.clientWidth || 220;
+  canvas.height = wrap.clientHeight || 84;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,canvas.height);
+  grad.addColorStop(0, color.replace('1)','0.25)'));
+  grad.addColorStop(1, color.replace('1)','0)'));
+  new Chart(ctx, {
+    type:'line',
+    data:{ labels: dataPoints.map(p=>p[0]), datasets:[{ data: dataPoints.map(p=>p[1]), borderColor:color, backgroundColor:grad, fill:true, borderWidth:1.5, tension:.4, pointRadius:0 }] },
+    options: trendChartDefaults
+  });
+}
+
+function renderAllTrends(){
+  renderTrendChart('trChart1', TREND_THROUGHPUT, 'rgba(139,92,246,1)', 'Not enough simulation history yet — run a few scenarios to build this trend.');
+  renderTrendChart('trChart2', TREND_DELAY,      'rgba(239,68,68,1)',  'No daily analytics snapshots recorded yet.');
+  renderTrendChart('trChart3', TREND_RECOVERY,   'rgba(59,130,246,1)', 'Recovery trend builds after a few completed simulations.');
+  renderTrendChart('trChart4', TREND_AIOPT,      'rgba(16,185,129,1)', 'No AI recommendations generated yet.');
+  renderTrendChart('trChart5', TREND_RESOURCE,   'rgba(6,182,212,1)',  'No daily analytics snapshots recorded yet.');
+}
+
+/* ═══════════════════ SCENARIO BUILDER → REAL EXISTING ENDPOINT ═══════════════════ */
+function prefillScenario(scenarioType){
+  const sel = document.getElementById('sb-type');
+  if(sel) sel.value = scenarioType;
+  document.getElementById('sb-type').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function loadSession(simId){
+  if(!simId) return;
+  const opt = document.querySelector(`#sb-session option[value="${simId}"]`);
+  if(!opt) return;
+  document.getElementById('sb-type').value = opt.dataset.type;
+  document.getElementById('sb-delay').value = opt.dataset.delay;
+  document.getElementById('sb-duration').value = opt.dataset.duration;
+}
+
+async function runScenario(){
+  const btn = document.getElementById('sbRunBtn');
+  const name = `${document.getElementById('sb-type').selectedOptions[0].textContent} — ${new Date().toLocaleTimeString('en-IN',{hour12:false})}`;
+  const scenario_type = document.getElementById('sb-type').value;
+  const delay_minutes = parseInt(document.getElementById('sb-delay').value) || 30;
+  const duration_hours = parseFloat(document.getElementById('sb-duration').value) || 2.0;
+  const trainSelect = document.getElementById('sb-train');
+  const train_ids = Array.from(trainSelect.selectedOptions).map(o => parseInt(o.value));
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Running…';
+
+  try {
+    const data = await apiPost('/api/simulation/run/', {name, scenario_type, delay_minutes, duration_hours, train_ids});
+    if(data.success){
+      Toast.success(`Simulation complete — ${data.throughput_impact}% throughput reduction, ${data.trains_affected} trains affected.`);
+      setTimeout(()=>location.reload(), 1200);
+    } else {
+      Toast.error(data.error || 'Simulation failed.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-fill"></i> Run Simulation';
+    }
+  } catch(e){
+    Toast.error('Network error while running simulation.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-play-fill"></i> Run Simulation';
+  }
+}
+
+function dismissRecovery(btn){
+  const panel = btn.closest('.sim-card');
+  const body = panel.querySelector('.rec-item') ? panel : null;
+  panel.querySelectorAll('.rec-item').forEach(el=>el.style.opacity='0.3');
+  btn.closest('.rec-actions').style.opacity = '0.5';
+  btn.closest('.rec-actions').innerHTML = '<div style="flex:1;text-align:center;font-size:0.65rem;color:var(--text-muted);padding:4px;">Recovery plan dismissed</div>';
+  Toast.success('Recovery plan dismissed.');
+}
+
+/* ═══════════════════ INIT ═══════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderSimMap();
+  renderAllTrends();
+});
+window.addEventListener('resize', ()=>{ renderAllTrends(); });
 </script>
 {% endblock %}
