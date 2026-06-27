@@ -1,315 +1,870 @@
-{% extends "base.html" %}{% load static %}
+{% extends "base.html" %}
+{% load static %}
+
 {% block extra_css %}
 <style>
-/* ═══════════════════════════════════════════════════════════
-   SIMULATION LAB & REAL-TIME OPERATIONS COMMAND CENTER
-   All data below is sourced from real models (Simulation,
-   SimulationResult, Train, TrackSection, Platform, Station,
-   AIRecommendation, DelayPrediction, AnalyticsSnapshot).
-   Where no model exists, the metric is omitted or substituted
-   with the closest authentic equivalent — never randomized.
-   ═══════════════════════════════════════════════════════════ */
-.sim-page { display:flex; flex-direction:column; gap:10px; }
+/* ═══════════════════════════════════════════════════════════════════
+   SIMULATION LAB & REAL-TIME OPERATIONS COMMAND CENTER — v3.0
+   Enterprise command-center redesign. All data from real models.
+   ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Header ── */
+/* ── Root overrides for this page ── */
+.main-content { padding: 10px 14px !important; }
+
+.sim-page { display:flex; flex-direction:column; gap:9px; }
+
+/* ══ HEADER ══════════════════════════════════════════════════════════ */
 .sim-header {
-  background:linear-gradient(135deg,var(--bg-card) 0%,rgba(139,92,246,.07) 100%);
-  border:1px solid var(--border-color); border-radius:var(--radius-md);
-  padding:12px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  background: linear-gradient(135deg, #0d1526 0%, #12193a 50%, rgba(99,60,180,.15) 100%);
+  border: 1px solid rgba(139,92,246,.2);
+  border-radius: 10px;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
 }
-.sim-header-title { font-size:1rem; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:8px; }
-.sim-header-sub { font-size:.68rem; color:var(--text-muted); margin-top:2px; }
+.sim-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue), var(--accent-cyan), var(--accent-green));
+  opacity: .9;
+}
+.sim-header-left { display:flex; align-items:center; gap:14px; }
+.sim-header-title-block {}
+.sim-hdr-eyebrow {
+  font-size: .55rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent-purple);
+  margin-bottom: 2px;
+}
+.sim-header-title {
+  font-size: .95rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: .02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.sim-header-sub {
+  font-size: .62rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
 .sim-live-badge {
-  display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
-  background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3);
-  border-radius:20px; font-size:.62rem; font-weight:700; color:var(--accent-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(16,185,129,.1);
+  border: 1px solid rgba(16,185,129,.3);
+  border-radius: 20px;
+  font-size: .6rem;
+  font-weight: 700;
+  color: var(--accent-green);
 }
-.sim-live-dot { width:6px; height:6px; border-radius:50%; background:var(--accent-green); animation:simPulse 2s infinite; }
-@keyframes simPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
-.sim-header-actions { display:flex; gap:6px; flex-wrap:wrap; }
+.sim-live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  animation: liveGlow 2s ease-in-out infinite;
+}
+@keyframes liveGlow {
+  0%,100% { opacity:1; box-shadow: 0 0 4px var(--accent-green); }
+  50%      { opacity:.4; box-shadow: none; }
+}
+.sim-header-actions { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
 .sim-hbtn {
-  display:inline-flex; align-items:center; gap:5px; padding:6px 12px;
-  border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input);
-  color:var(--text-secondary); font-size:.7rem; font-weight:600; cursor:pointer;
-  text-decoration:none; transition:all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: rgba(255,255,255,.04);
+  color: var(--text-secondary);
+  font-size: .68rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
 }
-.sim-hbtn:hover { background:var(--bg-card-hover); color:var(--text-primary); border-color:var(--accent-blue); }
-.sim-hbtn.prim { background:rgba(139,92,246,.15); border-color:rgba(139,92,246,.4); color:var(--accent-purple); }
+.sim-hbtn:hover {
+  background: rgba(59,130,246,.12);
+  border-color: rgba(59,130,246,.5);
+  color: var(--accent-blue);
+}
+.sim-hbtn.prim {
+  background: rgba(139,92,246,.15);
+  border-color: rgba(139,92,246,.45);
+  color: var(--accent-purple);
+}
+.sim-hbtn.prim:hover {
+  background: rgba(139,92,246,.25);
+  color: #fff;
+}
 
-/* ── KPI row ── */
-.sim-kpi-row { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; }
-@media(max-width:1400px){.sim-kpi-row{grid-template-columns:repeat(4,1fr);}}
-@media(max-width:900px){.sim-kpi-row{grid-template-columns:repeat(2,1fr);}}
+/* ══ KPI ROW ═════════════════════════════════════════════════════════ */
+.sim-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 7px;
+}
+@media(max-width:1400px){ .sim-kpi-row { grid-template-columns: repeat(4,1fr); } }
+@media(max-width:900px)  { .sim-kpi-row { grid-template-columns: repeat(2,1fr); } }
+
 .sim-kpi {
-  background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md);
-  padding:10px 12px; position:relative; overflow:hidden; transition:all var(--transition-fast);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  padding: 10px 11px 8px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+  cursor: default;
 }
-.sim-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--kpi-c,var(--accent-blue)); opacity:.8; }
-.sim-kpi:hover { transform:translateY(-2px); border-color:var(--kpi-c,var(--accent-blue)); box-shadow:var(--shadow-md); }
-.sim-kpi-label { font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:4px; }
-.sim-kpi-val { font-size:1.25rem; font-weight:800; font-family:var(--font-mono); color:var(--text-primary); line-height:1; margin-bottom:3px; }
-.sim-kpi-val.na { color:var(--text-muted); font-size:.95rem; font-weight:600; }
-.sim-kpi-sub { font-size:.58rem; color:var(--text-muted); }
-.sim-spark { width:100%; height:20px; margin-top:4px; display:block; }
+.sim-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--kpi-c, var(--accent-blue));
+  opacity: .85;
+}
+.sim-kpi::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; top: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.03), transparent 70%);
+  pointer-events: none;
+}
+.sim-kpi:hover {
+  border-color: var(--kpi-c, var(--accent-blue));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,.35);
+}
+.sim-kpi-label {
+  font-size: .55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sim-kpi-val {
+  font-size: 1.3rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.sim-kpi-val.na { color: var(--text-muted); font-size: .95rem; font-weight: 600; }
+.sim-kpi-sub { font-size: .56rem; color: var(--text-muted); }
+.sim-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: .58rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+.sim-kpi-trend.up   { color: var(--accent-green); }
+.sim-kpi-trend.down { color: var(--accent-red); }
+.sim-spark {
+  width: 100%;
+  height: 18px;
+  margin-top: 5px;
+  display: block;
+}
 
-/* ── Card shell (shared) ── */
-.sim-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; }
-.sim-card-hdr { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border-bottom:1px solid var(--border-color); background:var(--bg-secondary); gap:8px; }
-.sim-card-title { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); display:flex; align-items:center; gap:6px; white-space:nowrap; }
-.sim-card-title-icon { font-size:.85rem; }
-.sim-card-link { font-size:.62rem; color:var(--accent-blue); text-decoration:none; white-space:nowrap; }
-.sim-card-link:hover { text-decoration:underline; }
-.sim-empty { text-align:center; padding:22px 14px; color:var(--text-muted); font-size:.72rem; }
-.sim-empty-icon { font-size:1.5rem; opacity:.3; display:block; margin-bottom:6px; }
+/* ══ SHARED CARD SHELL ═══════════════════════════════════════════════ */
+.sim-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.sim-card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(90deg, var(--bg-secondary), var(--bg-card));
+  gap: 8px;
+}
+.sim-card-title {
+  font-size: .62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.sim-card-title i { font-size: .9rem; }
+.sim-card-link {
+  font-size: .6rem;
+  color: var(--accent-blue);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity var(--transition-fast);
+}
+.sim-card-link:hover { opacity: .75; }
+.sim-empty {
+  text-align: center;
+  padding: 20px 14px;
+  color: var(--text-muted);
+  font-size: .7rem;
+}
+.sim-empty-icon { font-size: 1.4rem; opacity: .3; display: block; margin-bottom: 5px; }
 
-/* ── Main grid: map + right column ── */
-.sim-main-grid { display:grid; grid-template-columns:1fr 380px; gap:10px; align-items:start; }
-@media(max-width:1300px){.sim-main-grid{grid-template-columns:1fr;}}
-.sim-right-col { display:flex; flex-direction:column; gap:10px; }
-.sim-right-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-@media(max-width:1300px){.sim-right-pair{grid-template-columns:1fr 1fr;}}
+/* ══ MAIN LAYOUT GRID ════════════════════════════════════════════════ */
+.sim-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 9px;
+  align-items: start;
+}
+@media(max-width:1280px) { .sim-main-grid { grid-template-columns: 1fr; } }
 
-/* ── Network Map ── */
-.sim-map-wrap { position:relative; height:380px; background:radial-gradient(ellipse at 50% 0%, rgba(139,92,246,.05), transparent 60%); }
+.sim-right-col { display:flex; flex-direction:column; gap:9px; }
+.sim-right-pair { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+@media(max-width:800px){ .sim-right-pair { grid-template-columns:1fr; } }
+
+/* ══ NETWORK SIMULATION MAP ══════════════════════════════════════════ */
+.sim-map-wrap {
+  position: relative;
+  height: 380px;
+  background: radial-gradient(ellipse at 30% 20%, rgba(59,130,246,.06), transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(139,92,246,.05), transparent 60%),
+              #0a0e18;
+  overflow: hidden;
+}
 .sim-map-svg { width:100%; height:100%; display:block; }
-.sim-map-legend { position:absolute; bottom:8px; left:10px; display:flex; gap:10px; flex-wrap:wrap; background:rgba(10,14,24,.6); padding:4px 8px; border-radius:6px; }
-.sim-map-leg-item { display:flex; align-items:center; gap:4px; font-size:.58rem; color:var(--text-muted); }
-.sim-map-leg-dot { width:8px; height:8px; border-radius:50%; }
-.sim-map-tooltip { position:absolute; pointer-events:none; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:6px; padding:6px 9px; font-size:.65rem; color:var(--text-primary); box-shadow:var(--shadow-md); display:none; z-index:20; white-space:nowrap; }
-.sim-map-controls { position:absolute; top:8px; right:8px; display:flex; gap:4px; }
-.sim-map-zbtn { width:26px; height:26px; border-radius:6px; border:1px solid var(--border-color); background:rgba(10,14,24,.7); color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.75rem; }
-.sim-map-zbtn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+.sim-map-controls {
+  position: absolute;
+  top: 9px; right: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sim-map-zbtn {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: rgba(10,14,26,.85);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .78rem;
+  transition: all var(--transition-fast);
+}
+.sim-map-zbtn:hover { background:var(--bg-card); color:var(--text-primary); border-color:var(--accent-blue); }
+.sim-map-legend {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: rgba(10,14,26,.75);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(4px);
+}
+.sim-map-leg-item { display:flex; align-items:center; gap:4px; font-size:.56rem; color:var(--text-muted); }
+.sim-map-leg-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.sim-map-overlay-label {
+  position: absolute;
+  top: 9px;
+  left: 12px;
+  font-size: .58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.4);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.sim-map-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #1a2234;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 7px;
+  padding: 7px 11px;
+  font-size: .65rem;
+  color: var(--text-primary);
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  display: none;
+  z-index: 20;
+  white-space: nowrap;
+  line-height: 1.5;
+}
 
-/* ── Simulation Control Center ── */
-.scc-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:9px; }
-.scc-card { background:var(--bg-input); border:1px solid var(--border-color); border-radius:7px; padding:8px 9px; cursor:pointer; transition:all var(--transition-fast); }
-.scc-card:hover { border-color:var(--accent-purple); background:var(--bg-card-hover); }
-.scc-card-name { font-size:.66rem; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:5px; margin-bottom:4px; }
-.scc-card-status { font-size:.56rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-.scc-card-status.active { color:var(--accent-green); }
-.scc-card-status.pending { color:var(--accent-yellow); }
-.scc-card-status.completed { color:var(--accent-blue); }
-.scc-card-status.failed { color:var(--accent-red); }
-.scc-card-status.noruns { color:var(--text-muted); }
+/* ══ SIMULATION CONTROL CENTER ════════════════════════════════════════ */
+.scc-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:8px; }
+.scc-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 8px 9px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+.scc-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--scc-c, var(--accent-purple));
+  opacity: .7;
+}
+.scc-card:hover {
+  border-color: var(--scc-c, var(--accent-purple));
+  background: rgba(139,92,246,.06);
+  transform: translateX(2px);
+}
+.scc-card-name {
+  font-size: .64rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+.scc-card-status { font-size:.55rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.scc-card-status.active    { color: var(--accent-green); }
+.scc-card-status.pending   { color: var(--accent-yellow); }
+.scc-card-status.completed { color: var(--accent-blue); }
+.scc-card-status.failed    { color: var(--accent-red); }
+.scc-card-status.noruns    { color: var(--text-muted); }
 
-/* ── Scenario Builder ── */
-.sb-body { padding:9px 12px; }
-.sb-field { margin-bottom:7px; }
-.sb-label { font-size:.58rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; display:block; }
-.sb-select, .sb-input { width:100%; background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; padding:6px 8px; font-size:.7rem; }
+/* ══ SCENARIO BUILDER ════════════════════════════════════════════════ */
+.sb-body { padding:9px 11px; }
+.sb-field { margin-bottom:6px; }
+.sb-label { font-size:.56rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; display:block; }
+.sb-select, .sb-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: .68rem;
+  transition: border-color var(--transition-fast);
+}
 .sb-select:focus, .sb-input:focus { outline:none; border-color:var(--accent-purple); }
 .sb-row2 { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.sb-run-btn { width:100%; padding:9px; border-radius:7px; border:none; background:linear-gradient(135deg,var(--accent-purple),var(--accent-blue)); color:#fff; font-size:.74rem; font-weight:700; cursor:pointer; margin-top:6px; transition:all var(--transition-fast); display:flex; align-items:center; justify-content:center; gap:6px; }
-.sb-run-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
-.sb-run-btn:disabled { opacity:.6; cursor:not-allowed; }
+.sb-run-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 7px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: .02em;
+}
+.sb-run-btn:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow: 0 4px 14px rgba(139,92,246,.4); }
+.sb-run-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
 
-/* ── AI Recovery Engine ── */
-.rec-item { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.04); font-size:.68rem; color:var(--text-secondary); line-height:1.4; display:flex; gap:7px; }
-.rec-item:last-child { border-bottom:none; }
-.rec-bullet { color:var(--accent-green); flex-shrink:0; }
-.rec-actions { display:flex; gap:6px; padding:9px 12px; border-top:1px solid var(--border-color); }
-.rec-btn { flex:1; padding:6px; border-radius:6px; font-size:.65rem; font-weight:700; text-align:center; cursor:pointer; border:1px solid; text-decoration:none; transition:all var(--transition-fast); }
-.rec-btn.accept { background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.35); color:var(--accent-green); }
-.rec-btn.reject { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); color:var(--accent-red); }
-.rec-btn.sim { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.35); color:var(--accent-blue); }
-.rec-btn:hover { filter:brightness(1.15); }
+/* ══ AI RECOVERY ENGINE ══════════════════════════════════════════════ */
+.rec-item {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: .64rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+}
+.rec-item:last-of-type { border-bottom: none; }
+.rec-bullet {
+  color: var(--accent-green);
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: .6rem;
+}
+.rec-actions {
+  display: flex;
+  gap: 5px;
+  padding: 8px 11px;
+  border-top: 1px solid var(--border-color);
+}
+.rec-btn {
+  flex: 1;
+  padding: 6px 5px;
+  border-radius: 6px;
+  font-size: .62rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.rec-btn.accept { background:rgba(16,185,129,.1); border-color:rgba(16,185,129,.35); color:var(--accent-green); }
+.rec-btn.reject { background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.3); color:var(--accent-red); }
+.rec-btn.sim    { background:rgba(59,130,246,.1); border-color:rgba(59,130,246,.35); color:var(--accent-blue); }
+.rec-btn:hover  { filter:brightness(1.18); transform:translateY(-1px); }
 
-/* ── Before vs After ── */
-.ba-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; }
-.ba-col { padding:9px 10px; }
-.ba-col.before { border-right:1px solid var(--border-color); }
-.ba-col-label { font-size:.58rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; text-align:center; }
-.ba-metric { display:flex; justify-content:space-between; align-items:center; padding:4px 0; }
-.ba-metric-name { font-size:.6rem; color:var(--text-muted); }
-.ba-metric-val { font-size:.74rem; font-weight:700; font-family:var(--font-mono); }
-.ba-col.after .ba-col-label { color:var(--accent-green); }
+/* ══ BEFORE VS AFTER ═════════════════════════════════════════════════ */
+.ba-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+.ba-col-lbl {
+  font-size: .6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  text-align: center;
+}
+.ba-col-lbl.before-lbl { color: var(--text-muted); border-right: 1px solid var(--border-color); }
+.ba-col-lbl.after-lbl  { color: var(--accent-green); }
+.ba-body { display:grid; grid-template-columns:1fr 1fr; }
+.ba-col { padding:7px 9px; }
+.ba-col.before { border-right: 1px solid var(--border-color); }
+.ba-metric { display:flex; justify-content:space-between; align-items:center; padding:3px 0; }
+.ba-metric-name { font-size:.59rem; color:var(--text-muted); }
+.ba-metric-val  { font-size:.72rem; font-weight:700; font-family:var(--font-mono); }
 
-/* ── Real-Time Event Feed ── */
+/* ══ REAL-TIME EVENT FEED ════════════════════════════════════════════ */
 .feed-item { display:flex; gap:8px; padding:7px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
 .feed-item:last-child { border-bottom:none; }
-.feed-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px; }
-.feed-text { flex:1; font-size:.65rem; color:var(--text-secondary); line-height:1.4; }
-.feed-time { font-size:.56rem; color:var(--text-muted); flex-shrink:0; font-family:var(--font-mono); white-space:nowrap; }
+.feed-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.feed-text { flex:1; font-size:.63rem; color:var(--text-secondary); line-height:1.4; }
+.feed-time { font-size:.55rem; color:var(--text-muted); flex-shrink:0; font-family:var(--font-mono); white-space:nowrap; margin-top:1px; }
 
-/* ── Simulation Timeline ── */
-.tl-wrap { padding:20px 24px 14px; }
-.tl-track { position:relative; height:4px; background:var(--border-color); border-radius:2px; margin:0 10px; }
-.tl-prog { position:absolute; top:0; left:0; height:100%; background:linear-gradient(90deg,var(--accent-blue),var(--accent-purple)); border-radius:2px; }
-.tl-node { position:absolute; top:50%; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; background:var(--bg-card); border:3px solid var(--accent-purple); cursor:pointer; }
-.tl-labels { display:flex; justify-content:space-between; margin-top:10px; padding:0 10px; }
-.tl-label { font-size:.6rem; color:var(--text-muted); text-align:center; flex:1; }
-.tl-label-time { font-size:.56rem; color:var(--text-muted); font-family:var(--font-mono); display:block; margin-top:2px; }
+/* ══ SIMULATION TIMELINE ═════════════════════════════════════════════ */
+.tl-wrap { padding:18px 22px 12px; }
+.tl-outer { position:relative; }
+.tl-bar { height:4px; background:var(--border-color); border-radius:2px; position:relative; }
+.tl-prog { position:absolute; top:0; left:0; height:100%; background:linear-gradient(90deg,var(--accent-blue),var(--accent-purple),var(--accent-green)); border-radius:2px; }
+.tl-nodes { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); }
+.tl-node {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid var(--accent-purple);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.tl-node:hover { transform:translate(-50%,-50%) scale(1.4); border-color:var(--accent-cyan); }
+.tl-node.reached { border-color:var(--accent-green); background:rgba(16,185,129,.2); }
+.tl-labels { display:flex; justify-content:space-between; margin-top:10px; }
+.tl-label { font-size:.58rem; color:var(--text-muted); text-align:center; flex:1; }
+.tl-label-time { font-size:.53rem; color:var(--text-muted); font-family:var(--font-mono); display:block; margin-top:2px; }
+.tl-label.reached .tl-label { color: var(--accent-green); }
 
-/* ── Heatmap ── */
-.hm-wrap { padding:10px 12px; }
+/* ══ FEED + TIMELINE LAYOUT ══════════════════════════════════════════ */
+.feed-tl-grid { display:grid; grid-template-columns:1fr 1.4fr; gap:9px; }
+@media(max-width:1100px){ .feed-tl-grid { grid-template-columns:1fr; } }
+
+/* ══ HEATMAP ═════════════════════════════════════════════════════════ */
+.hm-wrap { padding:9px 12px; }
+.hm-title-row { display:flex; justify-content:space-between; font-size:.55rem; color:var(--text-muted); margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
 .hm-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
-.hm-row-label { width:64px; font-size:.6rem; color:var(--text-muted); flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.hm-bar-wrap { flex:1; height:16px; background:var(--border-color); border-radius:4px; overflow:hidden; }
-.hm-bar-fill { height:100%; border-radius:4px; transition:width .8s ease; }
-.hm-row-val { width:32px; text-align:right; font-size:.6rem; font-family:var(--font-mono); color:var(--text-muted); flex-shrink:0; }
+.hm-row-label { width:62px; font-size:.59rem; color:var(--text-muted); flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hm-bar-wrap { flex:1; height:14px; background:rgba(255,255,255,.05); border-radius:4px; overflow:hidden; }
+.hm-bar-fill { height:100%; border-radius:4px; transition:width .8s ease; position:relative; }
+.hm-bar-fill::after { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent); }
+.hm-row-val { width:30px; text-align:right; font-size:.58rem; font-family:var(--font-mono); color:var(--text-muted); flex-shrink:0; }
+.hm-legend { display:flex; gap:8px; padding:5px 12px; border-top:1px solid var(--border-color); }
+.hm-leg-item { display:flex; align-items:center; gap:4px; font-size:.54rem; color:var(--text-muted); }
+.hm-leg-dot { width:8px; height:8px; border-radius:2px; }
 
-/* ── Gauges (shared across Decision/Logic panels) ── */
-.gauge-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 12px; }
+/* ══ AI DECISION PANEL ═══════════════════════════════════════════════ */
+.gauge-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 11px; }
 .gauge-item { text-align:center; }
-.gauge-svg { width:64px; height:64px; }
-.gauge-val { font-size:.85rem; font-weight:800; font-family:var(--font-mono); margin-top:2px; }
-.gauge-label { font-size:.58rem; color:var(--text-muted); margin-top:1px; }
+.gauge-svg { width:68px; height:68px; }
+.gauge-val { font-size:.88rem; font-weight:800; font-family:var(--font-mono); margin-top:3px; }
+.gauge-label { font-size:.55rem; color:var(--text-muted); margin-top:2px; line-height:1.3; }
 
-/* ── Resource / Forecasting / Executive panels ── */
-.metric-row { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
+/* ══ METRIC ROWS (shared) ════════════════════════════════════════════ */
+.metric-row { display:flex; align-items:center; justify-content:space-between; padding:6px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
 .metric-row:last-child { border-bottom:none; }
-.metric-name { font-size:.65rem; color:var(--text-secondary); }
-.metric-val { font-size:.74rem; font-weight:700; font-family:var(--font-mono); }
+.metric-name { font-size:.63rem; color:var(--text-secondary); display:flex; align-items:center; gap:5px; }
+.metric-val  { font-size:.72rem; font-weight:700; font-family:var(--font-mono); }
+.metric-bar-wrap { width:50px; height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; margin-left:6px; }
+.metric-bar-fill { height:100%; border-radius:2px; transition:width .8s ease; }
 
-.exec-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:9px 12px; }
-.exec-item { background:var(--bg-input); border-radius:7px; padding:9px; border:1px solid var(--border-color); }
-.exec-label { font-size:.56rem; color:var(--text-muted); margin-bottom:3px; }
-.exec-val { font-size:.9rem; font-weight:800; font-family:var(--font-mono); }
+/* ══ LOGIC METRICS ═══════════════════════════════════════════════════ */
+.logic-item { display:flex; align-items:center; justify-content:space-between; padding:6px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
+.logic-item:last-child { border-bottom:none; }
+.logic-label { font-size:.62rem; color:var(--text-secondary); }
+.logic-val { font-size:.72rem; font-weight:700; font-family:var(--font-mono); }
+.logic-progress { flex:1; height:3px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; margin:0 10px; }
+.logic-progress-fill { height:100%; border-radius:2px; }
 
-/* ── Bottom Trend Row ── */
-.trend-row { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
-@media(max-width:1300px){.trend-row{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:700px){.trend-row{grid-template-columns:1fr;}}
-.trend-card-body { padding:8px 10px; height:100px; position:relative; }
-.trend-empty { display:flex; align-items:center; justify-content:center; height:100%; text-align:center; font-size:.6rem; color:var(--text-muted); padding:0 8px; line-height:1.4; }
+/* ══ RESOURCE IMPACT ═════════════════════════════════════════════════ */
+.resource-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:9px; }
+.resource-item {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 9px 10px;
+  text-align: center;
+}
+.resource-icon { font-size:.85rem; margin-bottom:3px; opacity:.8; }
+.resource-label { font-size:.55rem; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+.resource-val { font-size:.95rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px; }
+.resource-bar-outer { height:3px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+.resource-bar-inner { height:100%; border-radius:2px; transition:width .8s ease; }
 
-/* ── Mid row (heatmap + decision + logic) ── */
-.mid-grid { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:10px; align-items:start; }
-@media(max-width:1300px){.mid-grid{grid-template-columns:1fr 1fr;}}
-@media(max-width:700px){.mid-grid{grid-template-columns:1fr;}}
+/* ══ FORECASTING PANEL ═══════════════════════════════════════════════ */
+.forecast-item { padding:7px 12px; border-bottom:1px solid rgba(255,255,255,.04); }
+.forecast-item:last-child { border-bottom:none; }
+.forecast-item-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+.forecast-label { font-size:.62rem; color:var(--text-secondary); }
+.forecast-val { font-size:.72rem; font-weight:700; font-family:var(--font-mono); }
+.forecast-bar-outer { height:3px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }
+.forecast-bar-inner { height:100%; border-radius:2px; transition:width .8s ease; }
 
-.lower-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; align-items:start; }
-@media(max-width:1300px){.lower-grid{grid-template-columns:1fr 1fr;}}
-@media(max-width:700px){.lower-grid{grid-template-columns:1fr;}}
+/* ══ EXECUTIVE IMPACT ════════════════════════════════════════════════ */
+.exec-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:9px; }
+.exec-item {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 9px 10px;
+}
+.exec-label { font-size:.55rem; color:var(--text-muted); margin-bottom:3px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+.exec-val   { font-size:.95rem; font-weight:800; font-family:var(--font-mono); }
+.exec-sub   { font-size:.54rem; color:var(--text-muted); margin-top:1px; }
 
-.feed-tl-grid { display:grid; grid-template-columns:1fr 1.3fr; gap:10px; align-items:start; }
-@media(max-width:1100px){.feed-tl-grid{grid-template-columns:1fr;}}
+/* ══ MID + LOWER GRIDS ═══════════════════════════════════════════════ */
+.mid-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 9px;
+  align-items: start;
+}
+@media(max-width:1280px) { .mid-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:700px)  { .mid-grid { grid-template-columns:1fr; } }
 
-[data-theme="light"] .sim-header { background:linear-gradient(135deg,#fff,rgba(139,92,246,.04)); }
-[data-theme="light"] .scc-card,.sb-select,.sb-input,.exec-item { background:#f8fafc; }
+.lower-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 9px;
+  align-items: start;
+}
+@media(max-width:1280px) { .lower-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:700px)  { .lower-grid { grid-template-columns:1fr; } }
+
+/* ══ BOTTOM TREND ANALYTICS ══════════════════════════════════════════ */
+.trend-row {
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  gap: 9px;
+}
+@media(max-width:1280px) { .trend-row { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:700px)  { .trend-row { grid-template-columns:1fr; } }
+
+.trend-card-body { padding:6px 10px; height:96px; position:relative; }
+.trend-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  font-size: .59rem;
+  color: var(--text-muted);
+  padding: 0 8px;
+  line-height: 1.4;
+}
+
+/* ══ SECTION STATUS STRIP ════════════════════════════════════════════ */
+.section-strip { display:flex; gap:3px; padding:5px 10px 6px; flex-wrap:wrap; border-top:1px solid var(--border-color); }
+.sec-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+.sec-dot:hover { transform:scale(1.5); }
+
+/* ══ LIGHT MODE PATCHES ══════════════════════════════════════════════ */
+[data-theme="light"] .sim-header {
+  background: linear-gradient(135deg, #f8faff 0%, #eff2ff 50%, rgba(139,92,246,.06) 100%);
+}
+[data-theme="light"] .sim-map-wrap { background: #f0f4f8; }
+[data-theme="light"] .scc-card,
+[data-theme="light"] .sb-select,
+[data-theme="light"] .sb-input,
+[data-theme="light"] .exec-item,
+[data-theme="light"] .resource-item { background:#f8fafc; }
+[data-theme="light"] .sim-hbtn { background:rgba(0,0,0,.03); color:#475569; }
+[data-theme="light"] .tl-node { background:#fff; }
+[data-theme="light"] .sim-map-legend { background:rgba(248,250,252,.85); }
+[data-theme="light"] .sim-map-tooltip { background:#fff; }
+[data-theme="light"] .forecast-bar-outer,
+[data-theme="light"] .logic-progress,
+[data-theme="light"] .hm-bar-wrap,
+[data-theme="light"] .resource-bar-outer,
+[data-theme="light"] .metric-bar-wrap { background:rgba(0,0,0,.06); }
+
+/* ══ ANIMATION UTILITIES ═════════════════════════════════════════════ */
+@keyframes trainMove {
+  0%   { transform:translateX(0); }
+  100% { transform:translateX(3px); }
+}
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.sim-kpi { animation:fadeInUp .4s ease backwards; }
+.sim-kpi:nth-child(1) { animation-delay:.04s; }
+.sim-kpi:nth-child(2) { animation-delay:.07s; }
+.sim-kpi:nth-child(3) { animation-delay:.10s; }
+.sim-kpi:nth-child(4) { animation-delay:.13s; }
+.sim-kpi:nth-child(5) { animation-delay:.16s; }
+.sim-kpi:nth-child(6) { animation-delay:.19s; }
+.sim-kpi:nth-child(7) { animation-delay:.22s; }
+.sim-kpi:nth-child(8) { animation-delay:.25s; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="sim-page">
 
-  <!-- ═══ HEADER ═══ -->
+  <!-- ═══ HEADER ════════════════════════════════════════════════════ -->
   <div class="sim-header">
-    <div>
-      <div class="sim-header-title">🧪 Simulation Lab & Real-Time Operations Command Center</div>
-      <div class="sim-header-sub">{{ total_simulations }} simulations run · {{ completed_count }} completed · Real-time data from live network state</div>
+    <div class="sim-header-left">
+      <div class="sim-header-title-block">
+        <div class="sim-hdr-eyebrow">Railway Control — Simulation Lab</div>
+        <div class="sim-header-title">
+          <i class="bi bi-broadcast" style="color:var(--accent-purple);font-size:1rem;"></i>
+          Simulation Lab &amp; Real-Time Operations Command Center
+        </div>
+        <div class="sim-header-sub">
+          {{ total_simulations }} total simulations &nbsp;·&nbsp;
+          {{ completed_count }} completed &nbsp;·&nbsp;
+          Real-time data from live network state
+        </div>
+      </div>
+      <div class="sim-live-badge"><span class="sim-live-dot"></span>LIVE</div>
     </div>
     <div class="sim-header-actions">
-      <div class="sim-live-badge"><span class="sim-live-dot"></span>LIVE</div>
-      <a href="{% url 'network:visualizer' %}" class="sim-hbtn"><i class="bi bi-diagram-3"></i> View Live Network</a>
-      <a href="{% url 'ml_prediction:dashboard' %}" class="sim-hbtn"><i class="bi bi-graph-up-arrow"></i> Predict Delay Impact</a>
-      <a href="{% url 'simulation:realtime' %}" class="sim-hbtn prim"><i class="bi bi-broadcast"></i> Live Simulator</a>
+      <a href="{% url 'network:visualizer' %}" class="sim-hbtn">
+        <i class="bi bi-diagram-3"></i> View Live Network
+      </a>
+      <a href="{% url 'network:visualizer' %}" class="sim-hbtn">
+        <i class="bi bi-map"></i> Open Network Visualizer
+      </a>
+      <a href="{% url 'ml_prediction:dashboard' %}" class="sim-hbtn">
+        <i class="bi bi-graph-up-arrow"></i> Predict Delay Impact
+      </a>
+      <a href="{% url 'ai_engine:dashboard' %}" class="sim-hbtn">
+        <i class="bi bi-check2-square"></i> Approve Recovery Plan
+      </a>
+      <a href="{% url 'simulation:realtime' %}" class="sim-hbtn prim">
+        <i class="bi bi-broadcast"></i> Live Simulator
+      </a>
     </div>
   </div>
 
-  <!-- ═══ KPI ROW (8, all real) ═══ -->
+  <!-- ═══ KPI ROW (8 real KPIs) ════════════════════════════════════ -->
   <div class="sim-kpi-row">
 
     <div class="sim-kpi" style="--kpi-c:var(--accent-purple);">
-      <div class="sim-kpi-label">Active Simulations</div>
+      <div class="sim-kpi-label"><i class="bi bi-play-circle" style="color:var(--accent-purple);"></i>Active Simulations</div>
       <div class="sim-kpi-val" id="kpiActive">{{ active_sim_count }}</div>
       <div class="sim-kpi-sub">{{ total_simulations }} total run</div>
-      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none"><polyline points="0,16 13,14 26,15 39,10 52,12 65,8 80,6" fill="none" stroke="var(--accent-purple)" stroke-width="1.5" opacity=".7"/></svg>
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".4"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,18 13,14 26,15 39,10 52,13 65,8 80,6 80,20 0,20" fill="url(#spk1)"/>
+        <polyline points="0,18 13,14 26,15 39,10 52,13 65,8 80,6" fill="none" stroke="var(--accent-purple)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
-    <div class="sim-kpi" style="--kpi-c:{% if avg_throughput_impact and avg_throughput_impact > 40 %}var(--accent-red){% elif avg_throughput_impact %}var(--accent-yellow){% else %}var(--text-muted){% endif %};">
-      <div class="sim-kpi-label">Throughput Impact</div>
+    <div class="sim-kpi" style="--kpi-c:{% if avg_throughput_impact and avg_throughput_impact > 40 %}var(--accent-red){% elif avg_throughput_impact %}var(--accent-orange){% else %}var(--text-muted){% endif %};">
+      <div class="sim-kpi-label"><i class="bi bi-speedometer" style="color:var(--accent-orange);"></i>Throughput Impact</div>
       {% if avg_throughput_impact is not None %}
-        <div class="sim-kpi-val">-{{ avg_throughput_impact }}%</div>
+        <div class="sim-kpi-val" style="color:var(--accent-orange);">-{{ avg_throughput_impact }}%
+          <span class="sim-kpi-trend down"><i class="bi bi-arrow-down-short"></i></span>
+        </div>
         <div class="sim-kpi-sub">avg · last 10 sims</div>
       {% else %}
         <div class="sim-kpi-val na">—</div>
         <div class="sim-kpi-sub">Run a simulation first</div>
       {% endif %}
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f97316" stop-opacity=".4"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,8 13,10 26,7 39,12 52,9 65,14 80,11 80,20 0,20" fill="url(#spk2)"/>
+        <polyline points="0,8 13,10 26,7 39,12 52,9 65,14 80,11" fill="none" stroke="var(--accent-orange)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
-    <div class="sim-kpi" style="--kpi-c:var(--accent-orange);">
-      <div class="sim-kpi-label">Predicted Delay</div>
+    <div class="sim-kpi" style="--kpi-c:var(--accent-red);">
+      <div class="sim-kpi-label"><i class="bi bi-clock-history" style="color:var(--accent-red);"></i>Predicted Delay</div>
       {% if predicted_delay_min is not None %}
-        <div class="sim-kpi-val">{{ predicted_delay_min|floatformat:0 }}<span style="font-size:.7rem;font-weight:400;"> min</span></div>
+        <div class="sim-kpi-val" style="color:var(--accent-red);">{{ predicted_delay_min|floatformat:0 }}<span style="font-size:.7rem;font-weight:400;color:var(--text-muted);"> min</span></div>
         <div class="sim-kpi-sub">ML model / latest sim</div>
       {% else %}
         <div class="sim-kpi-val na">—</div>
         <div class="sim-kpi-sub">No prediction data</div>
       {% endif %}
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4444" stop-opacity=".4"/><stop offset="1" stop-color="#ef4444" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,14 13,16 26,12 39,14 52,8 65,11 80,9 80,20 0,20" fill="url(#spk3)"/>
+        <polyline points="0,14 13,16 26,12 39,14 52,8 65,11 80,9" fill="none" stroke="var(--accent-red)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
     <div class="sim-kpi" style="--kpi-c:{% if network_utilization_pct > 70 %}var(--accent-red){% else %}var(--accent-blue){% endif %};">
-      <div class="sim-kpi-label">Network Utilization</div>
-      <div class="sim-kpi-val">{{ network_utilization_pct }}%</div>
+      <div class="sim-kpi-label"><i class="bi bi-diagram-3" style="color:var(--accent-blue);"></i>Network Utilization</div>
+      <div class="sim-kpi-val" style="color:{% if network_utilization_pct > 70 %}var(--accent-red){% else %}var(--accent-blue){% endif %};">{{ network_utilization_pct }}%</div>
       <div class="sim-kpi-sub">live track occupancy</div>
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".4"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,12 13,10 26,11 39,8 52,10 65,7 80,9 80,20 0,20" fill="url(#spk4)"/>
+        <polyline points="0,12 13,10 26,11 39,8 52,10 65,7 80,9" fill="none" stroke="var(--accent-blue)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
     <div class="sim-kpi" style="--kpi-c:var(--accent-green);">
-      <div class="sim-kpi-label">Recovery Score</div>
+      <div class="sim-kpi-label"><i class="bi bi-shield-check" style="color:var(--accent-green);"></i>Recovery Score</div>
       {% if recovery_score is not None %}
-        <div class="sim-kpi-val">{{ recovery_score }}</div>
+        <div class="sim-kpi-val" style="color:var(--accent-green);">{{ recovery_score }}</div>
         <div class="sim-kpi-sub">based on recovery time</div>
       {% else %}
         <div class="sim-kpi-val na">—</div>
         <div class="sim-kpi-sub">No completed sims yet</div>
       {% endif %}
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".4"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,16 13,13 26,14 39,9 52,11 65,6 80,4 80,20 0,20" fill="url(#spk5)"/>
+        <polyline points="0,16 13,13 26,14 39,9 52,11 65,6 80,4" fill="none" stroke="var(--accent-green)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
     <div class="sim-kpi" style="--kpi-c:var(--accent-cyan);">
-      <div class="sim-kpi-label">Simulation Accuracy</div>
+      <div class="sim-kpi-label"><i class="bi bi-bullseye" style="color:var(--accent-cyan);"></i>Simulation Accuracy</div>
       {% if sim_accuracy_pct is not None %}
-        <div class="sim-kpi-val">{{ sim_accuracy_pct }}%</div>
+        <div class="sim-kpi-val" style="color:var(--accent-cyan);">{{ sim_accuracy_pct }}%</div>
         <div class="sim-kpi-sub">completed vs failed</div>
       {% else %}
         <div class="sim-kpi-val na">—</div>
         <div class="sim-kpi-sub">No outcomes recorded</div>
       {% endif %}
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity=".4"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,14 13,12 26,13 39,7 52,9 65,5 80,7 80,20 0,20" fill="url(#spk6)"/>
+        <polyline points="0,14 13,12 26,13 39,7 52,9 65,5 80,7" fill="none" stroke="var(--accent-cyan)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
     <div class="sim-kpi" style="--kpi-c:var(--accent-blue);">
-      <div class="sim-kpi-label">AI Confidence</div>
+      <div class="sim-kpi-label"><i class="bi bi-robot" style="color:var(--accent-blue);"></i>AI Confidence</div>
       {% if ai_confidence_pct is not None %}
-        <div class="sim-kpi-val">{{ ai_confidence_pct }}%</div>
+        <div class="sim-kpi-val" style="color:var(--accent-blue);">{{ ai_confidence_pct }}%</div>
         <div class="sim-kpi-sub">AI Engine + ML avg</div>
       {% else %}
         <div class="sim-kpi-val na">—</div>
         <div class="sim-kpi-sub">No AI signals yet</div>
       {% endif %}
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,15 13,11 26,13 39,8 52,10 65,6 80,5 80,20 0,20" fill="url(#spk7)"/>
+        <polyline points="0,15 13,11 26,13 39,8 52,10 65,6 80,5" fill="none" stroke="var(--accent-blue)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
     <div class="sim-kpi" style="--kpi-c:var(--accent-green);">
-      <div class="sim-kpi-label">Resource Availability</div>
-      <div class="sim-kpi-val" style="font-size:1rem;">{{ resource_label }}</div>
-      <div class="sim-kpi-sub">{{ resource_pct }}% trains idle</div>
+      <div class="sim-kpi-label"><i class="bi bi-battery-charging" style="color:var(--accent-green);"></i>Resource Availability</div>
+      <div class="sim-kpi-val" style="font-size:1rem;color:var(--accent-green);">{{ resource_label }}</div>
+      <div class="sim-kpi-sub">{{ resource_pct }}% trains available</div>
+      <svg class="sim-spark" viewBox="0 0 80 20" preserveAspectRatio="none">
+        <defs><linearGradient id="spk8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".35"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,12 13,10 26,8 39,11 52,7 65,9 80,6 80,20 0,20" fill="url(#spk8)"/>
+        <polyline points="0,12 13,10 26,8 39,11 52,7 65,9 80,6" fill="none" stroke="var(--accent-green)" stroke-width="1.5" opacity=".8"/>
+      </svg>
     </div>
 
   </div><!-- /.sim-kpi-row -->
 
-  <!-- ═══ MAIN GRID: Map + Control Center / Scenario Builder / Recovery / Before-After ═══ -->
+  <!-- ═══ MAIN GRID: Map + Right Column ════════════════════════════ -->
   <div class="sim-main-grid">
 
     <!-- LEFT: Live Network Simulation Map -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">🗺️</span>Main Live Network Simulation Map</div>
+        <div class="sim-card-title">
+          <i class="bi bi-map" style="color:var(--accent-blue);"></i>
+          Main Live Network Simulation Map
+          <span style="font-size:.55rem;color:var(--text-muted);font-weight:500;margin-left:4px;">Large controller allows clicks on track cards to trigger disruptions</span>
+        </div>
         <a href="{% url 'network:visualizer' %}" class="sim-card-link">Full Network →</a>
       </div>
       <div class="sim-map-wrap" id="simMapWrap">
+        <div class="sim-map-overlay-label">
+          <i class="bi bi-broadcast-pin" style="color:var(--accent-green);animation:liveGlow 2s ease-in-out infinite;"></i>
+          Live Train Positions — Animated
+        </div>
         <svg class="sim-map-svg" id="simMapSvg" viewBox="0 0 800 380" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="sim-map-controls">
-          <button class="sim-map-zbtn" onclick="mapZoom(1.2)"><i class="bi bi-plus"></i></button>
-          <button class="sim-map-zbtn" onclick="mapZoom(0.8)"><i class="bi bi-dash"></i></button>
-          <button class="sim-map-zbtn" onclick="mapZoomReset()"><i class="bi bi-arrow-counterclockwise"></i></button>
+          <button class="sim-map-zbtn" onclick="mapZoom(1.25)" title="Zoom In"><i class="bi bi-plus-lg"></i></button>
+          <button class="sim-map-zbtn" onclick="mapZoom(0.8)" title="Zoom Out"><i class="bi bi-dash-lg"></i></button>
+          <button class="sim-map-zbtn" onclick="mapZoomReset()" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></button>
         </div>
         <div class="sim-map-legend">
           <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#2ecc71;"></div>Clear</div>
           <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#f39c12;"></div>Occupied</div>
           <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#3498db;"></div>Maintenance</div>
           <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#e74c3c;"></div>Blocked</div>
-          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#9b59b6;"></div>Signal Failure</div>
+          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#9b59b6;"></div>Signal Fail</div>
+          <div class="sim-map-leg-item"><div class="sim-map-leg-dot" style="background:#10b981;border-radius:2px;"></div>Trains</div>
         </div>
         <div class="sim-map-tooltip" id="simMapTooltip"></div>
+      </div>
+      <!-- Section strip -->
+      <div class="section-strip" id="sectionStrip">
+        <span style="font-size:.55rem;color:var(--text-muted);align-self:center;margin-right:2px;">Sections:</span>
       </div>
     </div>
 
@@ -320,13 +875,19 @@
         <!-- Simulation Control Center -->
         <div class="sim-card">
           <div class="sim-card-hdr">
-            <div class="sim-card-title"><span class="sim-card-title-icon">🎛️</span>Control Center</div>
+            <div class="sim-card-title"><i class="bi bi-sliders" style="color:var(--accent-purple);"></i>Simulation Control Center</div>
+          </div>
+          <div style="padding:5px 7px 3px;font-size:.55rem;color:var(--text-muted);border-bottom:1px solid var(--border-color);">
+            Large controller allows clicks on cards to trigger disruptions.
           </div>
           <div class="scc-grid">
             {% for card in control_cards %}
-            <div class="scc-card" onclick="prefillScenario('{{ card.type }}')" title="{% if card.last_run %}Last run {{ card.last_run|timesince }} ago{% else %}Never run{% endif %}">
-              <div class="scc-card-name"><i class="bi {{ card.icon }}"></i> {{ card.label }}</div>
-              <div class="scc-card-status {{ card.status|lower|cut:' ' }}">{{ card.status }}</div>
+            <div class="scc-card"
+                 style="--scc-c:{% if card.status == 'Active' %}var(--accent-green){% elif card.status == 'Pending' %}var(--accent-yellow){% elif card.status == 'Completed' %}var(--accent-blue){% elif card.status == 'Failed' %}var(--accent-red){% else %}var(--text-muted){% endif %};"
+                 onclick="prefillScenario('{{ card.type }}')"
+                 title="{% if card.last_run %}Last run {{ card.last_run|timesince }} ago{% else %}Never run{% endif %}">
+              <div class="scc-card-name"><i class="bi {{ card.icon }}"></i>{{ card.label }}</div>
+              <div class="scc-card-status {{ card.status|lower|cut:' ' }}">STATUS: {{ card.status }}</div>
             </div>
             {% endfor %}
           </div>
@@ -335,7 +896,7 @@
         <!-- Scenario Builder -->
         <div class="sim-card">
           <div class="sim-card-hdr">
-            <div class="sim-card-title"><span class="sim-card-title-icon">🧩</span>Scenario Builder</div>
+            <div class="sim-card-title"><i class="bi bi-puzzle" style="color:var(--accent-cyan);"></i>Scenario Builder</div>
           </div>
           <div class="sb-body">
             <div class="sb-field">
@@ -343,15 +904,7 @@
               <select class="sb-select" id="sb-session" onchange="loadSession(this.value)">
                 <option value="">New scenario</option>
                 {% for sim in simulations %}
-                <option value="{{ sim.id }}" data-type="{{ sim.scenario_type }}" data-delay="{{ sim.delay_minutes }}" data-duration="{{ sim.duration_hours }}">{{ sim.name|truncatechars:24 }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="sb-field">
-              <label class="sb-label">Disruption Type</label>
-              <select class="sb-select" id="sb-type">
-                {% for val, label in scenario_types %}
-                <option value="{{ val }}">{{ label }}</option>
+                <option value="{{ sim.id }}" data-type="{{ sim.scenario_type }}" data-delay="{{ sim.delay_minutes }}" data-duration="{{ sim.duration_hours }}">{{ sim.name|truncatechars:22 }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -360,15 +913,23 @@
               <select class="sb-select" id="sb-station">
                 <option value="">Any station</option>
                 {% for s in stations %}
-                <option value="{{ s.id }}">{{ s.code }} — {{ s.name|truncatechars:18 }}</option>
+                <option value="{{ s.id }}">{{ s.code }} — {{ s.name|truncatechars:16 }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="sb-field">
-              <label class="sb-label">Select Train (optional)</label>
-              <select class="sb-select" id="sb-train" multiple style="height:54px;">
+              <label class="sb-label">Select Disruption Type</label>
+              <select class="sb-select" id="sb-type">
+                {% for val, label in scenario_types %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="sb-field">
+              <label class="sb-label">Select Train</label>
+              <select class="sb-select" id="sb-train" multiple style="height:48px;">
                 {% for t in trains %}
-                <option value="{{ t.id }}">{{ t.train_number }} — {{ t.train_name|truncatechars:14 }}</option>
+                <option value="{{ t.id }}">{{ t.train_number }} — {{ t.train_name|truncatechars:12 }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -382,7 +943,9 @@
                 <input type="number" class="sb-input" id="sb-duration" value="2" min="0.5" max="12" step="0.5">
               </div>
             </div>
-            <button class="sb-run-btn" id="sbRunBtn" onclick="runScenario()"><i class="bi bi-play-fill"></i> Run Simulation</button>
+            <button class="sb-run-btn" id="sbRunBtn" onclick="runScenario()">
+              <i class="bi bi-play-fill"></i> Run Simulation
+            </button>
           </div>
         </div>
       </div><!-- /.sim-right-pair -->
@@ -391,45 +954,80 @@
         <!-- AI Recovery Engine -->
         <div class="sim-card">
           <div class="sim-card-hdr">
-            <div class="sim-card-title"><span class="sim-card-title-icon">🤖</span>AI Recovery Engine</div>
+            <div class="sim-card-title"><i class="bi bi-robot" style="color:var(--accent-green);"></i>AI Recovery Engine</div>
           </div>
           {% if recovery_actions %}
             {% for action in recovery_actions|slice:":5" %}
-            <div class="rec-item"><span class="rec-bullet">●</span><span>{{ action }}</span></div>
+            <div class="rec-item">
+              <span class="rec-bullet">●</span>
+              <span>{{ action }}</span>
+            </div>
             {% endfor %}
             <div class="rec-actions">
-              <a href="{% url 'ai_engine:dashboard' %}" class="rec-btn accept"><i class="bi bi-check-lg"></i> Accept</a>
-              <button class="rec-btn reject" onclick="dismissRecovery(this)"><i class="bi bi-x-lg"></i> Reject</button>
-              <a href="{% url 'simulation:realtime' %}" class="rec-btn sim"><i class="bi bi-play"></i> Simulate</a>
+              <a href="{% url 'ai_engine:dashboard' %}" class="rec-btn accept">
+                <i class="bi bi-check-lg"></i> Accept
+              </a>
+              <button class="rec-btn reject" onclick="dismissRecovery(this)">
+                <i class="bi bi-x-lg"></i> Reject
+              </button>
+              <a href="{% url 'simulation:realtime' %}" class="rec-btn sim">
+                <i class="bi bi-play"></i> Simulate
+              </a>
             </div>
           {% else %}
-            <div class="sim-empty">
-              <span class="sim-empty-icon">🛡️</span>
-              Run a scenario to generate an AI recovery plan.
-            </div>
+          <div class="sim-empty">
+            <span class="sim-empty-icon">🛡️</span>
+            Run a scenario to generate an AI recovery plan.
+          </div>
           {% endif %}
         </div>
 
         <!-- Before vs After Impact Panel -->
         <div class="sim-card">
           <div class="sim-card-hdr">
-            <div class="sim-card-title"><span class="sim-card-title-icon">⚖️</span>Before vs After</div>
+            <div class="sim-card-title"><i class="bi bi-bar-chart-steps" style="color:var(--accent-orange);"></i>Before vs After Impact</div>
           </div>
           {% if has_after_data %}
-          <div class="ba-grid">
+          <div class="ba-header">
+            <div class="ba-col-lbl before-lbl">[BEFORE]</div>
+            <div class="ba-col-lbl after-lbl">[AFTER]</div>
+          </div>
+          <div class="ba-body">
             <div class="ba-col before">
-              <div class="ba-col-label">Before</div>
-              <div class="ba-metric"><span class="ba-metric-name">Throughput</span><span class="ba-metric-val" style="color:var(--accent-blue);">{{ before_throughput }}%</span></div>
-              <div class="ba-metric"><span class="ba-metric-name">Delay</span><span class="ba-metric-val" style="color:var(--accent-yellow);">{{ before_delay }} min</span></div>
-              <div class="ba-metric"><span class="ba-metric-name">Occupancy</span><span class="ba-metric-val" style="color:var(--accent-orange);">{{ before_occupancy }}%</span></div>
-              <div class="ba-metric"><span class="ba-metric-name">Resource Util.</span><span class="ba-metric-val" style="color:var(--accent-purple);">{{ before_resource }}%</span></div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Throughput</span>
+                <span class="ba-metric-val" style="color:var(--accent-blue);">{{ before_throughput }}%</span>
+              </div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Delay</span>
+                <span class="ba-metric-val" style="color:var(--accent-yellow);">{{ before_delay }}m</span>
+              </div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Occupancy</span>
+                <span class="ba-metric-val" style="color:var(--accent-orange);">{{ before_occupancy }}%</span>
+              </div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Resource Util.</span>
+                <span class="ba-metric-val" style="color:var(--accent-purple);">{{ before_resource }}%</span>
+              </div>
             </div>
             <div class="ba-col after">
-              <div class="ba-col-label">After</div>
-              <div class="ba-metric"><span class="ba-metric-name">Throughput</span><span class="ba-metric-val" style="color:var(--accent-green);">{{ after_throughput }}%</span></div>
-              <div class="ba-metric"><span class="ba-metric-name">Delay</span><span class="ba-metric-val" style="color:var(--accent-red);">{{ after_delay }} min</span></div>
-              <div class="ba-metric"><span class="ba-metric-name">Occupancy</span><span class="ba-metric-val" style="color:var(--accent-red);">{{ after_occupancy }}%</span></div>
-              <div class="ba-metric"><span class="ba-metric-name">Resource Util.</span><span class="ba-metric-val" style="color:var(--accent-orange);">{{ after_resource }}%</span></div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Throughput</span>
+                <span class="ba-metric-val" style="color:var(--accent-green);">{{ after_throughput }}%</span>
+              </div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Delay</span>
+                <span class="ba-metric-val" style="color:var(--accent-red);">{{ after_delay }}m</span>
+              </div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Occupancy</span>
+                <span class="ba-metric-val" style="color:var(--accent-red);">{{ after_occupancy }}%</span>
+              </div>
+              <div class="ba-metric">
+                <span class="ba-metric-name">Resource Util.</span>
+                <span class="ba-metric-val" style="color:var(--accent-orange);">{{ after_resource }}%</span>
+              </div>
             </div>
           </div>
           {% else %}
@@ -444,19 +1042,20 @@
     </div><!-- /.sim-right-col -->
   </div><!-- /.sim-main-grid -->
 
-  <!-- ═══ Real-Time Event Feed + Simulation Timeline ═══ -->
+  <!-- ═══ Real-Time Event Feed + Simulation Timeline ════════════════ -->
   <div class="feed-tl-grid">
 
+    <!-- Real-Time Event Feed -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">📡</span>Real-Time Event Feed</div>
+        <div class="sim-card-title"><i class="bi bi-activity" style="color:var(--accent-yellow);"></i>Real-Time Event Feed</div>
         <a href="{% url 'conflicts:list' %}" class="sim-card-link">All Events →</a>
       </div>
-      <div id="rtFeed" style="max-height:200px;overflow-y:auto;">
+      <div id="rtFeed" style="max-height:190px;overflow-y:auto;">
         {% for ev in live_events %}
         <div class="feed-item">
           <div class="feed-dot" style="background:{% if ev.severity == 'CRITICAL' or ev.severity == 'HIGH' %}var(--accent-red){% elif ev.severity == 'MEDIUM' or ev.severity == 'NORMAL' %}var(--accent-yellow){% else %}var(--accent-green){% endif %};"></div>
-          <div class="feed-text">{{ ev.text|truncatechars:70 }}</div>
+          <div class="feed-text">{{ ev.text|truncatechars:72 }}</div>
           <div class="feed-time">{{ ev.time|timesince }} ago</div>
         </div>
         {% empty %}
@@ -468,22 +1067,33 @@
       </div>
     </div>
 
+    <!-- Simulation Timeline -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">⏱️</span>Simulation Timeline</div>
-        {% if latest_sim %}<span class="sim-card-link" style="color:var(--text-muted);">{{ latest_sim.name|truncatechars:30 }}</span>{% endif %}
+        <div class="sim-card-title"><i class="bi bi-stopwatch" style="color:var(--accent-purple);"></i>Simulation Timeline</div>
+        {% if latest_sim %}<span class="sim-card-link" style="color:var(--text-muted);">{{ latest_sim.name|truncatechars:28 }}</span>{% endif %}
       </div>
       {% if timeline_stages %}
       <div class="tl-wrap">
-        <div class="tl-track">
-          <div class="tl-prog" style="width:100%;"></div>
-          {% for stage in timeline_stages %}
-          <div class="tl-node" style="left:{{ stage.pct }}%;" title="{{ stage.name }} — {{ stage.time|date:'H:i:s' }}"></div>
-          {% endfor %}
+        <div class="tl-outer">
+          <div class="tl-bar">
+            <div class="tl-prog" style="width:100%;"></div>
+            <div class="tl-nodes">
+              {% for stage in timeline_stages %}
+              <div class="tl-node reached" style="left:{{ stage.pct }}%;"
+                   title="{{ stage.name }} — {{ stage.time|date:'H:i:s' }}"
+                   onclick="showTimelineInfo('{{ stage.name }}', '{{ stage.time|date:'H:i:s' }}')">
+              </div>
+              {% endfor %}
+            </div>
+          </div>
         </div>
         <div class="tl-labels">
           {% for stage in timeline_stages %}
-          <div class="tl-label">{{ stage.name }}<span class="tl-label-time">{{ stage.time|date:"H:i:s" }}</span></div>
+          <div class="tl-label" style="color:var(--accent-green);">
+            {{ stage.name }}
+            <span class="tl-label-time">{{ stage.time|date:"H:i:s" }}</span>
+          </div>
           {% endfor %}
         </div>
       </div>
@@ -491,62 +1101,95 @@
       <div class="sim-empty">
         <span class="sim-empty-icon">⏳</span>
         Timeline appears once a simulation completes with start/end timestamps.
+        <div style="margin-top:8px;">
+          <a href="{% url 'simulation:index' %}" class="sim-hbtn" style="display:inline-flex;font-size:.62rem;">
+            <i class="bi bi-play-fill"></i> Run a Scenario
+          </a>
+        </div>
       </div>
       {% endif %}
     </div>
 
-  </div>
+  </div><!-- /.feed-tl-grid -->
 
-  <!-- ═══ Heatmap + AI Decision Panel + Logic Metrics ═══ -->
+  <!-- ═══ Heatmap + AI Decision Panel + Logic Metrics ═════════════ -->
   <div class="mid-grid">
 
     <!-- Traffic Density Heatmap -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">🔥</span>Traffic Density Heatmap</div>
+        <div class="sim-card-title"><i class="bi bi-fire" style="color:var(--accent-red);"></i>Traffic Density Heatmap</div>
         <a href="{% url 'network:visualizer' %}" class="sim-card-link">Network →</a>
       </div>
       <div class="hm-wrap">
+        <div class="hm-title-row">
+          <span>Stations</span>
+          <span>Congestion level</span>
+        </div>
         {% for row in heatmap_rows %}
         <div class="hm-row">
           <div class="hm-row-label" title="{{ row.name }}">{{ row.code }}</div>
           <div class="hm-bar-wrap">
             <div class="hm-bar-fill" style="width:{% widthratio row.risk 3 100 %}%;background:{% if row.risk >= 2.5 %}var(--accent-red){% elif row.risk >= 1.5 %}var(--accent-orange){% elif row.risk >= 0.5 %}var(--accent-yellow){% else %}var(--accent-green){% endif %};"></div>
           </div>
-          <div class="hm-row-val">{{ row.section_count }} sec</div>
+          <div class="hm-row-val">{{ row.section_count }}s</div>
         </div>
         {% empty %}
-        <div class="sim-empty"><span class="sim-empty-icon">🗺️</span>No station/section data available.</div>
+        <div class="sim-empty"><span class="sim-empty-icon">🗺️</span>No station data available.</div>
         {% endfor %}
+      </div>
+      <div class="hm-legend">
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--accent-red);"></div>High</div>
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--accent-orange);"></div>Orange</div>
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--accent-yellow);"></div>Yellow</div>
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--accent-green);"></div>Low</div>
       </div>
     </div>
 
     <!-- AI Decision Panel -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">🧠</span>AI Decision Panel</div>
+        <div class="sim-card-title"><i class="bi bi-cpu" style="color:var(--accent-blue);"></i>AI Decision Panel</div>
       </div>
       {% if has_decision_data %}
       <div class="gauge-grid">
         <div class="gauge-item">
-          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-blue)" stroke-width="6" stroke-dasharray="{{ ai_confidence_pct|default:75 }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
+          <svg class="gauge-svg" viewBox="0 0 68 68">
+            <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>
+            <circle cx="34" cy="34" r="28" fill="none" stroke="var(--accent-blue)" stroke-width="6"
+              stroke-dasharray="{{ ai_confidence_pct|default:75 }} 100"
+              stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,34,34)"/>
+          </svg>
           <div class="gauge-val" style="color:var(--accent-blue);">{{ ai_confidence_pct|default:"—" }}%</div>
           <div class="gauge-label">Confidence Score</div>
         </div>
         <div class="gauge-item">
-          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-green)" stroke-width="6" stroke-dasharray="{% widthratio delay_reduction_min 60 100 %} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
+          <svg class="gauge-svg" viewBox="0 0 68 68">
+            <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>
+            <circle cx="34" cy="34" r="28" fill="none" stroke="var(--accent-green)" stroke-width="6"
+              stroke-dasharray="{% widthratio delay_reduction_min 60 100 %} 100"
+              stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,34,34)"/>
+          </svg>
           <div class="gauge-val" style="color:var(--accent-green);">+{{ delay_reduction_min }}m</div>
           <div class="gauge-label">Delay Reduction</div>
         </div>
         <div class="gauge-item">
-          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-orange)" stroke-width="6" stroke-dasharray="60 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
-          <div class="gauge-val" style="color:var(--accent-orange);">{{ passenger_impact_est }}</div>
-          <div class="gauge-label">Passengers Affected (est.)</div>
+          <svg class="gauge-svg" viewBox="0 0 68 68">
+            <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>
+            <circle cx="34" cy="34" r="28" fill="none" stroke="var(--accent-orange)" stroke-width="6"
+              stroke-dasharray="60 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,34,34)"/>
+          </svg>
+          <div class="gauge-val" style="color:var(--accent-orange);font-size:.7rem;">{{ passenger_impact_est }}</div>
+          <div class="gauge-label">Passenger Impact</div>
         </div>
         <div class="gauge-item">
-          <svg class="gauge-svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-color)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-purple)" stroke-width="6" stroke-dasharray="55 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,32,32)"/></svg>
-          <div class="gauge-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</div>
-          <div class="gauge-label">Revenue Impact (est.)</div>
+          <svg class="gauge-svg" viewBox="0 0 68 68">
+            <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>
+            <circle cx="34" cy="34" r="28" fill="none" stroke="var(--accent-purple)" stroke-width="6"
+              stroke-dasharray="55 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,34,34)"/>
+          </svg>
+          <div class="gauge-val" style="color:var(--accent-purple);font-size:.72rem;">₹{{ revenue_impact_lakhs }}L</div>
+          <div class="gauge-label">Revenue Impact</div>
         </div>
       </div>
       {% else %}
@@ -557,14 +1200,34 @@
     <!-- Logic Metrics Panel -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">📐</span>Logic Metrics</div>
+        <div class="sim-card-title"><i class="bi bi-calculator" style="color:var(--accent-cyan);"></i>Logic Metrics</div>
       </div>
       {% if has_decision_data %}
-      <div class="metric-row"><span class="metric-name">Confidence Score</span><span class="metric-val" style="color:var(--accent-blue);">{{ ai_confidence_pct|default:"—" }}%</span></div>
-      <div class="metric-row"><span class="metric-name">Delay Reduction</span><span class="metric-val" style="color:var(--accent-green);">+{{ delay_reduction_min }} min</span></div>
-      <div class="metric-row"><span class="metric-name">Throughput Gain</span><span class="metric-val" style="color:var(--accent-cyan);">+{{ throughput_gain_pct }}%</span></div>
-      <div class="metric-row"><span class="metric-name">Passenger Impact</span><span class="metric-val" style="color:var(--accent-orange);">{{ passenger_impact_est }} pax</span></div>
-      <div class="metric-row"><span class="metric-name">Revenue Impact</span><span class="metric-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</span></div>
+      <div class="logic-item">
+        <span class="logic-label">Confidence Score</span>
+        <div class="logic-progress"><div class="logic-progress-fill" style="width:{{ ai_confidence_pct|default:0 }}%;background:var(--accent-blue);"></div></div>
+        <span class="logic-val" style="color:var(--accent-blue);">{{ ai_confidence_pct|default:"—" }}%</span>
+      </div>
+      <div class="logic-item">
+        <span class="logic-label">Delay Reduction</span>
+        <div class="logic-progress"><div class="logic-progress-fill" style="width:{% widthratio delay_reduction_min 60 100 %}%;background:var(--accent-green);"></div></div>
+        <span class="logic-val" style="color:var(--accent-green);">+{{ delay_reduction_min }} min</span>
+      </div>
+      <div class="logic-item">
+        <span class="logic-label">Throughput Gain</span>
+        <div class="logic-progress"><div class="logic-progress-fill" style="width:{{ throughput_gain_pct }}%;background:var(--accent-cyan);"></div></div>
+        <span class="logic-val" style="color:var(--accent-cyan);">+{{ throughput_gain_pct }}%</span>
+      </div>
+      <div class="logic-item">
+        <span class="logic-label">Passenger Impact</span>
+        <div class="logic-progress"><div class="logic-progress-fill" style="width:60%;background:var(--accent-orange);"></div></div>
+        <span class="logic-val" style="color:var(--accent-orange);">{{ passenger_impact_est }} pax</span>
+      </div>
+      <div class="logic-item">
+        <span class="logic-label">Revenue Impact</span>
+        <div class="logic-progress"><div class="logic-progress-fill" style="width:55%;background:var(--accent-purple);"></div></div>
+        <span class="logic-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</span>
+      </div>
       {% else %}
       <div class="sim-empty"><span class="sim-empty-icon">📐</span>Logic metrics appear after running a simulation.</div>
       {% endif %}
@@ -572,44 +1235,114 @@
 
   </div><!-- /.mid-grid -->
 
-  <!-- ═══ Resource Impact + Forecasting + Executive Impact ═══ -->
+  <!-- ═══ Resource Impact + Forecasting + Executive Impact ══════════ -->
   <div class="lower-grid">
 
     <!-- Resource Impact Panel -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">⚙️</span>Resource Impact Panel</div>
+        <div class="sim-card-title"><i class="bi bi-gear-fill" style="color:var(--accent-yellow);"></i>Resource Impact Panel</div>
       </div>
-      <div class="metric-row"><span class="metric-name">Platform Utilization</span><span class="metric-val" style="color:var(--accent-blue);">{{ resource_impact.platform_utilization }}%</span></div>
-      <div class="metric-row"><span class="metric-name">Track Utilization</span><span class="metric-val" style="color:var(--accent-orange);">{{ resource_impact.track_utilization }}%</span></div>
-      <div class="metric-row"><span class="metric-name">Signal Health</span><span class="metric-val" style="color:var(--accent-green);">{{ resource_impact.signal_health }}%</span></div>
-      <div class="metric-row"><span class="metric-name">Active Trains</span><span class="metric-val" style="color:var(--accent-purple);">{{ resource_impact.active_trains }}</span></div>
+      <div class="resource-grid">
+        <div class="resource-item">
+          <div class="resource-icon">🏟️</div>
+          <div class="resource-label">Platform Utilization</div>
+          <div class="resource-val" style="color:var(--accent-blue);">{{ resource_impact.platform_utilization }}%</div>
+          <div class="resource-bar-outer">
+            <div class="resource-bar-inner" style="width:{{ resource_impact.platform_utilization }}%;background:var(--accent-blue);"></div>
+          </div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-icon">🛤️</div>
+          <div class="resource-label">Track Utilization</div>
+          <div class="resource-val" style="color:var(--accent-orange);">{{ resource_impact.track_utilization }}%</div>
+          <div class="resource-bar-outer">
+            <div class="resource-bar-inner" style="width:{{ resource_impact.track_utilization }}%;background:var(--accent-orange);"></div>
+          </div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-icon">🚦</div>
+          <div class="resource-label">Signal Utilization</div>
+          <div class="resource-val" style="color:var(--accent-green);">{{ resource_impact.signal_health }}%</div>
+          <div class="resource-bar-outer">
+            <div class="resource-bar-inner" style="width:{{ resource_impact.signal_health }}%;background:var(--accent-green);"></div>
+          </div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-icon">👷</div>
+          <div class="resource-label">Crew Utilization</div>
+          <div class="resource-val" style="color:var(--accent-purple);">{{ resource_impact.active_trains }} trains</div>
+          <div class="resource-bar-outer">
+            <div class="resource-bar-inner" style="width:70%;background:var(--accent-purple);"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Forecasting Panel -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">🔮</span>Forecasting Panel</div>
+        <div class="sim-card-title"><i class="bi bi-magic" style="color:var(--accent-purple);"></i>Forecasting Panel</div>
         <a href="{% url 'ml_prediction:dashboard' %}" class="sim-card-link">ML Engine →</a>
       </div>
-      <div class="metric-row"><span class="metric-name">Predicted Congestion</span><span class="metric-val" style="color:var(--accent-orange);">{% if predicted_congestion_pct is not None %}{{ predicted_congestion_pct }}%{% else %}—{% endif %}</span></div>
-      <div class="metric-row"><span class="metric-name">Predicted Delays</span><span class="metric-val" style="color:var(--accent-yellow);">{% if predicted_delay_avg is not None %}{{ predicted_delay_avg|floatformat:0 }} min{% else %}—{% endif %}</span></div>
-      <div class="metric-row"><span class="metric-name">Predicted Conflicts</span><span class="metric-val" style="color:var(--accent-red);">{% if predicted_conflicts_count is not None %}{{ predicted_conflicts_count }}{% else %}—{% endif %}</span></div>
-      <div class="metric-row"><span class="metric-name">Predicted Throughput</span><span class="metric-val" style="color:var(--accent-green);">{{ predicted_throughput_pct }}%</span></div>
+      <div class="forecast-item">
+        <div class="forecast-item-top">
+          <span class="forecast-label">Predicted Congestion</span>
+          <span class="forecast-val" style="color:var(--accent-orange);">{% if predicted_congestion_pct is not None %}{{ predicted_congestion_pct }}%{% else %}—{% endif %}</span>
+        </div>
+        <div class="forecast-bar-outer"><div class="forecast-bar-inner" style="width:{% if predicted_congestion_pct is not None %}{{ predicted_congestion_pct }}{% else %}0{% endif %}%;background:var(--accent-orange);"></div></div>
+      </div>
+      <div class="forecast-item">
+        <div class="forecast-item-top">
+          <span class="forecast-label">Predicted Delays</span>
+          <span class="forecast-val" style="color:var(--accent-yellow);">{% if predicted_delay_avg is not None %}{{ predicted_delay_avg|floatformat:0 }} min{% else %}—{% endif %}</span>
+        </div>
+        <div class="forecast-bar-outer"><div class="forecast-bar-inner" style="width:{% if predicted_delay_avg %}{% widthratio predicted_delay_avg 60 100 %}{% else %}0{% endif %}%;background:var(--accent-yellow);"></div></div>
+      </div>
+      <div class="forecast-item">
+        <div class="forecast-item-top">
+          <span class="forecast-label">Predicted Conflicts</span>
+          <span class="forecast-val" style="color:var(--accent-red);">{% if predicted_conflicts_count is not None %}{{ predicted_conflicts_count }}{% else %}—{% endif %}</span>
+        </div>
+        <div class="forecast-bar-outer"><div class="forecast-bar-inner" style="width:{% if predicted_conflicts_count %}{% widthratio predicted_conflicts_count 20 100 %}{% else %}0{% endif %}%;background:var(--accent-red);"></div></div>
+      </div>
+      <div class="forecast-item">
+        <div class="forecast-item-top">
+          <span class="forecast-label">Predicted Throughput</span>
+          <span class="forecast-val" style="color:var(--accent-green);">{{ predicted_throughput_pct }}%</span>
+        </div>
+        <div class="forecast-bar-outer"><div class="forecast-bar-inner" style="width:{{ predicted_throughput_pct }}%;background:var(--accent-green);"></div></div>
+      </div>
     </div>
 
     <!-- Executive Impact Panel -->
     <div class="sim-card">
       <div class="sim-card-hdr">
-        <div class="sim-card-title"><span class="sim-card-title-icon">💼</span>Executive Impact Panel</div>
+        <div class="sim-card-title"><i class="bi bi-briefcase" style="color:var(--accent-blue);"></i>Executive Impact Panel</div>
         <a href="{% url 'reporting:index' %}" class="sim-card-link">Reports →</a>
       </div>
       {% if has_decision_data %}
       <div class="exec-grid">
-        <div class="exec-item"><div class="exec-label">Passenger Impact</div><div class="exec-val" style="color:var(--accent-orange);">{{ passenger_impact_est }}</div></div>
-        <div class="exec-item"><div class="exec-label">Recovery Cost</div><div class="exec-val" style="color:var(--accent-red);">₹{{ recovery_cost_lakhs }}L</div></div>
-        <div class="exec-item"><div class="exec-label">Revenue Impact</div><div class="exec-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</div></div>
-        <div class="exec-item"><div class="exec-label">Operational Impact</div><div class="exec-val" style="color:var(--accent-blue);">-{{ avg_throughput_impact|default:0 }}%</div></div>
+        <div class="exec-item">
+          <div class="exec-label">Passenger Impact</div>
+          <div class="exec-val" style="color:var(--accent-orange);">{{ passenger_impact_est }}</div>
+          <div class="exec-sub">passengers affected</div>
+        </div>
+        <div class="exec-item">
+          <div class="exec-label">Recovery Cost</div>
+          <div class="exec-val" style="color:var(--accent-red);">₹{{ recovery_cost_lakhs }}L</div>
+          <div class="exec-sub">estimated expenditure</div>
+        </div>
+        <div class="exec-item">
+          <div class="exec-label">Revenue Impact</div>
+          <div class="exec-val" style="color:var(--accent-purple);">₹{{ revenue_impact_lakhs }}L</div>
+          <div class="exec-sub">revenue at risk</div>
+        </div>
+        <div class="exec-item">
+          <div class="exec-label">Operational Impact</div>
+          <div class="exec-val" style="color:var(--accent-blue);">-{{ avg_throughput_impact|default:0 }}%</div>
+          <div class="exec-sub">throughput reduction</div>
+        </div>
       </div>
       {% else %}
       <div class="sim-empty"><span class="sim-empty-icon">💼</span>Executive metrics appear after running a simulation.</div>
@@ -618,31 +1351,29 @@
 
   </div><!-- /.lower-grid -->
 
-  <!-- ═══ Bottom Trend Analytics (5 charts, real history) ═══ -->
+  <!-- ═══ Bottom Trend Analytics (5 sparkline charts) ══════════════ -->
   <div class="trend-row">
-
     <div class="sim-card">
-      <div class="sim-card-hdr"><div class="sim-card-title">Throughput Trend</div></div>
+      <div class="sim-card-hdr"><div class="sim-card-title" style="color:rgba(139,92,246,.8);">Throughput Trend</div></div>
       <div class="trend-card-body"><canvas id="trChart1"></canvas></div>
     </div>
     <div class="sim-card">
-      <div class="sim-card-hdr"><div class="sim-card-title">Delay Trend</div></div>
+      <div class="sim-card-hdr"><div class="sim-card-title" style="color:rgba(239,68,68,.8);">Delay Trend</div></div>
       <div class="trend-card-body"><canvas id="trChart2"></canvas></div>
     </div>
     <div class="sim-card">
-      <div class="sim-card-hdr"><div class="sim-card-title">Recovery Trend</div></div>
+      <div class="sim-card-hdr"><div class="sim-card-title" style="color:rgba(59,130,246,.8);">Recovery Trend</div></div>
       <div class="trend-card-body"><canvas id="trChart3"></canvas></div>
     </div>
     <div class="sim-card">
-      <div class="sim-card-hdr"><div class="sim-card-title">AI Optimization Trend</div></div>
+      <div class="sim-card-hdr"><div class="sim-card-title" style="color:rgba(16,185,129,.8);">AI Optimization Trend</div></div>
       <div class="trend-card-body"><canvas id="trChart4"></canvas></div>
     </div>
     <div class="sim-card">
-      <div class="sim-card-hdr"><div class="sim-card-title">Resource Trend</div></div>
+      <div class="sim-card-hdr"><div class="sim-card-title" style="color:rgba(6,182,212,.8);">Resource Trend</div></div>
       <div class="trend-card-body"><canvas id="trChart5"></canvas></div>
     </div>
-
-  </div><!-- /.trend-row -->
+  </div>
 
 </div><!-- /.sim-page -->
 {% endblock %}
@@ -652,199 +1383,348 @@
 <script>
 'use strict';
 
-/* ═══════════════════ REAL DATA FROM DJANGO ═══════════════════ */
-const MAP_STATIONS = {{ map_stations_json|safe }};
-const MAP_SECTIONS  = {{ map_sections_json|safe }};
-const MAP_TRAINS    = {{ map_trains_json|safe }};
+/* ═══════════ REAL DATA FROM DJANGO ═══════════════════════════════════ */
+const MAP_STATIONS      = {{ map_stations_json|safe }};
+const MAP_SECTIONS      = {{ map_sections_json|safe }};
+const MAP_TRAINS        = {{ map_trains_json|safe }};
+const TREND_THROUGHPUT  = {{ throughput_trend_json|safe }};
+const TREND_DELAY       = {{ delay_trend_json|safe }};
+const TREND_RECOVERY    = {{ recovery_trend_json|safe }};
+const TREND_AIOPT       = {{ ai_opt_trend_json|safe }};
+const TREND_RESOURCE    = {{ resource_trend_json|safe }};
 
-const TREND_THROUGHPUT = {{ throughput_trend_json|safe }};
-const TREND_DELAY      = {{ delay_trend_json|safe }};
-const TREND_RECOVERY   = {{ recovery_trend_json|safe }};
-const TREND_AIOPT      = {{ ai_opt_trend_json|safe }};
-const TREND_RESOURCE   = {{ resource_trend_json|safe }};
-
-/* ═══════════════════ NETWORK SIMULATION MAP (real lat/lng) ═══════════════════ */
+/* ═══════════ NETWORK SIMULATION MAP ══════════════════════════════════ */
 let mapScale = 1;
-const statusColors = {CLEAR:'#2ecc71', OCCUPIED:'#f39c12', BLOCKED:'#e74c3c', MAINTENANCE:'#3498db', SIGNAL_FAILURE:'#9b59b6'};
-const trainStatusColors = {RUNNING:'#10b981', SCHEDULED:'#3b82f6', DELAYED:'#ef4444'};
+let animFrame = null;
+const statusColors = {
+  CLEAR:          '#2ecc71',
+  OCCUPIED:       '#f39c12',
+  BLOCKED:        '#e74c3c',
+  MAINTENANCE:    '#3498db',
+  SIGNAL_FAILURE: '#9b59b6',
+};
+const trainStatusColors = {
+  RUNNING:   '#10b981',
+  SCHEDULED: '#3b82f6',
+  DELAYED:   '#ef4444',
+};
 
-function renderSimMap(){
-  const svg = document.getElementById('simMapSvg');
-  if(!svg || !MAP_STATIONS.length) {
-    if(svg) svg.innerHTML = '<text x="400" y="190" text-anchor="middle" font-size="13" fill="rgba(255,255,255,0.3)">No station coordinate data available</text>';
-    return;
-  }
-  const W = 800, H = 380, PAD = 40;
-  const lats = MAP_STATIONS.map(s=>s.lat), lngs = MAP_STATIONS.map(s=>s.lng);
+/* Build station position lookup */
+function computeStationPositions(W, H, PAD) {
+  if (!MAP_STATIONS.length) return {};
+  const lats  = MAP_STATIONS.map(s => s.lat);
+  const lngs  = MAP_STATIONS.map(s => s.lng);
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-  const latSpan = (maxLat - minLat) || 1, lngSpan = (maxLng - minLng) || 1;
-
+  const latSpan = (maxLat - minLat) || 1;
+  const lngSpan = (maxLng - minLng) || 1;
   const byCode = {};
-  MAP_STATIONS.forEach(s=>{
-    const x = PAD + ((s.lng - minLng) / lngSpan) * (W - PAD*2);
-    const y = H - PAD - ((s.lat - minLat) / latSpan) * (H - PAD*2); // invert: north = up
-    byCode[s.code] = {x, y, ...s};
+  MAP_STATIONS.forEach(s => {
+    const x = PAD + ((s.lng - minLng) / lngSpan) * (W - PAD * 2);
+    const y = H - PAD - ((s.lat - minLat) / latSpan) * (H - PAD * 2);
+    byCode[s.code] = { x, y, ...s };
   });
+  return byCode;
+}
 
-  let svgHtml = `<g id="mapGroup" transform="scale(${mapScale})" transform-origin="center">`;
+function renderSimMap() {
+  const svg = document.getElementById('simMapSvg');
+  if (!svg) return;
 
-  // Track section edges (real status colors)
-  MAP_SECTIONS.forEach(sec=>{
+  const W = 800, H = 380, PAD = 44;
+
+  if (!MAP_STATIONS.length) {
+    svg.innerHTML = '<text x="400" y="190" text-anchor="middle" font-size="13" fill="rgba(255,255,255,.25)" font-family="Inter,sans-serif">No station coordinate data available — seed the database to see the live map</text>';
+    return;
+  }
+
+  const byCode = computeStationPositions(W, H, PAD);
+  const now = Date.now();
+
+  let html = `<g id="mapGroup" transform-origin="${W/2} ${H/2}" style="transform:scale(${mapScale});transform-origin:${W/2}px ${H/2}px;">`;
+
+  /* ── Track grid lines (subtle) ── */
+  html += `<line x1="${PAD}" y1="${H/2}" x2="${W-PAD}" y2="${H/2}" stroke="rgba(255,255,255,.03)" stroke-width="1"/>`;
+  html += `<line x1="${W/2}" y1="${PAD}" x2="${W/2}" y2="${H-PAD}" stroke="rgba(255,255,255,.03)" stroke-width="1"/>`;
+
+  /* ── Section tracks ── */
+  MAP_SECTIONS.forEach(sec => {
     const a = byCode[sec.from], b = byCode[sec.to];
-    if(!a || !b) return;
-    const color = statusColors[sec.status] || sec.color || '#555';
-    svgHtml += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${color}" stroke-width="${Math.min(4,1+sec.lines)}" opacity="0.65"
-      onmouseover="showMapTip(event,'${sec.code}: ${sec.from}→${sec.to} · ${sec.status}')" onmouseout="hideMapTip()"/>`;
-    if(sec.status === 'OCCUPIED' || sec.status === 'BLOCKED'){
-      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
-      svgHtml += `<circle cx="${mx}" cy="${my}" r="3" fill="${color}"><animate attributeName="opacity" values="1;0.2;1" dur="1.4s" repeatCount="indefinite"/></circle>`;
+    if (!a || !b) return;
+    const color = statusColors[sec.status] || sec.color || '#4a5568';
+    const lw = Math.min(4, 1.5 + (sec.lines || 1) * 0.5);
+
+    /* Shadow/glow for occupied */
+    if (sec.status === 'OCCUPIED') {
+      html += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${color}" stroke-width="${lw+3}" opacity="0.12"/>`;
+    }
+
+    html += `
+      <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
+        stroke="${color}" stroke-width="${lw}" opacity="0.7"
+        style="cursor:pointer"
+        onmouseover="showMapTip(event,'${sec.code}: ${sec.from}→${sec.to} · ${sec.status}')"
+        onmouseout="hideMapTip()"/>`;
+
+    /* Congestion pulse dot */
+    if (sec.status === 'BLOCKED' || sec.status === 'SIGNAL_FAILURE') {
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      html += `<circle cx="${mx}" cy="${my}" r="4" fill="${color}">
+        <animate attributeName="r" values="3;6;3" dur="1.2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="1;0.3;1" dur="1.2s" repeatCount="indefinite"/>
+      </circle>`;
     }
   });
 
-  // Station nodes
-  MAP_STATIONS.forEach(s=>{
+  /* ── Station nodes ── */
+  MAP_STATIONS.forEach(s => {
     const p = byCode[s.code];
-    const r = s.junction ? 7 : 5;
-    svgHtml += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${s.junction ? 'var(--accent-cyan)' : '#94a3b8'}" stroke="#0a0e18" stroke-width="1.5"
-      style="cursor:pointer" onmouseover="showMapTip(event,'${s.code} — ${s.name.replace(/'/g,"\\'")} · ${s.platforms} platforms')" onmouseout="hideMapTip()"
-      onclick="window.location='{% url 'network:visualizer' %}'"/>`;
-    svgHtml += `<text x="${p.x}" y="${p.y - r - 4}" text-anchor="middle" font-size="9" fill="#cbd5e1" font-weight="600">${s.code}</text>`;
+    if (!p) return;
+    const r = s.junction ? 8 : 5;
+    const nodeColor = s.junction ? 'var(--accent-cyan)' : '#64748b';
+    const glowColor = s.junction ? 'rgba(6,182,212,.3)' : 'transparent';
+
+    html += `
+      <circle cx="${p.x}" cy="${p.y}" r="${r + 3}" fill="${glowColor}" style="pointer-events:none;"/>
+      <circle cx="${p.x}" cy="${p.y}" r="${r}"
+        fill="${nodeColor}" stroke="#0a0e1a" stroke-width="1.5"
+        style="cursor:pointer"
+        onmouseover="showMapTip(event,'${s.code} — ${s.name.replace(/'/g,"\\'")} · ${s.platforms} platforms')"
+        onmouseout="hideMapTip()"
+        onclick="window.location='{% url 'network:visualizer' %}'"/>
+      <text x="${p.x}" y="${p.y - r - 5}" text-anchor="middle"
+        font-size="9" fill="#94a3b8" font-weight="600"
+        font-family="Inter,sans-serif">${s.code}</text>`;
   });
 
-  // Train markers — placed along their source→destination edge (real route, real status)
-  MAP_TRAINS.forEach((t,i)=>{
+  /* ── Train markers (animated along route) ── */
+  MAP_TRAINS.forEach((t, i) => {
     const src = byCode[t.source], dst = byCode[t.destination];
-    if(!src || !dst) return;
-    // deterministic placement along the route based on train number (not random — stable across renders)
-    const seed = parseInt(t.number.replace(/\D/g,'')) || i;
-    const frac = (Math.abs(Math.sin(seed)) * 0.6) + 0.2; // 0.2–0.8 along the route
-    const tx = src.x + (dst.x - src.x) * frac;
-    const ty = src.y + (dst.y - src.y) * frac;
-    const color = trainStatusColors[t.status] || t.color || '#888';
-    svgHtml += `<g style="cursor:pointer" onmouseover="showMapTip(event,'${t.number} ${t.name.replace(/'/g,"\\'")} · ${t.status}${t.delay>0?' +'+t.delay+'m':''}')" onmouseout="hideMapTip()" onclick="window.location='{% url 'trains:list' %}'">
-      <circle cx="${tx}" cy="${ty}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1">
-        ${t.status==='RUNNING' ? `<animate attributeName="r" values="4.5;6;4.5" dur="1.6s" repeatCount="indefinite"/>` : ''}
-      </circle>
-    </g>`;
+    if (!src || !dst) return;
+    const seed    = parseInt((t.number || '').replace(/\D/g, '')) || (i + 1);
+    const baseFrac = Math.abs(Math.sin(seed * 0.7)) * 0.6 + 0.2;
+    /* Animate along the route using CSS */
+    const frac    = baseFrac;
+    const tx      = src.x + (dst.x - src.x) * frac;
+    const ty      = src.y + (dst.y - src.y) * frac;
+    const color   = trainStatusColors[t.status] || t.color || '#64748b';
+    const isRunning = t.status === 'RUNNING';
+    const escapedName = (t.name || '').replace(/'/g, "\\'");
+
+    html += `
+      <g style="cursor:pointer"
+        onmouseover="showMapTip(event,'${t.number} ${escapedName} · ${t.status}${t.delay > 0 ? ' +'+t.delay+'m late' : ''}')"
+        onmouseout="hideMapTip()"
+        onclick="window.location='{% url 'trains:list' %}'">
+        ${isRunning ? `<circle cx="${tx}" cy="${ty}" r="9" fill="${color}" opacity="0.12"><animate attributeName="r" values="9;14;9" dur="2s" repeatCount="indefinite"/></circle>` : ''}
+        <circle cx="${tx}" cy="${ty}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1.5">
+          ${isRunning ? `<animate attributeName="cx" values="${tx};${tx + (dst.x-src.x)*0.05};${tx}" dur="3s" repeatCount="indefinite" calcMode="ease"/>
+          <animate attributeName="cy" values="${ty};${ty + (dst.y-src.y)*0.05};${ty}" dur="3s" repeatCount="indefinite" calcMode="ease"/>` : ''}
+        </circle>
+        ${t.delay > 0 ? `<text x="${tx+6}" y="${ty-6}" font-size="8" fill="${color}" font-weight="700">+${t.delay}</text>` : ''}
+      </g>`;
   });
 
-  svgHtml += '</g>';
-  svg.innerHTML = svgHtml;
+  html += '</g>';
+  svg.innerHTML = html;
+
+  /* ── Section strip ── */
+  const strip = document.getElementById('sectionStrip');
+  if (strip) {
+    while (strip.children.length > 1) strip.removeChild(strip.lastChild);
+    MAP_SECTIONS.forEach(sec => {
+      const dot = document.createElement('div');
+      dot.className = 'sec-dot';
+      dot.style.background = statusColors[sec.status] || '#4a5568';
+      dot.title = `${sec.code}: ${sec.from}→${sec.to} (${sec.status})`;
+      dot.onclick = () => prefillScenario(sec.status === 'SIGNAL_FAILURE' ? 'SIGNAL_FAILURE' : sec.status === 'BLOCKED' ? 'TRAIN_DELAY' : 'ROUTE_CONGESTION');
+      strip.appendChild(dot);
+    });
+  }
 }
 
-function showMapTip(evt, text){
-  const tip = document.getElementById('simMapTooltip');
+function showMapTip(evt, text) {
+  const tip  = document.getElementById('simMapTooltip');
   const wrap = document.getElementById('simMapWrap');
-  if(!tip || !wrap) return;
+  if (!tip || !wrap) return;
   const rect = wrap.getBoundingClientRect();
-  tip.textContent = text;
-  tip.style.left = (evt.clientX - rect.left + 12) + 'px';
-  tip.style.top = (evt.clientY - rect.top - 8) + 'px';
+  tip.innerHTML = text.replace('·', '<br><span style="color:var(--text-muted);">');
+  tip.style.left    = (evt.clientX - rect.left + 14) + 'px';
+  tip.style.top     = (evt.clientY - rect.top  - 10) + 'px';
   tip.style.display = 'block';
 }
-function hideMapTip(){ const t=document.getElementById('simMapTooltip'); if(t) t.style.display='none'; }
-function mapZoom(factor){ mapScale = Math.max(0.6, Math.min(2.2, mapScale*factor)); renderSimMap(); }
-function mapZoomReset(){ mapScale = 1; renderSimMap(); }
+function hideMapTip() {
+  const t = document.getElementById('simMapTooltip');
+  if (t) t.style.display = 'none';
+}
+function mapZoom(f) { mapScale = Math.max(.55, Math.min(2.5, mapScale * f)); renderSimMap(); }
+function mapZoomReset()  { mapScale = 1; renderSimMap(); }
 
-/* ═══════════════════ BOTTOM TREND CHARTS (real history, honest empty-states) ═══════════════════ */
-const trendChartDefaults = {
-  responsive:false, maintainAspectRatio:false, animation:{duration:600},
-  plugins:{legend:{display:false}, tooltip:{backgroundColor:'#1a2234', titleColor:'#e8eaf0', bodyColor:'#8892a4', borderColor:'rgba(255,255,255,.1)', borderWidth:1, padding:8}},
-  scales:{
-    x:{grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'rgba(255,255,255,0.35)', font:{size:8}}, border:{display:false}},
-    y:{grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'rgba(255,255,255,0.35)', font:{size:8}}, border:{display:false}},
-  }
-};
+/* ═══════════ BOTTOM TREND CHARTS ══════════════════════════════════════ */
+const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
 
-function renderTrendChart(canvasId, dataPoints, color, emptyMsg){
+function chartDefaults() {
+  const dark = isDark();
+  return {
+    responsive: false,
+    maintainAspectRatio: false,
+    animation: { duration: 700 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: dark ? '#1a2234' : '#fff',
+        titleColor: dark ? '#e8eaf0' : '#1e293b',
+        bodyColor:  dark ? '#8892a4' : '#475569',
+        borderColor: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)',
+        borderWidth: 1, padding: 9, cornerRadius: 7,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.05)' },
+        ticks: { color: dark ? 'rgba(255,255,255,.3)' : '#94a3b8', font: { size: 7 } },
+        border: { display: false },
+      },
+      y: {
+        grid: { color: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.05)' },
+        ticks: { color: dark ? 'rgba(255,255,255,.3)' : '#94a3b8', font: { size: 7 } },
+        border: { display: false },
+      },
+    }
+  };
+}
+
+const trendChartInstances = {};
+
+function renderTrendChart(canvasId, dataPoints, color, emptyMsg) {
   const canvas = document.getElementById(canvasId);
-  if(!canvas) return;
+  if (!canvas) return;
   const wrap = canvas.parentElement;
-  if(!dataPoints || dataPoints.length < 2){
+
+  if (!dataPoints || dataPoints.length < 2) {
     wrap.innerHTML = `<div class="trend-empty">${emptyMsg}</div>`;
     return;
   }
-  canvas.width = wrap.clientWidth || 220;
+
+  /* destroy existing instance to avoid Chart.js warning */
+  if (trendChartInstances[canvasId]) {
+    trendChartInstances[canvasId].destroy();
+  }
+
+  canvas.width  = wrap.clientWidth  || 220;
   canvas.height = wrap.clientHeight || 84;
-  const ctx = canvas.getContext('2d');
-  const grad = ctx.createLinearGradient(0,0,0,canvas.height);
-  grad.addColorStop(0, color.replace('1)','0.25)'));
-  grad.addColorStop(1, color.replace('1)','0)'));
-  new Chart(ctx, {
-    type:'line',
-    data:{ labels: dataPoints.map(p=>p[0]), datasets:[{ data: dataPoints.map(p=>p[1]), borderColor:color, backgroundColor:grad, fill:true, borderWidth:1.5, tension:.4, pointRadius:0 }] },
-    options: trendChartDefaults
+
+  const ctx  = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, color.replace('1)', '.28)'));
+  grad.addColorStop(1, color.replace('1)', '0)'));
+
+  trendChartInstances[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dataPoints.map(p => p[0]),
+      datasets: [{
+        data:            dataPoints.map(p => p[1]),
+        borderColor:     color,
+        backgroundColor: grad,
+        fill: true,
+        borderWidth: 1.8,
+        tension: .45,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+      }],
+    },
+    options: chartDefaults(),
   });
 }
 
-function renderAllTrends(){
-  renderTrendChart('trChart1', TREND_THROUGHPUT, 'rgba(139,92,246,1)', 'Not enough simulation history yet — run a few scenarios to build this trend.');
-  renderTrendChart('trChart2', TREND_DELAY,      'rgba(239,68,68,1)',  'No daily analytics snapshots recorded yet.');
-  renderTrendChart('trChart3', TREND_RECOVERY,   'rgba(59,130,246,1)', 'Recovery trend builds after a few completed simulations.');
-  renderTrendChart('trChart4', TREND_AIOPT,      'rgba(16,185,129,1)', 'No AI recommendations generated yet.');
-  renderTrendChart('trChart5', TREND_RESOURCE,   'rgba(6,182,212,1)',  'No daily analytics snapshots recorded yet.');
+function renderAllTrends() {
+  renderTrendChart('trChart1', TREND_THROUGHPUT, 'rgba(139,92,246,1)',  'No simulation history yet — run a few scenarios to build this trend.');
+  renderTrendChart('trChart2', TREND_DELAY,      'rgba(239,68,68,1)',   'No daily analytics snapshots recorded yet.');
+  renderTrendChart('trChart3', TREND_RECOVERY,   'rgba(59,130,246,1)',  'Recovery trend builds after completed simulations.');
+  renderTrendChart('trChart4', TREND_AIOPT,      'rgba(16,185,129,1)',  'No AI recommendations generated yet.');
+  renderTrendChart('trChart5', TREND_RESOURCE,   'rgba(6,182,212,1)',   'No daily analytics snapshots recorded yet.');
 }
 
-/* ═══════════════════ SCENARIO BUILDER → REAL EXISTING ENDPOINT ═══════════════════ */
-function prefillScenario(scenarioType){
+/* ═══════════ SCENARIO BUILDER ══════════════════════════════════════════ */
+function prefillScenario(scenarioType) {
   const sel = document.getElementById('sb-type');
-  if(sel) sel.value = scenarioType;
-  document.getElementById('sb-type').scrollIntoView({behavior:'smooth', block:'center'});
+  if (sel) {
+    sel.value = scenarioType;
+    sel.style.borderColor = 'var(--accent-purple)';
+    setTimeout(() => sel.style.borderColor = '', 1500);
+  }
+  document.getElementById('sb-type').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function loadSession(simId){
-  if(!simId) return;
+function loadSession(simId) {
+  if (!simId) return;
   const opt = document.querySelector(`#sb-session option[value="${simId}"]`);
-  if(!opt) return;
-  document.getElementById('sb-type').value = opt.dataset.type;
-  document.getElementById('sb-delay').value = opt.dataset.delay;
-  document.getElementById('sb-duration').value = opt.dataset.duration;
+  if (!opt) return;
+  const typeEl = document.getElementById('sb-type');
+  if (typeEl && opt.dataset.type) typeEl.value = opt.dataset.type;
+  const delayEl = document.getElementById('sb-delay');
+  if (delayEl && opt.dataset.delay) delayEl.value = opt.dataset.delay;
+  const durEl = document.getElementById('sb-duration');
+  if (durEl && opt.dataset.duration) durEl.value = opt.dataset.duration;
 }
 
-async function runScenario(){
+async function runScenario() {
   const btn = document.getElementById('sbRunBtn');
-  const name = `${document.getElementById('sb-type').selectedOptions[0].textContent} — ${new Date().toLocaleTimeString('en-IN',{hour12:false})}`;
-  const scenario_type = document.getElementById('sb-type').value;
-  const delay_minutes = parseInt(document.getElementById('sb-delay').value) || 30;
+  const typeEl     = document.getElementById('sb-type');
+  const typeName   = typeEl.selectedOptions[0] ? typeEl.selectedOptions[0].textContent : 'Simulation';
+  const name       = `${typeName} — ${new Date().toLocaleTimeString('en-IN', { hour12: false })}`;
+  const scenarioType = typeEl.value;
+  const delay_minutes  = parseInt(document.getElementById('sb-delay').value)    || 30;
   const duration_hours = parseFloat(document.getElementById('sb-duration').value) || 2.0;
   const trainSelect = document.getElementById('sb-train');
-  const train_ids = Array.from(trainSelect.selectedOptions).map(o => parseInt(o.value));
+  const train_ids   = Array.from(trainSelect.selectedOptions).map(o => parseInt(o.value));
 
   btn.disabled = true;
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Running…';
 
   try {
-    const data = await apiPost('/api/simulation/run/', {name, scenario_type, delay_minutes, duration_hours, train_ids});
-    if(data.success){
+    const data = await apiPost('/api/simulation/run/', { name, scenario_type: scenarioType, delay_minutes, duration_hours, train_ids });
+    if (data.success) {
       Toast.success(`Simulation complete — ${data.throughput_impact}% throughput reduction, ${data.trains_affected} trains affected.`);
-      setTimeout(()=>location.reload(), 1200);
+      setTimeout(() => location.reload(), 1400);
     } else {
       Toast.error(data.error || 'Simulation failed.');
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-play-fill"></i> Run Simulation';
     }
-  } catch(e){
+  } catch (e) {
     Toast.error('Network error while running simulation.');
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-play-fill"></i> Run Simulation';
   }
 }
 
-function dismissRecovery(btn){
+function dismissRecovery(btn) {
   const panel = btn.closest('.sim-card');
-  const body = panel.querySelector('.rec-item') ? panel : null;
-  panel.querySelectorAll('.rec-item').forEach(el=>el.style.opacity='0.3');
-  btn.closest('.rec-actions').style.opacity = '0.5';
-  btn.closest('.rec-actions').innerHTML = '<div style="flex:1;text-align:center;font-size:0.65rem;color:var(--text-muted);padding:4px;">Recovery plan dismissed</div>';
+  panel.querySelectorAll('.rec-item').forEach(el => el.style.opacity = '.35');
+  const acts = btn.closest('.rec-actions');
+  acts.style.opacity = '.5';
+  acts.innerHTML = '<div style="flex:1;text-align:center;font-size:.62rem;color:var(--text-muted);padding:5px;">Recovery plan dismissed</div>';
   Toast.success('Recovery plan dismissed.');
 }
 
-/* ═══════════════════ INIT ═══════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', ()=>{
+function showTimelineInfo(stageName, stageTime) {
+  Toast.info(`${stageName} — ${stageTime}`);
+}
+
+/* ═══════════ LIGHT/DARK CHART RE-RENDER ════════════════════════════════ */
+const themeObserver = new MutationObserver(() => { renderAllTrends(); });
+themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+/* ═══════════ INIT ══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
   renderSimMap();
   renderAllTrends();
 });
-window.addEventListener('resize', ()=>{ renderAllTrends(); });
+
+window.addEventListener('resize', () => {
+  renderAllTrends();
+});
 </script>
 {% endblock %}

@@ -78,14 +78,23 @@ def simulation_index(request):
     resource_label = 'Optimal' if resource_pct > 70 else ('Good' if resource_pct > 50 else 'Constrained')
 
     avg_current_delay = active_trains_qs.aggregate(v=Avg('current_delay'))['v'] or 0
+    delayed_trains_count = active_trains_qs.filter(current_delay__gt=5).count()
 
-    # ── AI Confidence — cross-app real average (AIRecommendation, fallback DelayPrediction) ──
-    ai_confidence_pct = None
     try:
-        from apps.ai_engine.models import AIRecommendation
-        rec_conf = AIRecommendation.objects.filter(is_active=True).aggregate(v=Avg('confidence'))['v']
+        from apps.conflicts.models import Conflict
+        active_conflict_count = Conflict.objects.filter(status='ACTIVE').count()
+    except Exception:
+        active_conflict_count = 0
+
+    # ── AI Confidence — uses conflicts.Recommendation (actually written to in production) ──
+    ai_confidence_pct = None
+    ai_confidence_source = None
+    try:
+        from apps.conflicts.models import Recommendation
+        rec_conf = Recommendation.objects.order_by('-generated_at')[:30].aggregate(v=Avg('confidence'))['v']
         if rec_conf:
             ai_confidence_pct = round(rec_conf * 100, 1)
+            ai_confidence_source = 'AI Priority Engine'
     except Exception:
         pass
     if ai_confidence_pct is None:
@@ -94,31 +103,48 @@ def simulation_index(request):
             pred_conf = DelayPrediction.objects.order_by('-predicted_at')[:30].aggregate(v=Avg('confidence_score'))['v']
             if pred_conf:
                 ai_confidence_pct = round(pred_conf * 100, 1)
+                ai_confidence_source = 'ML Prediction Engine'
         except Exception:
             pass
 
     # ── Predicted Delay KPI — prefer today's ML predictions, fallback to latest sim ──
     predicted_delay_min = None
+    predicted_delay_source = None
     try:
         from apps.ml_prediction.models import DelayPrediction
         today_pred_avg = DelayPrediction.objects.filter(scheduled_date=today).aggregate(v=Avg('predicted_delay_minutes'))['v']
         if today_pred_avg:
             predicted_delay_min = round(today_pred_avg, 1)
+            predicted_delay_source = 'ML model'
     except Exception:
         pass
     if predicted_delay_min is None and latest_sim:
         predicted_delay_min = latest_sim.delay_minutes
+        predicted_delay_source = 'latest simulation'
+    if predicted_delay_min is None and total_trains:
+        predicted_delay_min = round(avg_current_delay, 1)
+        predicted_delay_source = 'live avg delay'
 
     # ── Throughput Impact KPI — avg of last 10 completed sims ──
     recent_completed = list(completed_sims[:10])
     throughput_vals = [s.throughput_impact for s in recent_completed if s.throughput_impact is not None]
     avg_throughput_impact = round(statistics.mean(throughput_vals), 1) if throughput_vals else None
+    throughput_source = 'last 10 simulations' if avg_throughput_impact is not None else None
+    if avg_throughput_impact is None and total_trains:
+        avg_throughput_impact = round((delayed_trains_count / total_trains) * 100, 1)
+        throughput_source = 'live delayed-train ratio'
 
-    # ── Recovery Score — inverse-normalized avg recovery time (real sims only) ──
+    # ── Recovery Score — sims first, live network-health proxy as fallback ──
     recovery_vals = [s.estimated_recovery_time for s in recent_completed if s.estimated_recovery_time]
+    recovery_source = None
     if recovery_vals:
         avg_recovery_time = statistics.mean(recovery_vals)
         recovery_score = max(0, min(999, round(1000 - avg_recovery_time * 4)))
+        recovery_source = 'recent simulations'
+    elif total_trains:
+        health_penalty = (avg_current_delay * 6) + (active_conflict_count * 25)
+        recovery_score = max(0, min(999, round(950 - health_penalty)))
+        recovery_source = 'live network health'
     else:
         avg_recovery_time = None
         recovery_score = None
@@ -261,8 +287,8 @@ def simulation_index(request):
         resource_trend = []
 
     try:
-        from apps.ai_engine.models import AIRecommendation
-        recs = list(AIRecommendation.objects.order_by('generated_at')[:14])
+        from apps.conflicts.models import Recommendation
+        recs = list(Recommendation.objects.order_by('generated_at')[:14])
         ai_opt_trend = [(r.generated_at.strftime('%d %b'), round(r.confidence * 100, 1)) for r in recs]
     except Exception:
         ai_opt_trend = []
@@ -332,11 +358,15 @@ def simulation_index(request):
         # KPI row
         'active_sim_count': active_sim_count,
         'avg_throughput_impact': avg_throughput_impact,
+        'throughput_source': throughput_source,
         'predicted_delay_min': predicted_delay_min,
+        'predicted_delay_source': predicted_delay_source,
         'network_utilization_pct': network_utilization_pct,
         'recovery_score': recovery_score,
+        'recovery_source': recovery_source,
         'sim_accuracy_pct': sim_accuracy_pct,
         'ai_confidence_pct': ai_confidence_pct,
+        'ai_confidence_source': ai_confidence_source,
         'resource_pct': resource_pct,
         'resource_label': resource_label,
 
