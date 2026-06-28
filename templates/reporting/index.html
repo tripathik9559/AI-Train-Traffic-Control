@@ -233,8 +233,8 @@
   <div class="rpt-kpi-row">
     <div class="rpt-kpi" style="--kc:var(--accent-purple);">
       <div class="rpt-kpi-lbl"><i class="bi bi-file-earmark-text" style="color:var(--accent-purple);"></i> Total Reports</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-purple);">450+</div>
-      <div class="rpt-kpi-sub">all time generated</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-purple);">{{ year_schedules|default:"—" }}</div>
+      <div class="rpt-kpi-sub">schedules this year</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
         <defs><linearGradient id="rs1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".4"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,12 13,10 26,11 39,8 52,10 65,5 80,4 80,14 0,14" fill="url(#rs1)"/>
@@ -242,9 +242,9 @@
       </svg>
     </div>
     <div class="rpt-kpi" style="--kc:var(--accent-blue);">
-      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-day" style="color:var(--accent-blue);"></i> Daily Reports</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-blue);">112 <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i>+12</span></div>
-      <div class="rpt-kpi-sub">this month</div>
+      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-day" style="color:var(--accent-blue);"></i> Daily Schedules</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-blue);">{{ today_schedules|default:"0" }}</div>
+      <div class="rpt-kpi-sub">scheduled today</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
         <defs><linearGradient id="rs2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".4"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,10 13,9 26,11 39,7 52,9 65,5 80,6 80,14 0,14" fill="url(#rs2)"/>
@@ -252,9 +252,9 @@
       </svg>
     </div>
     <div class="rpt-kpi" style="--kc:var(--accent-cyan);">
-      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-week" style="color:var(--accent-cyan);"></i> Weekly Reports</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-cyan);">38 <span class="rpt-trend dn"><i class="bi bi-arrow-down-short"></i>-4</span></div>
-      <div class="rpt-kpi-sub">last 90 days</div>
+      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-week" style="color:var(--accent-cyan);"></i> Weekly Schedules</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-cyan);">{{ week_schedules|default:"0" }}</div>
+      <div class="rpt-kpi-sub">last 7 days</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
         <defs><linearGradient id="rs3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity=".4"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,8 13,10 26,7 39,11 52,8 65,12 80,10 80,14 0,14" fill="url(#rs3)"/>
@@ -262,9 +262,9 @@
       </svg>
     </div>
     <div class="rpt-kpi" style="--kc:var(--accent-orange);">
-      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-month" style="color:var(--accent-orange);"></i> Monthly Reports</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-orange);">6 <span class="rpt-trend dn"><i class="bi bi-arrow-down-short"></i>-1</span></div>
-      <div class="rpt-kpi-sub">this year</div>
+      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-month" style="color:var(--accent-orange);"></i> Monthly Schedules</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-orange);">{{ month_schedules|default:"0" }}</div>
+      <div class="rpt-kpi-sub">this month</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
         <defs><linearGradient id="rs4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f97316" stop-opacity=".4"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,9 13,10 26,8 39,12 52,10 65,11 80,9 80,14 0,14" fill="url(#rs4)"/>
@@ -273,38 +273,40 @@
     </div>
     <div class="rpt-kpi" style="--kc:var(--accent-green);">
       <div class="rpt-kpi-lbl"><i class="bi bi-speedometer2" style="color:var(--accent-green);"></i> Op. Efficiency</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-green);">94.2% <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
-      <div class="rpt-kpi-sub">network-wide</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-green);">{{ op_efficiency|default:"—" }}%</div>
+      <div class="rpt-kpi-sub">punctuality rate</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
         <defs><linearGradient id="rs5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".4"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,12 13,10 26,11 39,7 52,8 65,4 80,3 80,14 0,14" fill="url(#rs5)"/>
         <polyline points="0,12 13,10 26,11 39,7 52,8 65,4 80,3" fill="none" stroke="#10b981" stroke-width="1.5"/>
       </svg>
     </div>
-    <div class="rpt-kpi" style="--kc:var(--accent-green);">
-      <div class="rpt-kpi-lbl"><i class="bi bi-arrow-up-right-circle" style="color:var(--accent-green);"></i> Throughput +</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-green);">+12.5% <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
-      <div class="rpt-kpi-sub">vs last month</div>
+    <div class="rpt-kpi" style="--kc:{% if throughput_improvement > 0 %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+      <div class="rpt-kpi-lbl"><i class="bi bi-arrow-up-right-circle" style="color:var(--accent-green);"></i> Throughput Δ</div>
+      <div class="rpt-kpi-val" style="color:{% if throughput_improvement > 0 %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+        {% if throughput_improvement > 0 %}+{% endif %}{{ throughput_improvement|default:"0" }}%
+      </div>
+      <div class="rpt-kpi-sub">vs last week</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
         <defs><linearGradient id="rs6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".35"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,13 13,11 26,12 39,9 52,8 65,5 80,3 80,14 0,14" fill="url(#rs6)"/>
         <polyline points="0,13 13,11 26,12 39,9 52,8 65,5 80,3" fill="none" stroke="#10b981" stroke-width="1.5"/>
       </svg>
     </div>
-    <div class="rpt-kpi" style="--kc:var(--accent-yellow);">
-      <div class="rpt-kpi-lbl"><i class="bi bi-currency-rupee" style="color:var(--accent-yellow);"></i> Revenue Impact</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-yellow);">+₹7.5k <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
-      <div class="rpt-kpi-sub">operational gains</div>
+    <div class="rpt-kpi" style="--kc:var(--accent-red);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-exclamation-triangle" style="color:var(--accent-red);"></i> Active Conflicts</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-red);">{{ active_conflicts|default:"0" }}</div>
+      <div class="rpt-kpi-sub">{{ resolved_conflicts|default:"0" }} resolved</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
-        <defs><linearGradient id="rs7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eab308" stop-opacity=".4"/><stop offset="1" stop-color="#eab308" stop-opacity="0"/></linearGradient></defs>
+        <defs><linearGradient id="rs7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4444" stop-opacity=".4"/><stop offset="1" stop-color="#ef4444" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,10 13,11 26,9 39,10 52,7 65,6 80,4 80,14 0,14" fill="url(#rs7)"/>
-        <polyline points="0,10 13,11 26,9 39,10 52,7 65,6 80,4" fill="none" stroke="#eab308" stroke-width="1.5"/>
+        <polyline points="0,10 13,11 26,9 39,10 52,7 65,6 80,4" fill="none" stroke="#ef4444" stroke-width="1.5"/>
       </svg>
     </div>
     <div class="rpt-kpi" style="--kc:var(--accent-cyan);">
-      <div class="rpt-kpi-lbl"><i class="bi bi-person-check" style="color:var(--accent-cyan);"></i> Pax Satisfaction</div>
-      <div class="rpt-kpi-val" style="color:var(--accent-cyan);">4.8/5 <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
-      <div class="rpt-kpi-sub">avg rating</div>
+      <div class="rpt-kpi-lbl"><i class="bi bi-train-front" style="color:var(--accent-cyan);"></i> Active Trains</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-cyan);">{{ running_trains|default:"0" }}</div>
+      <div class="rpt-kpi-sub">{{ delayed_trains|default:"0" }} delayed</div>
       <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
         <defs><linearGradient id="rs8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity=".35"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>
         <polygon points="0,11 13,10 26,9 39,10 52,7 65,6 80,5 80,14 0,14" fill="url(#rs8)"/>
@@ -501,38 +503,38 @@
             <div class="gauge-mini">
               <svg class="gauge-mini-svg" viewBox="0 0 58 58">
                 <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
-                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-green)" stroke-width="5" stroke-dasharray="75 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-green)" stroke-width="5" stroke-dasharray="{{ op_efficiency|default:0 }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
               </svg>
-              <div class="gauge-mini-val" style="color:var(--accent-green);">+₹7.5k</div>
-              <div class="gauge-mini-delta" style="color:var(--accent-green);">+₹7.5k</div>
-              <div class="gauge-mini-lbl">Revenue Impact</div>
+              <div class="gauge-mini-val" style="color:var(--accent-green);">{{ op_efficiency|default:"—" }}%</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-green);">punctuality</div>
+              <div class="gauge-mini-lbl">Op. Efficiency</div>
             </div>
             <div class="gauge-mini">
               <svg class="gauge-mini-svg" viewBox="0 0 58 58">
                 <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
-                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-red)" stroke-width="5" stroke-dasharray="60 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-red)" stroke-width="5" stroke-dasharray="{{ critical_conflicts|default:0 }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
               </svg>
-              <div class="gauge-mini-val" style="color:var(--accent-red);">-60%</div>
-              <div class="gauge-mini-delta" style="color:var(--accent-red);">-3.1%</div>
-              <div class="gauge-mini-lbl">Cost Reduction</div>
+              <div class="gauge-mini-val" style="color:var(--accent-red);">{{ critical_conflicts|default:"0" }}</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-red);">critical</div>
+              <div class="gauge-mini-lbl">Conflicts</div>
             </div>
             <div class="gauge-mini">
               <svg class="gauge-mini-svg" viewBox="0 0 58 58">
                 <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
-                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-cyan)" stroke-width="5" stroke-dasharray="88 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-cyan)" stroke-width="5" stroke-dasharray="{{ resolution_rate|default:0 }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
               </svg>
-              <div class="gauge-mini-val" style="color:var(--accent-cyan);">88%</div>
-              <div class="gauge-mini-delta" style="color:var(--accent-green);">+₹7.5k</div>
-              <div class="gauge-mini-lbl">Pax Satisfaction</div>
+              <div class="gauge-mini-val" style="color:var(--accent-cyan);">{{ resolution_rate|default:"0" }}%</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-green);">resolved</div>
+              <div class="gauge-mini-lbl">Resolution Rate</div>
             </div>
             <div class="gauge-mini">
               <svg class="gauge-mini-svg" viewBox="0 0 58 58">
                 <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
-                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-orange)" stroke-width="5" stroke-dasharray="43 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-orange)" stroke-width="5" stroke-dasharray="{{ platform_util|default:0 }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
               </svg>
-              <div class="gauge-mini-val" style="color:var(--accent-orange);">4.3%</div>
-              <div class="gauge-mini-delta" style="color:var(--accent-green);">+1.8%</div>
-              <div class="gauge-mini-lbl">Resource Util.</div>
+              <div class="gauge-mini-val" style="color:var(--accent-orange);">{{ platform_util|default:"0" }}%</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-green);">platform</div>
+              <div class="gauge-mini-lbl">Platform Util.</div>
             </div>
           </div>
         </div>
@@ -777,6 +779,11 @@ function updateCf() {
   if(document.getElementById('cfCsvBtn'))  document.getElementById('cfCsvBtn').href  = `/reports/conflicts/?from=${f}&to=${t}&format=csv`;
 }
 
+/* ── Real trend data from backend ────────────────────────── */
+const THROUGHPUT_TREND = {{ throughput_trend_json|default:"[]"|safe }};
+const DELAY_TREND      = {{ delay_trend_json|default:"[]"|safe }};
+const EFFICIENCY_TREND = {{ efficiency_trend_json|default:"[]"|safe }};
+
 /* ── Charts ──────────────────────────────────────────────── */
 const CI = {};
 const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
@@ -824,18 +831,26 @@ const DA = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const rnd = (a,b,n=7) => Array.from({length:n},()=>Math.round(Math.random()*(b-a)+a));
 
 function renderAll() {
-  mkChart('opChart1','line', MO, [1800,1900,1750,2000,1850,2100,1980], 'rgba(59,130,246,1)');
-  mkChart('opChart2','line', MO, [120,100,110,80,95,70,85],           'rgba(239,68,68,1)');
-  mkChart('opChart3','line', MO, [480,460,470,490,475,500,485],       'rgba(16,185,129,1)');
-  mkChart('opChart4','line', MO, [88,90,87,92,91,94,93],              'rgba(139,92,246,1)');
+  /* Operational Performance — real data if available, fallback to demo */
+  const tpLabels = THROUGHPUT_TREND.length ? THROUGHPUT_TREND.map(p=>p[0]) : MO;
+  const tpData   = THROUGHPUT_TREND.length ? THROUGHPUT_TREND.map(p=>p[1]) : [1800,1900,1750,2000,1850,2100,1980];
+  const dlLabels = DELAY_TREND.length ? DELAY_TREND.map(p=>p[0]) : MO;
+  const dlData   = DELAY_TREND.length ? DELAY_TREND.map(p=>p[1]) : [120,100,110,80,95,70,85];
+  const efLabels = EFFICIENCY_TREND.length ? EFFICIENCY_TREND.map(p=>p[0]) : MO;
+  const efData   = EFFICIENCY_TREND.length ? EFFICIENCY_TREND.map(p=>p[1]) : [88,90,87,92,91,94,93];
+
+  mkChart('opChart1','line', tpLabels, tpData,   'rgba(59,130,246,1)');
+  mkChart('opChart2','line', dlLabels, dlData,   'rgba(239,68,68,1)');
+  mkChart('opChart3','line', MO, [480,460,470,490,475,500,485], 'rgba(16,185,129,1)');
+  mkChart('opChart4','line', efLabels, efData,   'rgba(139,92,246,1)');
   mkChart('predChart1','bar',  ['Mon','Tue','Wed','Thu','Fri','Sat'], [220,190,240,210,250,200], 'rgba(59,130,246,1)');
   mkChart('predChart2','line', DA, [18,22,15,25,20,28,16],            'rgba(239,68,68,1)');
   mkChart('predChart3','line', DA, [30,25,35,20,28,22,18],            'rgba(234,179,8,1)');
   mkChart('predChart4','line', MO, [1000,1100,980,1200,1050,1300,1150],'rgba(16,185,129,1)');
-  mkChart('trChart1','line', MO, [30,25,22,18,15,12,10],              'rgba(16,185,129,1)');
-  mkChart('trChart2','line', MO, rnd(800,1200),                       'rgba(59,130,246,1)');
+  mkChart('trChart1','line', dlLabels, dlData,                        'rgba(16,185,129,1)');
+  mkChart('trChart2','line', tpLabels, tpData,                        'rgba(59,130,246,1)');
   mkChart('trChart3','line', MO, [4200,4500,4800,4600,5000,5200,5500],'rgba(234,179,8,1)');
-  mkChart('trChart4','line', MO, [4.2,4.3,4.4,4.3,4.5,4.6,4.8],     'rgba(6,182,212,1)');
+  mkChart('trChart4','line', efLabels, efData,                        'rgba(6,182,212,1)');
   mkChart('trChart5','line', MO, rnd(60,95),                          'rgba(139,92,246,1)');
 }
 

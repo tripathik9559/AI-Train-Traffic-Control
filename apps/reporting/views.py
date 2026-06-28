@@ -21,14 +21,144 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def report_index(request):
-    """Reporting dashboard."""
-    today = timezone.now().date()
+    """Reporting dashboard — real KPIs from existing models."""
+    from django.db.models import Avg, Count, Sum
+
+    today      = timezone.now().date()
+    week_start = today - timedelta(days=7)
+    month_start = today.replace(day=1)
+    year_start  = today.replace(month=1, day=1)
+
+    # ── Trains (real) ─────────────────────────────────────────────
+    try:
+        trains_qs      = Train.objects.filter(is_active=True)
+        total_trains   = trains_qs.count()
+        delayed_trains = trains_qs.filter(current_status='DELAYED').count()
+        running_trains = trains_qs.filter(current_status='RUNNING').count()
+        on_time_trains = trains_qs.filter(current_delay__lte=5).count()
+        punctuality_pct = round((on_time_trains / max(total_trains, 1)) * 100, 1)
+        avg_delay_min   = trains_qs.aggregate(v=Avg('current_delay'))['v'] or 0
+        avg_delay_min   = round(avg_delay_min, 1)
+        resource_avail_pct = round((running_trains / max(total_trains, 1)) * 100, 1)
+    except Exception:
+        total_trains = delayed_trains = running_trains = on_time_trains = 0
+        punctuality_pct = avg_delay_min = resource_avail_pct = 0
+
+    # ── Conflicts (real) ──────────────────────────────────────────
+    try:
+        total_conflicts    = Conflict.objects.count()
+        active_conflicts   = Conflict.objects.filter(status='ACTIVE').count()
+        resolved_conflicts = Conflict.objects.filter(status='RESOLVED').count()
+        critical_conflicts = Conflict.objects.filter(severity='CRITICAL').count()
+        week_conflicts     = Conflict.objects.filter(detected_at__date__gte=week_start).count()
+    except Exception:
+        total_conflicts = active_conflicts = resolved_conflicts = critical_conflicts = week_conflicts = 0
+
+    # ── Analytics Snapshots (real) ────────────────────────────────
+    try:
+        snapshots      = AnalyticsSnapshot.objects.order_by('-date')
+        latest_snap    = snapshots.first()
+        week_snaps     = list(snapshots.filter(date__gte=week_start))
+        month_snaps    = list(snapshots.filter(date__gte=month_start))
+
+        op_efficiency  = round(latest_snap.punctuality_rate, 1) if latest_snap else punctuality_pct
+        avg_throughput = round(latest_snap.section_throughput, 1) if latest_snap else 0
+        platform_util  = round(latest_snap.platform_utilization, 1) if latest_snap else 0
+        track_util     = round(latest_snap.track_utilization, 1) if latest_snap else 0
+
+        # Throughput improvement: compare latest vs 7-days-ago snapshot
+        old_snap = snapshots.filter(date__lte=week_start).first()
+        if latest_snap and old_snap and old_snap.section_throughput:
+            throughput_improvement = round(
+                ((latest_snap.section_throughput - old_snap.section_throughput)
+                 / max(old_snap.section_throughput, 0.01)) * 100, 1
+            )
+        else:
+            throughput_improvement = 0
+
+        # Trend data for charts (last 7 snapshots)
+        chart_snaps = list(snapshots[:7])[::-1]
+        throughput_trend = [[s.date.strftime('%d %b'), round(s.section_throughput, 1)] for s in chart_snaps]
+        delay_trend      = [[s.date.strftime('%d %b'), round(s.avg_delay_minutes, 1)]  for s in chart_snaps]
+        efficiency_trend = [[s.date.strftime('%d %b'), round(s.punctuality_rate, 1)]   for s in chart_snaps]
+
+        # Daily/Weekly/Monthly analytics counts
+        daily_snap_count   = 1 if latest_snap and latest_snap.date == today else 0
+        weekly_snap_count  = len(week_snaps)
+        monthly_snap_count = len(month_snaps)
+
+    except Exception:
+        op_efficiency = punctuality_pct
+        avg_throughput = platform_util = track_util = throughput_improvement = 0
+        throughput_trend = delay_trend = efficiency_trend = []
+        daily_snap_count = weekly_snap_count = monthly_snap_count = 0
+
+    # ── Schedules (real) ──────────────────────────────────────────
+    try:
+        today_schedules  = Schedule.objects.filter(scheduled_date=today).count()
+        week_schedules   = Schedule.objects.filter(scheduled_date__gte=week_start).count()
+        month_schedules  = Schedule.objects.filter(scheduled_date__gte=month_start).count()
+        year_schedules   = Schedule.objects.filter(scheduled_date__gte=year_start).count()
+    except Exception:
+        today_schedules = week_schedules = month_schedules = year_schedules = 0
+
+    # ── Derived KPIs ──────────────────────────────────────────────
+    # Conflict resolution rate
+    resolution_rate = round(
+        (resolved_conflicts / max(total_conflicts, 1)) * 100, 1
+    ) if total_conflicts else 0
+
+    # Network health score (0-100)
+    health_score = max(0, round(
+        op_efficiency - (active_conflicts * 3) - (avg_delay_min * 0.5), 1
+    ))
+
+    import json
     context = {
         'page_title': 'Reports & Analytics',
         'active_nav': 'reports',
-        'today': today,
-        'week_start': today - timedelta(days=7),
-        'month_start': today.replace(day=1),
+        'today':       today,
+        'week_start':  week_start,
+        'month_start': month_start,
+
+        # ── KPI Row ──
+        'total_trains':          total_trains,
+        'delayed_trains':        delayed_trains,
+        'running_trains':        running_trains,
+        'on_time_trains':        on_time_trains,
+        'punctuality_pct':       punctuality_pct,
+        'avg_delay_min':         avg_delay_min,
+        'op_efficiency':         op_efficiency,
+        'throughput_improvement': throughput_improvement,
+        'resource_avail_pct':    resource_avail_pct,
+
+        # ── Conflicts ──
+        'total_conflicts':    total_conflicts,
+        'active_conflicts':   active_conflicts,
+        'resolved_conflicts': resolved_conflicts,
+        'critical_conflicts': critical_conflicts,
+        'week_conflicts':     week_conflicts,
+        'resolution_rate':    resolution_rate,
+
+        # ── Analytics ──
+        'platform_util':    platform_util,
+        'track_util':       track_util,
+        'avg_throughput':   avg_throughput,
+        'health_score':     health_score,
+        'daily_snap_count':   daily_snap_count,
+        'weekly_snap_count':  weekly_snap_count,
+        'monthly_snap_count': monthly_snap_count,
+        'year_schedules':     year_schedules,
+
+        # ── Chart trend JSON ──
+        'throughput_trend_json': json.dumps(throughput_trend),
+        'delay_trend_json':      json.dumps(delay_trend),
+        'efficiency_trend_json': json.dumps(efficiency_trend),
+
+        # ── Schedules ──
+        'today_schedules': today_schedules,
+        'week_schedules':  week_schedules,
+        'month_schedules': month_schedules,
     }
     return render(request, 'reporting/index.html', context)
 
