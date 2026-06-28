@@ -1,70 +1,902 @@
-{% extends "base.html" %}{% load static %}
-{% block content %}
-<div class="page-header">
-  <div class="page-header-left">
-    <div class="page-title"><i class="bi bi-file-earmark-bar-graph"></i> Reports & Analytics</div>
-    <div class="page-subtitle">Generate, export, and download operational reports</div>
-  </div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
-  <!-- Daily Report -->
-  <div class="card" style="border-color:var(--accent-blue)22;">
-    <div style="font-size:2.5rem;margin-bottom:12px;">📊</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Daily Operations Report</div>
-    <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">Punctuality, delays, conflict summary, and schedule adherence for any date.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <input type="date" id="daily-date" class="form-control" value="{{ today }}" style="flex:1;min-width:130px;" />
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <a id="daily-html-btn" href="/reports/daily/?date={{ today }}" class="btn btn-primary btn-sm"><i class="bi bi-eye"></i> View</a>
-      <a id="daily-csv-btn" href="/reports/daily/?date={{ today }}&format=csv" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-      <a id="daily-pdf-btn" href="/reports/daily/?date={{ today }}&format=pdf" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-pdf"></i> PDF</a>
-    </div>
-  </div>
+{% extends "base.html" %}
+{% load static %}
 
-  <!-- Conflict Report -->
-  <div class="card" style="border-color:var(--accent-red)22;">
-    <div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Conflict Analysis Report</div>
-    <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">Conflict breakdown by type, severity, and resolution rate for a date range.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <input type="date" id="cf-from" class="form-control" value="{{ week_start }}" style="flex:1;min-width:120px;" />
-      <input type="date" id="cf-to" class="form-control" value="{{ today }}" style="flex:1;min-width:120px;" />
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <a id="cf-html-btn" href="/reports/conflicts/?from={{ week_start }}&to={{ today }}" class="btn btn-primary btn-sm"><i class="bi bi-eye"></i> View</a>
-      <a id="cf-csv-btn" href="/reports/conflicts/?from={{ week_start }}&to={{ today }}&format=csv" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-    </div>
-  </div>
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   EXECUTIVE REPORTING COMMAND CENTER — v1.0
+   Only templates/reporting/index.html modified.
+   ═══════════════════════════════════════════════════════════════ */
+.main-content { padding: 7px 12px !important; }
+.rpt-page { display: flex; flex-direction: column; gap: 6px; }
 
-  <!-- Train Performance Report -->
-  <div class="card" style="border-color:var(--accent-green)22;">
-    <div style="font-size:2.5rem;margin-bottom:12px;">🚂</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Train Performance Report</div>
-    <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">Per-train delay, status, priority, and route statistics for the entire fleet.</div>
-    <div style="height:44px;"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <a href="/reports/trains/" class="btn btn-primary btn-sm"><i class="bi bi-eye"></i> View</a>
-      <a href="/reports/trains/?format=csv" class="btn btn-secondary btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-    </div>
-  </div>
-</div>
-
-<script>
-// Update report links dynamically when dates change
-document.getElementById('daily-date').addEventListener('change', function() {
-  const d = this.value;
-  document.getElementById('daily-html-btn').href = `/reports/daily/?date=${d}`;
-  document.getElementById('daily-csv-btn').href = `/reports/daily/?date=${d}&format=csv`;
-  document.getElementById('daily-pdf-btn').href = `/reports/daily/?date=${d}&format=pdf`;
-});
-function updateCfLinks() {
-  const from = document.getElementById('cf-from').value;
-  const to = document.getElementById('cf-to').value;
-  document.getElementById('cf-html-btn').href = `/reports/conflicts/?from=${from}&to=${to}`;
-  document.getElementById('cf-csv-btn').href = `/reports/conflicts/?from=${from}&to=${to}&format=csv`;
+/* ── HEADER ─────────────────────────────────────────────────── */
+.rpt-header {
+  background: linear-gradient(135deg,#0d1526 0%,#12193a 50%,rgba(59,130,246,.12) 100%);
+  border: 1px solid rgba(59,130,246,.2); border-radius: 10px;
+  padding: 10px 14px; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  position: relative; overflow: hidden;
 }
-document.getElementById('cf-from').addEventListener('change', updateCfLinks);
-document.getElementById('cf-to').addEventListener('change', updateCfLinks);
+.rpt-header::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg,var(--accent-blue),var(--accent-purple),var(--accent-cyan),var(--accent-green));
+}
+.rpt-hdr-eye  { font-size:.54rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-blue); margin-bottom:2px; }
+.rpt-hdr-title { font-size:.88rem; font-weight:900; color:var(--text-primary); display:flex; align-items:center; gap:8px; }
+.rpt-hdr-sub  { font-size:.6rem; color:var(--text-muted); margin-top:1px; }
+.rpt-hdr-actions { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+.rpt-btn {
+  display:inline-flex; align-items:center; gap:5px; padding:6px 11px; border-radius:7px;
+  border:1px solid var(--border-color); background:rgba(255,255,255,.04);
+  color:var(--text-secondary); font-size:.67rem; font-weight:600; cursor:pointer;
+  text-decoration:none; transition:all var(--transition-fast); white-space:nowrap;
+}
+.rpt-btn:hover { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.5); color:var(--accent-blue); }
+.rpt-btn.prim { background:rgba(59,130,246,.15); border-color:rgba(59,130,246,.4); color:var(--accent-blue); }
+.rpt-btn.prim:hover { background:rgba(59,130,246,.28); color:#fff; }
+.rpt-btn.grn  { background:rgba(16,185,129,.1); border-color:rgba(16,185,129,.35); color:var(--accent-green); }
+.rpt-btn.grn:hover { background:rgba(16,185,129,.22); color:#fff; }
+
+/* ── KPI ROW ────────────────────────────────────────────────── */
+.rpt-kpi-row { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
+@media(max-width:1400px){ .rpt-kpi-row { grid-template-columns:repeat(4,1fr); } }
+@media(max-width:900px) { .rpt-kpi-row { grid-template-columns:repeat(2,1fr); } }
+.rpt-kpi {
+  background:var(--bg-card); border:1px solid var(--border-color); border-radius:9px;
+  padding:7px 10px 6px; position:relative; overflow:hidden;
+  transition:all var(--transition-fast); animation:rptFadeUp .4s ease backwards;
+}
+.rpt-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--kc,var(--accent-blue)); opacity:.85; }
+.rpt-kpi:hover { border-color:var(--kc,var(--accent-blue)); transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.35); }
+.rpt-kpi-lbl { font-size:.53rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); margin-bottom:3px; display:flex; align-items:center; gap:3px; }
+.rpt-kpi-val { font-size:1.1rem; font-weight:900; font-family:var(--font-mono); line-height:1; margin-bottom:1px; }
+.rpt-kpi-sub { font-size:.54rem; color:var(--text-muted); }
+.rpt-trend { display:inline-flex; align-items:center; gap:2px; font-size:.56rem; font-weight:700; margin-left:3px; }
+.rpt-trend.up { color:var(--accent-green); } .rpt-trend.dn { color:var(--accent-red); }
+.rpt-spark { width:100%; height:14px; margin-top:4px; display:block; }
+@keyframes rptFadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.rpt-kpi:nth-child(1){animation-delay:.04s}.rpt-kpi:nth-child(2){animation-delay:.07s}
+.rpt-kpi:nth-child(3){animation-delay:.10s}.rpt-kpi:nth-child(4){animation-delay:.13s}
+.rpt-kpi:nth-child(5){animation-delay:.16s}.rpt-kpi:nth-child(6){animation-delay:.19s}
+.rpt-kpi:nth-child(7){animation-delay:.22s}.rpt-kpi:nth-child(8){animation-delay:.25s}
+
+/* ── SHARED CARD ────────────────────────────────────────────── */
+.rpt-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:9px; overflow:hidden; }
+.rpt-card-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 10px; border-bottom:1px solid var(--border-color);
+  background:linear-gradient(90deg,var(--bg-secondary),var(--bg-card)); gap:8px;
+}
+.rpt-card-title { font-size:.61rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.rpt-card-link  { font-size:.59rem; color:var(--accent-blue); text-decoration:none; white-space:nowrap; }
+.rpt-card-link:hover { opacity:.75; }
+
+/* ── MAIN 2-COL LAYOUT ──────────────────────────────────────── */
+.rpt-main { display:grid; grid-template-columns:1fr 230px; gap:6px; align-items:start; }
+@media(max-width:1280px){ .rpt-main { grid-template-columns:1fr; } }
+
+/* ── LIVE EXECUTIVE FEED ────────────────────────────────────── */
+.lef-item { display:flex; gap:7px; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,.04); }
+.lef-item:last-child { border-bottom:none; }
+.lef-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.lef-body { flex:1; }
+.lef-title { font-size:.63rem; font-weight:600; color:var(--text-primary); line-height:1.3; }
+.lef-desc  { font-size:.57rem; color:var(--text-muted); margin-top:1px; line-height:1.3; }
+.lef-time  { font-size:.53rem; color:var(--text-muted); flex-shrink:0; font-family:var(--font-mono); white-space:nowrap; }
+
+/* ── EXECUTIVE SUMMARY CENTER ───────────────────────────────── */
+.exec-sum-grid { display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr 1fr; gap:5px; padding:8px; }
+@media(max-width:1200px){ .exec-sum-grid { grid-template-columns:1fr 1fr; } }
+.exec-sum-card {
+  background:var(--bg-input); border:1px solid var(--border-color); border-radius:7px;
+  padding:8px 9px; position:relative; overflow:hidden;
+}
+.exec-sum-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--ec,var(--accent-blue)); }
+.exec-sum-label { font-size:.55rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ec,var(--accent-blue)); margin-bottom:4px; }
+.exec-sum-text  { font-size:.61rem; color:var(--text-secondary); line-height:1.45; }
+.exec-ai-badge  { display:inline-flex; align-items:center; gap:4px; font-size:.52rem; font-weight:700; color:var(--accent-green); background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.2); border-radius:10px; padding:2px 7px; margin-bottom:4px; }
+
+/* ── REPORT GENERATION CENTER ───────────────────────────────── */
+.rgc-tabs { display:flex; gap:4px; padding:7px 8px 0; flex-wrap:wrap; }
+.rgc-tab {
+  padding:5px 11px; border-radius:6px 6px 0 0; font-size:.63rem; font-weight:700;
+  cursor:pointer; border:1px solid var(--border-color); border-bottom:none;
+  background:var(--bg-input); color:var(--text-muted); text-decoration:none;
+  transition:all var(--transition-fast);
+}
+.rgc-tab.active,.rgc-tab:hover { background:var(--accent-blue); color:#fff; border-color:var(--accent-blue); }
+.rgc-body { padding:8px 10px; }
+.rgc-row  { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+@media(max-width:900px){ .rgc-row { grid-template-columns:1fr; } }
+.rgc-section-title { font-size:.57rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.rgc-input {
+  width:100%; background:var(--bg-input); border:1px solid var(--border-color);
+  color:var(--text-primary); border-radius:6px; padding:5px 8px; font-size:.66rem;
+  margin-bottom:5px; transition:border-color var(--transition-fast);
+  box-sizing:border-box;
+}
+.rgc-input:focus { outline:none; border-color:var(--accent-blue); }
+.rgc-actions { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+.rgc-archive-row {
+  display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:6px;
+  padding:5px 0; border-bottom:1px solid rgba(255,255,255,.05); align-items:center; font-size:.62rem;
+}
+.rgc-archive-hdr { font-size:.54rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+.rgc-archive-name { color:var(--text-primary); font-weight:600; }
+.rgc-status-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 6px; border-radius:10px; font-size:.54rem; font-weight:700; }
+.rgc-status-badge.gen { background:rgba(16,185,129,.12); color:var(--accent-green); border:1px solid rgba(16,185,129,.25); }
+.rgc-status-badge.sch { background:rgba(59,130,246,.12);  color:var(--accent-blue);  border:1px solid rgba(59,130,246,.25); }
+.rgc-status-badge.sh  { background:rgba(139,92,246,.12);  color:var(--accent-purple);border:1px solid rgba(139,92,246,.25); }
+.rgc-icon-btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:5px; border:1px solid var(--border-color);
+  background:transparent; color:var(--text-muted); cursor:pointer; font-size:.7rem;
+  transition:all var(--transition-fast); text-decoration:none;
+}
+.rgc-icon-btn:hover { background:rgba(59,130,246,.12); border-color:var(--accent-blue); color:var(--accent-blue); }
+
+/* ── DISTRIBUTION CENTER ────────────────────────────────────── */
+.rdc-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; padding:8px; }
+.rdc-item { background:var(--bg-input); border:1px solid var(--border-color); border-radius:7px; padding:8px 10px; text-align:center; }
+.rdc-val  { font-size:1rem; font-weight:800; font-family:var(--font-mono); }
+.rdc-lbl  { font-size:.53rem; color:var(--text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+.rdc-bar-outer { height:3px; background:rgba(255,255,255,.07); border-radius:2px; overflow:hidden; margin-top:5px; }
+.rdc-bar-inner { height:100%; border-radius:2px; }
+
+/* ── PERF + REVENUE + AI GRID ───────────────────────────────── */
+.perf-rev-grid { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:6px; align-items:start; }
+@media(max-width:1200px){ .perf-rev-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:700px) { .perf-rev-grid { grid-template-columns:1fr; } }
+.op-charts { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:8px; }
+.op-chart-label { font-size:.57rem; color:var(--text-muted); font-weight:600; margin-bottom:3px; }
+.op-chart-wrap  { height:88px; position:relative; }
+.gauge-mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; }
+.gauge-mini { text-align:center; }
+.gauge-mini-svg { width:58px; height:58px; }
+.gauge-mini-val   { font-size:.82rem; font-weight:800; font-family:var(--font-mono); margin-top:2px; }
+.gauge-mini-lbl   { font-size:.53rem; color:var(--text-muted); margin-top:1px; line-height:1.3; }
+.gauge-mini-delta { font-size:.54rem; font-weight:700; margin-top:1px; }
+.ai-ins-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:8px; }
+.ai-ins-card { background:var(--bg-input); border:1px solid var(--border-color); border-radius:7px; padding:8px 9px; }
+.ai-ins-title { font-size:.58rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; display:flex; align-items:center; gap:4px; }
+.ai-ins-text  { font-size:.6rem; color:var(--text-secondary); line-height:1.45; }
+
+/* ── PREDICTIVE REPORTING ───────────────────────────────────── */
+.pred-charts { display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr; gap:5px; padding:8px; }
+@media(max-width:1100px){ .pred-charts { grid-template-columns:1fr 1fr; } }
+.pred-chart-wrap { height:96px; position:relative; }
+.pred-lbl  { font-size:.57rem; color:var(--text-muted); font-weight:600; margin-bottom:3px; }
+.pred-conf { font-size:.52rem; color:var(--accent-green); font-weight:700; margin-top:3px; }
+
+/* ── SCORECARD + HEATMAP ────────────────────────────────────── */
+.sc-hm-grid { display:grid; grid-template-columns:1fr 1.2fr; gap:6px; align-items:stretch; }
+@media(max-width:1100px){ .sc-hm-grid { grid-template-columns:1fr; } }
+.sc-table { width:100%; border-collapse:collapse; font-size:.62rem; }
+.sc-table th { font-size:.54rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); padding:5px 8px; border-bottom:1px solid var(--border-color); text-align:left; font-weight:700; cursor:pointer; user-select:none; }
+.sc-table th:hover { color:var(--accent-blue); }
+.sc-table td { padding:5px 8px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text-secondary); }
+.sc-table tr:hover td { background:rgba(255,255,255,.02); color:var(--text-primary); }
+.sc-rank { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; font-size:.56rem; font-weight:800; font-family:var(--font-mono); }
+.sc-rank.r1 { background:rgba(251,191,36,.2); color:#fbbf24; }
+.sc-rank.r2 { background:rgba(148,163,184,.15); color:#94a3b8; }
+.sc-rank.r3 { background:rgba(251,146,60,.15); color:#fb923c; }
+.sc-rank.rn { background:rgba(255,255,255,.05); color:var(--text-muted); }
+.sc-score   { font-family:var(--font-mono); font-weight:700; color:var(--accent-green); font-size:.65rem; }
+.hm-grids   { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px; }
+.hm-grid-title { font-size:.57rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.hm-cells { display:grid; gap:2px; }
+.hm-cell { height:18px; border-radius:3px; cursor:pointer; transition:all var(--transition-fast); }
+.hm-cell:hover { filter:brightness(1.35); transform:scale(1.08); }
+.hm-scale { display:flex; justify-content:space-between; margin-top:4px; font-size:.5rem; color:var(--text-muted); }
+
+/* ── BOTTOM TRENDS ──────────────────────────────────────────── */
+.rpt-trend-row { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+@media(max-width:1280px){ .rpt-trend-row { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:700px) { .rpt-trend-row { grid-template-columns:1fr; } }
+.rpt-trend-body { padding:5px 8px; height:78px; position:relative; cursor:pointer; }
+
+/* ── LIGHT MODE ─────────────────────────────────────────────── */
+[data-theme="light"] .rpt-header { background:linear-gradient(135deg,#f8faff 0%,#eff5ff 50%,rgba(59,130,246,.05) 100%); }
+[data-theme="light"] .exec-sum-card,[data-theme="light"] .ai-ins-card,[data-theme="light"] .rdc-item { background:#f8fafc; }
+[data-theme="light"] .rgc-input { background:#f8fafc; }
+[data-theme="light"] .rgc-tab   { background:#f0f4f8; }
+[data-theme="light"] .sc-table tr:hover td { background:rgba(0,0,0,.02); }
+[data-theme="light"] .rdc-bar-outer { background:rgba(0,0,0,.06); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rpt-page">
+
+  <!-- ═══ HEADER ═══════════════════════════════════════════════ -->
+  <div class="rpt-header">
+    <div>
+      <div class="rpt-hdr-eye">Executive Intelligence</div>
+      <div class="rpt-hdr-title">
+        <i class="bi bi-file-earmark-bar-graph" style="color:var(--accent-blue);font-size:.95rem;"></i>
+        Operational Reporting Command Center
+      </div>
+      <div class="rpt-hdr-sub">{{ today|date:"D, d M Y" }} &nbsp;·&nbsp; Reports, Analytics & Executive Intelligence</div>
+    </div>
+    <div class="rpt-hdr-actions">
+      <a href="{% url 'dashboard:analytics' %}" class="rpt-btn"><i class="bi bi-bar-chart-line"></i> Analytics</a>
+      <a href="{% url 'ml_prediction:dashboard' %}" class="rpt-btn"><i class="bi bi-graph-up-arrow"></i> ML Forecast</a>
+      <a href="{% url 'ai_engine:dashboard' %}" class="rpt-btn"><i class="bi bi-robot"></i> AI Engine</a>
+      <a href="{% url 'reporting:daily' %}?date={{ today }}&format=pdf" class="rpt-btn prim">
+        <i class="bi bi-filetype-pdf"></i> PDF Export
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══ KPI ROW ════════════════════════════════════════════════ -->
+  <div class="rpt-kpi-row">
+    <div class="rpt-kpi" style="--kc:var(--accent-purple);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-file-earmark-text" style="color:var(--accent-purple);"></i> Total Reports</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-purple);">450+</div>
+      <div class="rpt-kpi-sub">all time generated</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".4"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,12 13,10 26,11 39,8 52,10 65,5 80,4 80,14 0,14" fill="url(#rs1)"/>
+        <polyline points="0,12 13,10 26,11 39,8 52,10 65,5 80,4" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="rpt-kpi" style="--kc:var(--accent-blue);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-day" style="color:var(--accent-blue);"></i> Daily Reports</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-blue);">112 <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i>+12</span></div>
+      <div class="rpt-kpi-sub">this month</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".4"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,10 13,9 26,11 39,7 52,9 65,5 80,6 80,14 0,14" fill="url(#rs2)"/>
+        <polyline points="0,10 13,9 26,11 39,7 52,9 65,5 80,6" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="rpt-kpi" style="--kc:var(--accent-cyan);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-week" style="color:var(--accent-cyan);"></i> Weekly Reports</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-cyan);">38 <span class="rpt-trend dn"><i class="bi bi-arrow-down-short"></i>-4</span></div>
+      <div class="rpt-kpi-sub">last 90 days</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity=".4"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,8 13,10 26,7 39,11 52,8 65,12 80,10 80,14 0,14" fill="url(#rs3)"/>
+        <polyline points="0,8 13,10 26,7 39,11 52,8 65,12 80,10" fill="none" stroke="#06b6d4" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="rpt-kpi" style="--kc:var(--accent-orange);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-calendar-month" style="color:var(--accent-orange);"></i> Monthly Reports</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-orange);">6 <span class="rpt-trend dn"><i class="bi bi-arrow-down-short"></i>-1</span></div>
+      <div class="rpt-kpi-sub">this year</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f97316" stop-opacity=".4"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,9 13,10 26,8 39,12 52,10 65,11 80,9 80,14 0,14" fill="url(#rs4)"/>
+        <polyline points="0,9 13,10 26,8 39,12 52,10 65,11 80,9" fill="none" stroke="#f97316" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="rpt-kpi" style="--kc:var(--accent-green);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-speedometer2" style="color:var(--accent-green);"></i> Op. Efficiency</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-green);">94.2% <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
+      <div class="rpt-kpi-sub">network-wide</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".4"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,12 13,10 26,11 39,7 52,8 65,4 80,3 80,14 0,14" fill="url(#rs5)"/>
+        <polyline points="0,12 13,10 26,11 39,7 52,8 65,4 80,3" fill="none" stroke="#10b981" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="rpt-kpi" style="--kc:var(--accent-green);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-arrow-up-right-circle" style="color:var(--accent-green);"></i> Throughput +</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-green);">+12.5% <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
+      <div class="rpt-kpi-sub">vs last month</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".35"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,13 13,11 26,12 39,9 52,8 65,5 80,3 80,14 0,14" fill="url(#rs6)"/>
+        <polyline points="0,13 13,11 26,12 39,9 52,8 65,5 80,3" fill="none" stroke="#10b981" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="rpt-kpi" style="--kc:var(--accent-yellow);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-currency-rupee" style="color:var(--accent-yellow);"></i> Revenue Impact</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-yellow);">+₹7.5k <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
+      <div class="rpt-kpi-sub">operational gains</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eab308" stop-opacity=".4"/><stop offset="1" stop-color="#eab308" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,10 13,11 26,9 39,10 52,7 65,6 80,4 80,14 0,14" fill="url(#rs7)"/>
+        <polyline points="0,10 13,11 26,9 39,10 52,7 65,6 80,4" fill="none" stroke="#eab308" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="rpt-kpi" style="--kc:var(--accent-cyan);">
+      <div class="rpt-kpi-lbl"><i class="bi bi-person-check" style="color:var(--accent-cyan);"></i> Pax Satisfaction</div>
+      <div class="rpt-kpi-val" style="color:var(--accent-cyan);">4.8/5 <span class="rpt-trend up"><i class="bi bi-arrow-up-short"></i></span></div>
+      <div class="rpt-kpi-sub">avg rating</div>
+      <svg class="rpt-spark" viewBox="0 0 80 14" preserveAspectRatio="none">
+        <defs><linearGradient id="rs8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity=".35"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,11 13,10 26,9 39,10 52,7 65,6 80,5 80,14 0,14" fill="url(#rs8)"/>
+        <polyline points="0,11 13,10 26,9 39,10 52,7 65,6 80,5" fill="none" stroke="#06b6d4" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN GRID: Content + Live Feed ════════════════════════ -->
+  <div class="rpt-main">
+
+    <!-- ── LEFT COLUMN ────────────────────────────────────────── -->
+    <div style="display:flex;flex-direction:column;gap:6px;">
+
+      <!-- Executive Summary Center -->
+      <div class="rpt-card">
+        <div class="rpt-card-hdr">
+          <div class="rpt-card-title"><i class="bi bi-stars" style="color:var(--accent-yellow);"></i> Executive Summary Center</div>
+          <span style="font-size:.54rem;color:var(--text-muted);">AI Generated · {{ today|date:"d M Y" }}</span>
+        </div>
+        <div class="exec-sum-grid">
+          <div class="exec-sum-card" style="--ec:var(--accent-blue);">
+            <div class="exec-ai-badge"><i class="bi bi-robot"></i> AI · 94% confidence</div>
+            <div class="exec-sum-label">AI Generated Executive Summary</div>
+            <div class="exec-sum-text">Northern Zone efficiency peak, delay reduction continues. AI recommends sustained resolution and timetable optimization changes schedule.</div>
+          </div>
+          <div class="exec-sum-card" style="--ec:var(--accent-green);">
+            <div class="exec-sum-label">Key Operational Highlights</div>
+            <div class="exec-sum-text">Punctuality +3.1%. Performance achievements for conflict resolution and bottleneck situations improved across all routes.</div>
+          </div>
+          <div class="exec-sum-card" style="--ec:var(--accent-red);">
+            <div class="exec-sum-label">Critical Events</div>
+            <div class="exec-sum-text">1 Major disruption resolved. Recommendations of resolution milestone situations resolved in target window.</div>
+          </div>
+          <div class="exec-sum-card" style="--ec:var(--accent-purple);">
+            <div class="exec-sum-label">Performance Achievements</div>
+            <div class="exec-sum-text">Conflict resolution +15%. Route 354 bottleneck mitigation for conflict optimization milestones achieved.</div>
+          </div>
+          <div class="exec-sum-card" style="--ec:var(--accent-orange);">
+            <div class="exec-sum-label">Improvement Opportunities</div>
+            <div class="exec-sum-text">Route 124 bottleneck mitigations. Performance enhancement for optimization opportunities milestones ahead.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Generation Center -->
+      <div class="rpt-card">
+        <div class="rpt-card-hdr">
+          <div class="rpt-card-title"><i class="bi bi-file-earmark-plus" style="color:var(--accent-blue);"></i> Report Generation Center</div>
+          <a href="{% url 'reporting:daily' %}?date={{ today }}&format=pdf" class="rpt-btn prim" style="font-size:.57rem;padding:4px 9px;">
+            <i class="bi bi-filetype-pdf"></i> PDF Export
+          </a>
+        </div>
+        <div class="rgc-tabs">
+          <a href="{% url 'reporting:daily' %}?date={{ today }}" class="rgc-tab active"><i class="bi bi-calendar-day"></i> Generate Daily</a>
+          <a href="{% url 'reporting:daily' %}?date={{ week_start }}" class="rgc-tab"><i class="bi bi-calendar-week"></i> Weekly</a>
+          <a href="{% url 'reporting:daily' %}?date={{ month_start }}" class="rgc-tab"><i class="bi bi-calendar-month"></i> Monthly</a>
+          <a href="{% url 'reporting:conflicts' %}" class="rgc-tab"><i class="bi bi-sliders"></i> Custom</a>
+        </div>
+        <div class="rgc-body">
+          <div class="rgc-row">
+            <div>
+              <div class="rgc-section-title">Daily Report</div>
+              <input type="date" class="rgc-input" id="drDate" value="{{ today }}">
+              <div class="rgc-actions">
+                <a id="drViewBtn" href="{% url 'reporting:daily' %}?date={{ today }}" class="rpt-btn prim" style="font-size:.59rem;padding:5px 9px;"><i class="bi bi-eye"></i> View</a>
+                <a id="drCsvBtn"  href="{% url 'reporting:daily' %}?date={{ today }}&format=csv" class="rpt-btn" style="font-size:.59rem;padding:5px 9px;"><i class="bi bi-filetype-csv"></i> CSV</a>
+                <a id="drPdfBtn"  href="{% url 'reporting:daily' %}?date={{ today }}&format=pdf" class="rpt-btn" style="font-size:.59rem;padding:5px 9px;"><i class="bi bi-filetype-pdf"></i> PDF</a>
+              </div>
+            </div>
+            <div>
+              <div class="rgc-section-title">Conflict Report</div>
+              <input type="date" class="rgc-input" id="cfFrom" value="{{ week_start }}">
+              <input type="date" class="rgc-input" id="cfTo"   value="{{ today }}">
+              <div class="rgc-actions">
+                <a id="cfViewBtn" href="{% url 'reporting:conflicts' %}?from={{ week_start }}&to={{ today }}" class="rpt-btn prim" style="font-size:.59rem;padding:5px 9px;"><i class="bi bi-eye"></i> View</a>
+                <a id="cfCsvBtn"  href="{% url 'reporting:conflicts' %}?from={{ week_start }}&to={{ today }}&format=csv" class="rpt-btn" style="font-size:.59rem;padding:5px 9px;"><i class="bi bi-filetype-csv"></i> CSV</a>
+              </div>
+            </div>
+            <div>
+              <div class="rgc-section-title">Train Performance</div>
+              <div style="font-size:.59rem;color:var(--text-muted);margin-bottom:5px;line-height:1.4;">Full fleet delay, status, priority and route analysis.</div>
+              <div class="rgc-actions">
+                <a href="{% url 'reporting:trains' %}" class="rpt-btn prim" style="font-size:.59rem;padding:5px 9px;"><i class="bi bi-eye"></i> View</a>
+                <a href="{% url 'reporting:trains' %}?format=csv" class="rpt-btn" style="font-size:.59rem;padding:5px 9px;"><i class="bi bi-filetype-csv"></i> CSV</a>
+              </div>
+            </div>
+          </div>
+          <!-- Report Archive -->
+          <div style="margin-top:8px;">
+            <div class="rgc-archive-row" style="border-bottom:1px solid var(--border-color);">
+              <div class="rgc-archive-hdr">Name</div>
+              <div class="rgc-archive-hdr">Status</div>
+              <div class="rgc-archive-hdr">Scheduled</div>
+              <div class="rgc-archive-hdr">Actions</div>
+            </div>
+            <div class="rgc-archive-row">
+              <div class="rgc-archive-name" style="font-size:.62rem;color:var(--text-primary);font-weight:600;">Daily Op. — {{ today }}</div>
+              <div><span class="rgc-status-badge gen"><i class="bi bi-check-circle"></i> Generated</span></div>
+              <div style="font-size:.57rem;color:var(--text-muted);">BOM-DELH Rte, Plat Util</div>
+              <div style="display:flex;gap:3px;">
+                <a href="{% url 'reporting:daily' %}?date={{ today }}" class="rgc-icon-btn" title="View"><i class="bi bi-eye"></i></a>
+                <a href="{% url 'reporting:daily' %}?date={{ today }}&format=csv" class="rgc-icon-btn" title="CSV"><i class="bi bi-filetype-csv"></i></a>
+                <a href="{% url 'reporting:daily' %}?date={{ today }}&format=pdf" class="rgc-icon-btn" title="PDF"><i class="bi bi-filetype-pdf"></i></a>
+              </div>
+            </div>
+            <div class="rgc-archive-row">
+              <div class="rgc-archive-name" style="font-size:.62rem;color:var(--text-primary);font-weight:600;">Weekly Efficiency</div>
+              <div><span class="rgc-status-badge sch"><i class="bi bi-clock"></i> Scheduled</span></div>
+              <div style="font-size:.57rem;color:var(--text-muted);">Monthly Exec</div>
+              <div style="display:flex;gap:3px;">
+                <a href="{% url 'reporting:daily' %}?date={{ week_start }}" class="rgc-icon-btn"><i class="bi bi-eye"></i></a>
+                <a href="{% url 'reporting:daily' %}?date={{ week_start }}&format=csv" class="rgc-icon-btn"><i class="bi bi-filetype-csv"></i></a>
+              </div>
+            </div>
+            <div class="rgc-archive-row">
+              <div class="rgc-archive-name" style="font-size:.62rem;color:var(--text-primary);font-weight:600;">Controller Perf. Summary</div>
+              <div><span class="rgc-status-badge sh"><i class="bi bi-share"></i> Shared</span></div>
+              <div style="font-size:.57rem;color:var(--text-muted);">Controller Perf</div>
+              <div style="display:flex;gap:3px;">
+                <a href="{% url 'reporting:trains' %}" class="rgc-icon-btn"><i class="bi bi-eye"></i></a>
+                <a href="{% url 'reporting:trains' %}?format=csv" class="rgc-icon-btn"><i class="bi bi-filetype-csv"></i></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Distribution Center -->
+      <div class="rpt-card">
+        <div class="rpt-card-hdr">
+          <div class="rpt-card-title"><i class="bi bi-send" style="color:var(--accent-cyan);"></i> Report Distribution Center</div>
+          <a href="{% url 'notifications:list' %}" class="rpt-card-link">Notifications →</a>
+        </div>
+        <div class="rdc-grid">
+          <div class="rdc-item">
+            <div class="rdc-val" style="color:var(--accent-blue);">24</div>
+            <div class="rdc-lbl">Sent Today</div>
+            <div class="rdc-bar-outer"><div class="rdc-bar-inner" style="width:80%;background:var(--accent-blue);"></div></div>
+          </div>
+          <div class="rdc-item">
+            <div class="rdc-val" style="color:var(--accent-purple);">8</div>
+            <div class="rdc-lbl">Scheduled</div>
+            <div class="rdc-bar-outer"><div class="rdc-bar-inner" style="width:60%;background:var(--accent-purple);"></div></div>
+          </div>
+          <div class="rdc-item">
+            <div class="rdc-val" style="color:var(--accent-yellow);">3</div>
+            <div class="rdc-lbl">Pending</div>
+            <div class="rdc-bar-outer"><div class="rdc-bar-inner" style="width:25%;background:var(--accent-yellow);"></div></div>
+          </div>
+          <div class="rdc-item">
+            <div class="rdc-val" style="color:var(--accent-red);">1</div>
+            <div class="rdc-lbl">Failed</div>
+            <div class="rdc-bar-outer"><div class="rdc-bar-inner" style="width:8%;background:var(--accent-red);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Operational Performance + Revenue & Business + AI Insights -->
+      <div class="perf-rev-grid">
+
+        <!-- Operational Performance Panel -->
+        <div class="rpt-card">
+          <div class="rpt-card-hdr">
+            <div class="rpt-card-title"><i class="bi bi-activity" style="color:var(--accent-blue);"></i> Operational Performance Panel</div>
+            <a href="{% url 'dashboard:analytics' %}" class="rpt-card-link">Analytics →</a>
+          </div>
+          <div class="op-charts">
+            <div>
+              <div class="op-chart-label">Throughput</div>
+              <div class="op-chart-wrap"><canvas id="opChart1"></canvas></div>
+            </div>
+            <div>
+              <div class="op-chart-label">Delay</div>
+              <div class="op-chart-wrap"><canvas id="opChart2"></canvas></div>
+            </div>
+            <div>
+              <div class="op-chart-label">Capacity</div>
+              <div class="op-chart-wrap"><canvas id="opChart3"></canvas></div>
+            </div>
+            <div>
+              <div class="op-chart-label">Efficiency Trends</div>
+              <div class="op-chart-wrap"><canvas id="opChart4"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue & Business Impact Panel -->
+        <div class="rpt-card">
+          <div class="rpt-card-hdr">
+            <div class="rpt-card-title"><i class="bi bi-currency-rupee" style="color:var(--accent-yellow);"></i> Revenue & Business Impact</div>
+          </div>
+          <div class="gauge-mini-grid">
+            <div class="gauge-mini">
+              <svg class="gauge-mini-svg" viewBox="0 0 58 58">
+                <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-green)" stroke-width="5" stroke-dasharray="75 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+              </svg>
+              <div class="gauge-mini-val" style="color:var(--accent-green);">+₹7.5k</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-green);">+₹7.5k</div>
+              <div class="gauge-mini-lbl">Revenue Impact</div>
+            </div>
+            <div class="gauge-mini">
+              <svg class="gauge-mini-svg" viewBox="0 0 58 58">
+                <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-red)" stroke-width="5" stroke-dasharray="60 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+              </svg>
+              <div class="gauge-mini-val" style="color:var(--accent-red);">-60%</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-red);">-3.1%</div>
+              <div class="gauge-mini-lbl">Cost Reduction</div>
+            </div>
+            <div class="gauge-mini">
+              <svg class="gauge-mini-svg" viewBox="0 0 58 58">
+                <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-cyan)" stroke-width="5" stroke-dasharray="88 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+              </svg>
+              <div class="gauge-mini-val" style="color:var(--accent-cyan);">88%</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-green);">+₹7.5k</div>
+              <div class="gauge-mini-lbl">Pax Satisfaction</div>
+            </div>
+            <div class="gauge-mini">
+              <svg class="gauge-mini-svg" viewBox="0 0 58 58">
+                <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="var(--accent-orange)" stroke-width="5" stroke-dasharray="43 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,29,29)"/>
+              </svg>
+              <div class="gauge-mini-val" style="color:var(--accent-orange);">4.3%</div>
+              <div class="gauge-mini-delta" style="color:var(--accent-green);">+1.8%</div>
+              <div class="gauge-mini-lbl">Resource Util.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Insights Panel -->
+        <div class="rpt-card">
+          <div class="rpt-card-hdr">
+            <div class="rpt-card-title"><i class="bi bi-robot" style="color:var(--accent-purple);"></i> AI Insights Panel</div>
+            <a href="{% url 'ai_engine:dashboard' %}" class="rpt-card-link">AI Engine →</a>
+          </div>
+          <div class="ai-ins-grid">
+            <div class="ai-ins-card">
+              <div class="ai-ins-title"><i class="bi bi-lightbulb" style="color:var(--accent-green);"></i> AI Recommendations</div>
+              <div class="ai-ins-text">Inside rests and moves optimization rotation considerations.</div>
+              <a href="{% url 'ai_engine:dashboard' %}" class="rpt-btn grn" style="font-size:.55rem;padding:3px 7px;margin-top:5px;display:inline-flex;"><i class="bi bi-arrow-right-circle"></i> View Recommendation</a>
+            </div>
+            <div class="ai-ins-card">
+              <div class="ai-ins-title"><i class="bi bi-exclamation-triangle" style="color:var(--accent-red);"></i> Future Risks</div>
+              <div class="ai-ins-text">Concentration attributions optimization improvements and future risks.</div>
+              <a href="{% url 'ml_prediction:dashboard' %}" class="rpt-btn" style="font-size:.55rem;padding:3px 7px;margin-top:5px;display:inline-flex;"><i class="bi bi-graph-up-arrow"></i> ML Forecast</a>
+            </div>
+            <div class="ai-ins-card">
+              <div class="ai-ins-title"><i class="bi bi-gear" style="color:var(--accent-cyan);"></i> Optimization Opportunities</div>
+              <div class="ai-ins-text">Recommendations for route view optimization opportunities.</div>
+              <a href="{% url 'ai_engine:throughput' %}" class="rpt-btn" style="font-size:.55rem;padding:3px 7px;margin-top:5px;display:inline-flex;"><i class="bi bi-arrow-right"></i> Open AI Engine</a>
+            </div>
+            <div class="ai-ins-card">
+              <div class="ai-ins-title"><i class="bi bi-graph-up" style="color:var(--accent-blue);"></i> Predicted Improvements</div>
+              <div class="ai-ins-text">Optimization execution, predicted and forecast improvements.</div>
+              <a href="{% url 'ml_prediction:dashboard' %}" class="rpt-btn" style="font-size:.55rem;padding:3px 7px;margin-top:5px;display:inline-flex;"><i class="bi bi-arrow-right"></i> ML Dashboard</a>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.perf-rev-grid -->
+
+      <!-- Predictive Reporting Center -->
+      <div class="rpt-card">
+        <div class="rpt-card-hdr">
+          <div class="rpt-card-title"><i class="bi bi-magic" style="color:var(--accent-purple);"></i> Predictive Reporting Center</div>
+          <a href="{% url 'ml_prediction:dashboard' %}" class="rpt-card-link">Forecasting →</a>
+        </div>
+        <div class="pred-charts">
+          <div>
+            <div class="pred-lbl">Next Week/Month</div>
+            <div class="pred-chart-wrap"><canvas id="predChart1"></canvas></div>
+            <div class="pred-conf"><i class="bi bi-shield-check"></i> Confidence: 87%</div>
+          </div>
+          <div>
+            <div class="pred-lbl">Congestion</div>
+            <div class="pred-chart-wrap"><canvas id="predChart2"></canvas></div>
+            <div class="pred-conf"><i class="bi bi-shield-check"></i> Confidence: 82%</div>
+          </div>
+          <div>
+            <div class="pred-lbl">Delay</div>
+            <div class="pred-chart-wrap"><canvas id="predChart3"></canvas></div>
+            <div class="pred-conf"><i class="bi bi-shield-check"></i> Confidence: 91%</div>
+          </div>
+          <div>
+            <div class="pred-lbl">Throughput</div>
+            <div class="pred-chart-wrap"><canvas id="predChart4"></canvas></div>
+            <div class="pred-conf"><i class="bi bi-shield-check"></i> Confidence: 85%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Executive Scorecard + Heatmap Analytics -->
+      <div class="sc-hm-grid">
+
+        <!-- Executive Scorecard -->
+        <div class="rpt-card">
+          <div class="rpt-card-hdr">
+            <div class="rpt-card-title"><i class="bi bi-trophy" style="color:var(--accent-yellow);"></i> Executive Scorecard</div>
+            <a href="{% url 'stations:list' %}" class="rpt-card-link">Stations →</a>
+          </div>
+          <div style="padding:5px 8px;">
+            <table class="sc-table">
+              <thead>
+                <tr>
+                  <th onclick="sortSC(0)">Railway Zone ↕</th>
+                  <th onclick="sortSC(1)">Station ↕</th>
+                  <th onclick="sortSC(2)">Route ↕</th>
+                  <th onclick="sortSC(3)">Controller Rankings</th>
+                </tr>
+              </thead>
+              <tbody id="scBody">
+                <tr>
+                  <td><span class="sc-rank r1">1</span> Railway Zone 1</td>
+                  <td><a href="{% url 'stations:list' %}" style="color:var(--accent-blue);text-decoration:none;">2</a></td>
+                  <td>2</td>
+                  <td><span class="sc-score">95.2%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="sc-rank r2">2</span> Station</td>
+                  <td><a href="{% url 'stations:list' %}" style="color:var(--accent-blue);text-decoration:none;">3</a></td>
+                  <td>3</td>
+                  <td><span class="sc-score">92.1%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="sc-rank r3">3</span> Route</td>
+                  <td><a href="{% url 'stations:list' %}" style="color:var(--accent-blue);text-decoration:none;">4</a></td>
+                  <td>4 <span style="color:var(--accent-red);font-size:.5rem;">▼</span></td>
+                  <td><span class="sc-score">89.4%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="sc-rank rn">4</span> Controller</td>
+                  <td><a href="{% url 'stations:list' %}" style="color:var(--accent-blue);text-decoration:none;">4</a></td>
+                  <td>5 <span style="color:var(--accent-green);font-size:.5rem;">▲</span></td>
+                  <td><span class="sc-score">86.7%</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Heatmap Analytics -->
+        <div class="rpt-card">
+          <div class="rpt-card-hdr">
+            <div class="rpt-card-title"><i class="bi bi-grid-3x3" style="color:var(--accent-orange);"></i> Heatmap Analytics</div>
+            <a href="{% url 'stations:list' %}" class="rpt-card-link">Stations →</a>
+          </div>
+          <div class="hm-grids">
+            <div>
+              <div class="hm-grid-title">Station Performance</div>
+              <div class="hm-cells" id="stHeatmap"></div>
+              <div class="hm-scale"><span>0</span><span>50</span><span>100</span></div>
+            </div>
+            <div>
+              <div class="hm-grid-title">Route Performance</div>
+              <div class="hm-cells" id="rtHeatmap"></div>
+              <div class="hm-scale"><span>0</span><span>50</span><span>100</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.sc-hm-grid -->
+
+      <!-- Bottom Trend Analytics -->
+      <div class="rpt-trend-row">
+        <div class="rpt-card">
+          <div class="rpt-card-hdr"><div class="rpt-card-title" style="color:rgba(16,185,129,.8);">Delay Reduction Trend</div></div>
+          <div class="rpt-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="trChart1"></canvas></div>
+        </div>
+        <div class="rpt-card">
+          <div class="rpt-card-hdr"><div class="rpt-card-title" style="color:rgba(59,130,246,.8);">Throughput Growth Trend</div></div>
+          <div class="rpt-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="trChart2"></canvas></div>
+        </div>
+        <div class="rpt-card">
+          <div class="rpt-card-hdr"><div class="rpt-card-title" style="color:rgba(234,179,8,.8);">Revenue Growth Trend</div></div>
+          <div class="rpt-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="trChart3"></canvas></div>
+        </div>
+        <div class="rpt-card">
+          <div class="rpt-card-hdr"><div class="rpt-card-title" style="color:rgba(6,182,212,.8);">Passenger Satisfaction Trend</div></div>
+          <div class="rpt-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="trChart4"></canvas></div>
+        </div>
+        <div class="rpt-card">
+          <div class="rpt-card-hdr"><div class="rpt-card-title" style="color:rgba(139,92,246,.8);">AI Optimization Trend</div></div>
+          <div class="rpt-trend-body" onclick="window.location='{% url 'ai_engine:dashboard' %}'"><canvas id="trChart5"></canvas></div>
+        </div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- ── RIGHT: Live Executive Feed (sticky) ────────────────── -->
+    <div class="rpt-card" style="position:sticky;top:7px;">
+      <div class="rpt-card-hdr">
+        <div class="rpt-card-title">
+          <i class="bi bi-broadcast" style="color:var(--accent-green);animation:liveGlow 2s ease-in-out infinite;"></i>
+          Live Executive Feed
+        </div>
+      </div>
+      <div id="lefFeed" style="max-height:calc(100vh - 140px);overflow-y:auto;">
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-green);"></div>
+          <div class="lef-body"><div class="lef-title">Daily Report Gen</div><div class="lef-desc">Daily Report Gen generate daily consensus.</div></div>
+          <div class="lef-time">30m</div>
+        </div>
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-blue);"></div>
+          <div class="lef-body"><div class="lef-title">KPIs Updated</div><div class="lef-desc">KPIs updated on for RPIs findings.</div></div>
+          <div class="lef-time">12h</div>
+        </div>
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-purple);"></div>
+          <div class="lef-body"><div class="lef-title">AI Insight Created</div><div class="lef-desc">AI recommendations autocreative annunciation.</div></div>
+          <div class="lef-time">12h</div>
+        </div>
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-red);"></div>
+          <div class="lef-body"><div class="lef-title">Rte bottleneck risk</div><div class="lef-desc">Rte bottleneck risk with optimization.</div></div>
+          <div class="lef-time">23h</div>
+        </div>
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-green);"></div>
+          <div class="lef-body"><div class="lef-title">Daily Report Gen</div><div class="lef-desc">Report sent. KPIs Updated dispatched.</div></div>
+          <div class="lef-time">50s</div>
+        </div>
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-purple);"></div>
+          <div class="lef-body"><div class="lef-title">AI Insight Created</div><div class="lef-desc">Rte bottleneck risk with optimization.</div></div>
+          <div class="lef-time">45h</div>
+        </div>
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-yellow);"></div>
+          <div class="lef-body"><div class="lef-title">Revenue Threshold</div><div class="lef-desc">Revenue target 92% reached for Q2.</div></div>
+          <div class="lef-time">2d</div>
+        </div>
+        <div class="lef-item">
+          <div class="lef-dot" style="background:var(--accent-cyan);"></div>
+          <div class="lef-body"><div class="lef-title">Scorecard Updated</div><div class="lef-desc">Zone rankings recalculated — Northern Zone #1.</div></div>
+          <div class="lef-time">3d</div>
+        </div>
+        <div style="padding:7px 10px;border-top:1px solid var(--border-color);">
+          <a href="{% url 'notifications:list' %}" class="rpt-btn" style="width:100%;justify-content:center;font-size:.6rem;">
+            <i class="bi bi-bell"></i> All Notifications
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.rpt-main -->
+</div><!-- /.rpt-page -->
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+/* ── Date inputs → real URLs ─────────────────────────────── */
+document.getElementById('drDate')?.addEventListener('change', function() {
+  const d = this.value;
+  document.getElementById('drViewBtn').href = `/reports/daily/?date=${d}`;
+  document.getElementById('drCsvBtn').href  = `/reports/daily/?date=${d}&format=csv`;
+  document.getElementById('drPdfBtn').href  = `/reports/daily/?date=${d}&format=pdf`;
+});
+['cfFrom','cfTo'].forEach(id => document.getElementById(id)?.addEventListener('change', updateCf));
+function updateCf() {
+  const f = document.getElementById('cfFrom').value;
+  const t = document.getElementById('cfTo').value;
+  if(document.getElementById('cfViewBtn')) document.getElementById('cfViewBtn').href = `/reports/conflicts/?from=${f}&to=${t}`;
+  if(document.getElementById('cfCsvBtn'))  document.getElementById('cfCsvBtn').href  = `/reports/conflicts/?from=${f}&to=${t}&format=csv`;
+}
+
+/* ── Charts ──────────────────────────────────────────────── */
+const CI = {};
+const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+function gc() {
+  const dark = isDark();
+  return {
+    responsive:false, maintainAspectRatio:false, animation:{duration:600},
+    plugins:{ legend:{display:false}, tooltip:{
+      backgroundColor: dark?'#1a2234':'#fff', titleColor:dark?'#e8eaf0':'#1e293b',
+      bodyColor:dark?'#8892a4':'#475569', borderColor:dark?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)',
+      borderWidth:1, padding:7, cornerRadius:6,
+    }},
+    scales:{
+      x:{ grid:{color:dark?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)'}, ticks:{color:dark?'rgba(255,255,255,.3)':'#94a3b8',font:{size:7}}, border:{display:false}},
+      y:{ grid:{color:dark?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)'}, ticks:{color:dark?'rgba(255,255,255,.3)':'#94a3b8',font:{size:7}}, border:{display:false}},
+    }
+  };
+}
+
+function mkChart(id, type, labels, data, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const wrap = el.parentElement;
+  if (CI[id]) CI[id].destroy();
+  el.width  = wrap.clientWidth  || 180;
+  el.height = wrap.clientHeight || 80;
+  const ctx = el.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,el.height);
+  grad.addColorStop(0, color.replace('1)', '.25)'));
+  grad.addColorStop(1, color.replace('1)', '0)'));
+  CI[id] = new Chart(ctx, {
+    type,
+    data:{ labels, datasets:[{
+      data, borderColor:color,
+      backgroundColor: type==='line' ? grad : color.replace('1)','.6)'),
+      fill: type==='line', borderWidth:1.8, tension:.45,
+      pointRadius:0, pointHoverRadius:4, borderRadius:3,
+    }]},
+    options: gc(),
+  });
+}
+
+const MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+const DA = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const rnd = (a,b,n=7) => Array.from({length:n},()=>Math.round(Math.random()*(b-a)+a));
+
+function renderAll() {
+  mkChart('opChart1','line', MO, [1800,1900,1750,2000,1850,2100,1980], 'rgba(59,130,246,1)');
+  mkChart('opChart2','line', MO, [120,100,110,80,95,70,85],           'rgba(239,68,68,1)');
+  mkChart('opChart3','line', MO, [480,460,470,490,475,500,485],       'rgba(16,185,129,1)');
+  mkChart('opChart4','line', MO, [88,90,87,92,91,94,93],              'rgba(139,92,246,1)');
+  mkChart('predChart1','bar',  ['Mon','Tue','Wed','Thu','Fri','Sat'], [220,190,240,210,250,200], 'rgba(59,130,246,1)');
+  mkChart('predChart2','line', DA, [18,22,15,25,20,28,16],            'rgba(239,68,68,1)');
+  mkChart('predChart3','line', DA, [30,25,35,20,28,22,18],            'rgba(234,179,8,1)');
+  mkChart('predChart4','line', MO, [1000,1100,980,1200,1050,1300,1150],'rgba(16,185,129,1)');
+  mkChart('trChart1','line', MO, [30,25,22,18,15,12,10],              'rgba(16,185,129,1)');
+  mkChart('trChart2','line', MO, rnd(800,1200),                       'rgba(59,130,246,1)');
+  mkChart('trChart3','line', MO, [4200,4500,4800,4600,5000,5200,5500],'rgba(234,179,8,1)');
+  mkChart('trChart4','line', MO, [4.2,4.3,4.4,4.3,4.5,4.6,4.8],     'rgba(6,182,212,1)');
+  mkChart('trChart5','line', MO, rnd(60,95),                          'rgba(139,92,246,1)');
+}
+
+/* ── Heatmaps ────────────────────────────────────────────── */
+function buildHM(id, cols, rows, url) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  el.innerHTML = '';
+  for (let i = 0; i < cols * rows; i++) {
+    const v = Math.random();
+    const cell = document.createElement('div');
+    cell.className = 'hm-cell';
+    cell.style.background = v > .75 ? '#ef4444' : v > .5 ? '#f97316' : v > .25 ? '#eab308' : '#10b981';
+    cell.style.opacity = (.6 + v * .4).toFixed(2);
+    cell.title = `${Math.round(v*100)}%`;
+    cell.onclick = () => window.location = url;
+    el.appendChild(cell);
+  }
+}
+
+/* ── Scorecard sort ──────────────────────────────────────── */
+function sortSC(col) {
+  const tb = document.getElementById('scBody');
+  if (!tb) return;
+  const rows = Array.from(tb.querySelectorAll('tr'));
+  rows.sort((a,b) => (a.cells[col]?.textContent||'').trim().localeCompare((b.cells[col]?.textContent||'').trim(),undefined,{numeric:true}));
+  rows.forEach(r => tb.appendChild(r));
+}
+
+/* ── Live feed pulse ─────────────────────────────────────── */
+const FEED = [
+  ['Daily Report Gen','Auto-generated and dispatched.','var(--accent-green)'],
+  ['KPI Snapshot','Network KPIs recalculated.','var(--accent-blue)'],
+  ['AI Insight','New optimization opportunity flagged.','var(--accent-purple)'],
+  ['Export Complete','PDF export ready for download.','var(--accent-cyan)'],
+  ['Revenue Alert','Q2 revenue threshold reached.','var(--accent-yellow)'],
+];
+let fi = 0;
+function pulse() {
+  const feed = document.getElementById('lefFeed');
+  if (!feed) return;
+  const item = FEED[fi++ % FEED.length];
+  const div = document.createElement('div');
+  div.className = 'lef-item';
+  div.style.animation = 'rptFadeUp .4s ease';
+  div.innerHTML = `<div class="lef-dot" style="background:${item[2]};"></div>
+    <div class="lef-body"><div class="lef-title">${item[0]}</div><div class="lef-desc">${item[1]}</div></div>
+    <div class="lef-time">now</div>`;
+  feed.insertBefore(div, feed.children[0]);
+  if (feed.children.length > 14) feed.removeChild(feed.lastChild);
+}
+setInterval(pulse, 20000);
+
+/* ── Theme re-render + init ──────────────────────────────── */
+new MutationObserver(renderAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+document.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+  buildHM('stHeatmap', 10, 5, "{% url 'stations:list' %}");
+  buildHM('rtHeatmap',  8, 5, "{% url 'stations:routes' %}");
+});
+window.addEventListener('resize', renderAll);
 </script>
 {% endblock %}
