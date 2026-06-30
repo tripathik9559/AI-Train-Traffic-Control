@@ -1,211 +1,1100 @@
-{% extends "base.html" %}{% load static %}
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   NOTIFICATION & ALERT COMMAND CENTER — v1.0
+   Only templates/notifications/list.html modified.
+   ═══════════════════════════════════════════════════════════════ */
+.main-content { padding: 7px 12px !important; }
+.nac-page { display:flex; flex-direction:column; gap:6px; }
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.nac-header {
+  background: linear-gradient(135deg,#0d1526 0%,#12193a 60%,rgba(239,68,68,.1) 100%);
+  border:1px solid rgba(239,68,68,.2); border-radius:10px;
+  padding:10px 14px; display:flex; align-items:center;
+  justify-content:space-between; gap:10px; flex-wrap:wrap;
+  position:relative; overflow:hidden;
+}
+.nac-header::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--accent-red),var(--accent-orange),var(--accent-yellow),var(--accent-green));
+}
+.nac-hdr-eye   { font-size:.54rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-red); margin-bottom:2px; }
+.nac-hdr-title { font-size:.88rem; font-weight:900; color:var(--text-primary); display:flex; align-items:center; gap:8px; }
+.nac-hdr-sub   { font-size:.6rem; color:var(--text-muted); margin-top:1px; }
+.nac-live-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); border-radius:20px; font-size:.58rem; font-weight:700; color:var(--accent-red); }
+.nac-live-dot   { width:6px; height:6px; border-radius:50%; background:var(--accent-red); animation:nacGlow 1.5s ease-in-out infinite; }
+@keyframes nacGlow { 0%,100%{opacity:1;box-shadow:0 0 4px var(--accent-red);} 50%{opacity:.3;box-shadow:none;} }
+.nac-hdr-actions { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+.nac-btn {
+  display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:7px;
+  border:1px solid var(--border-color); background:rgba(255,255,255,.04);
+  color:var(--text-secondary); font-size:.65rem; font-weight:600; cursor:pointer;
+  text-decoration:none; transition:all var(--transition-fast); white-space:nowrap;
+}
+.nac-btn:hover { background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.4); color:var(--accent-red); }
+.nac-btn.danger { background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.35); color:var(--accent-red); }
+.nac-btn.grn    { background:rgba(16,185,129,.1); border-color:rgba(16,185,129,.35); color:var(--accent-green); }
+.nac-btn.blue   { background:rgba(59,130,246,.1); border-color:rgba(59,130,246,.35); color:var(--accent-blue); }
+
+/* ── KPI ROW ────────────────────────────────────────────────── */
+.nac-kpi-row { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
+@media(max-width:1400px){ .nac-kpi-row { grid-template-columns:repeat(4,1fr); } }
+@media(max-width:900px) { .nac-kpi-row { grid-template-columns:repeat(2,1fr); } }
+.nac-kpi {
+  background:var(--bg-card); border:1px solid var(--border-color); border-radius:9px;
+  padding:7px 10px 6px; position:relative; overflow:hidden;
+  transition:all var(--transition-fast); animation:nacFade .4s ease backwards;
+}
+.nac-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--kc,var(--accent-red)); opacity:.85; }
+.nac-kpi:hover { border-color:var(--kc,var(--accent-red)); transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.35); }
+.nac-kpi-lbl { font-size:.52rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); margin-bottom:3px; display:flex; align-items:center; gap:3px; }
+.nac-kpi-val { font-size:1.1rem; font-weight:900; font-family:var(--font-mono); line-height:1; margin-bottom:1px; }
+.nac-kpi-sub { font-size:.53rem; color:var(--text-muted); }
+.nac-trend { display:inline-flex; align-items:center; font-size:.56rem; font-weight:700; margin-left:3px; }
+.nac-trend.up { color:var(--accent-green); } .nac-trend.dn { color:var(--accent-red); }
+.nac-spark { width:100%; height:13px; margin-top:4px; display:block; }
+@keyframes nacFade { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.nac-kpi:nth-child(1){animation-delay:.04s}.nac-kpi:nth-child(2){animation-delay:.07s}
+.nac-kpi:nth-child(3){animation-delay:.10s}.nac-kpi:nth-child(4){animation-delay:.13s}
+.nac-kpi:nth-child(5){animation-delay:.16s}.nac-kpi:nth-child(6){animation-delay:.19s}
+.nac-kpi:nth-child(7){animation-delay:.22s}.nac-kpi:nth-child(8){animation-delay:.25s}
+
+/* ── SHARED CARD ─────────────────────────────────────────────── */
+.nac-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:9px; overflow:hidden; }
+.nac-card-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 10px; border-bottom:1px solid var(--border-color);
+  background:linear-gradient(90deg,var(--bg-secondary),var(--bg-card)); gap:8px; flex-wrap:wrap;
+}
+.nac-card-title { font-size:.61rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.nac-card-link  { font-size:.58rem; color:var(--accent-blue); text-decoration:none; white-space:nowrap; }
+.nac-card-link:hover { opacity:.75; }
+
+/* ── MAIN GRID ───────────────────────────────────────────────── */
+.nac-main-grid { display:grid; grid-template-columns:1fr 340px; gap:6px; align-items:stretch; }
+@media(max-width:1280px){ .nac-main-grid { grid-template-columns:1fr; } }
+.nac-right-col { display:flex; flex-direction:column; gap:6px; }
+.nac-main-grid > div:first-child { display:flex; flex-direction:column; gap:6px; }
+.nac-main-grid > div:first-child .nac-card:first-child { flex:1; display:flex; flex-direction:column; }
+.nac-main-grid > div:first-child .nac-card:first-child .nac-table-wrap { flex:1; overflow-y:auto; max-height:380px; }
+
+/* ── FILTER BAR ──────────────────────────────────────────────── */
+.nac-filter-bar { display:flex; gap:5px; padding:7px 10px; border-bottom:1px solid var(--border-color); flex-wrap:wrap; align-items:center; }
+.nac-search {
+  flex:1; min-width:160px; background:var(--bg-input); border:1px solid var(--border-color);
+  color:var(--text-primary); border-radius:6px; padding:5px 9px; font-size:.65rem;
+  transition:border-color var(--transition-fast);
+}
+.nac-search:focus { outline:none; border-color:var(--accent-red); }
+.nac-fsel {
+  background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-primary);
+  border-radius:6px; padding:5px 8px; font-size:.64rem;
+  transition:border-color var(--transition-fast); cursor:pointer;
+}
+.nac-fsel:focus { outline:none; border-color:var(--accent-blue); }
+
+/* ── ALERT TABLE ─────────────────────────────────────────────── */
+.nac-table-wrap { overflow-x:auto; }
+.nac-table { width:100%; border-collapse:collapse; font-size:.62rem; }
+.nac-table th {
+  font-size:.53rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);
+  padding:6px 8px; border-bottom:1px solid var(--border-color); text-align:left;
+  font-weight:700; cursor:pointer; white-space:nowrap; background:var(--bg-secondary);
+}
+.nac-table th:hover { color:var(--accent-red); }
+.nac-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text-secondary); vertical-align:middle; }
+.nac-table tr:hover td { background:rgba(255,255,255,.025); color:var(--text-primary); }
+.nac-table tr.critical-row { border-left:2px solid var(--accent-red); }
+.nac-table tr.critical-row td:first-child { padding-left:6px; }
+.nac-alert-id { font-family:var(--font-mono); font-size:.6rem; color:var(--text-muted); }
+.sev-badge {
+  display:inline-flex; align-items:center; gap:3px; padding:2px 6px; border-radius:10px;
+  font-size:.54rem; font-weight:700; white-space:nowrap;
+}
+.sev-CRITICAL { background:rgba(239,68,68,.15);  color:#ef4444; border:1px solid rgba(239,68,68,.3); }
+.sev-HIGH     { background:rgba(249,115,22,.12); color:#f97316; border:1px solid rgba(249,115,22,.3); }
+.sev-NORMAL   { background:rgba(234,179,8,.1);   color:#eab308; border:1px solid rgba(234,179,8,.3); }
+.sev-LOW      { background:rgba(16,185,129,.1);  color:#10b981; border:1px solid rgba(16,185,129,.3); }
+.sev-INFO     { background:rgba(59,130,246,.1);  color:#3b82f6; border:1px solid rgba(59,130,246,.3); }
+.status-badge {
+  display:inline-flex; align-items:center; gap:3px; padding:2px 6px; border-radius:10px;
+  font-size:.54rem; font-weight:700;
+}
+.st-unread  { background:rgba(239,68,68,.1);  color:var(--accent-red);    border:1px solid rgba(239,68,68,.25); }
+.st-read    { background:rgba(16,185,129,.1); color:var(--accent-green);  border:1px solid rgba(16,185,129,.25); }
+.st-bc      { background:rgba(139,92,246,.1); color:var(--accent-purple); border:1px solid rgba(139,92,246,.25); }
+.nac-type-icon { font-size:.8rem; }
+.nac-action-btns { display:flex; gap:3px; }
+.nac-tbl-btn {
+  display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px;
+  border-radius:5px; border:1px solid var(--border-color); background:transparent;
+  color:var(--text-muted); cursor:pointer; font-size:.68rem; transition:all var(--transition-fast);
+  text-decoration:none;
+}
+.nac-tbl-btn:hover { background:rgba(59,130,246,.12); border-color:var(--accent-blue); color:var(--accent-blue); }
+.nac-tbl-btn.del:hover { background:rgba(239,68,68,.12); border-color:var(--accent-red); color:var(--accent-red); }
+
+/* ── REAL-TIME ALERT STREAM ──────────────────────────────────── */
+.rtas-wrap { padding:6px 10px; display:flex; gap:8px; overflow-x:auto; }
+.rtas-item {
+  flex-shrink:0; display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+  border-radius:20px; font-size:.58rem; font-weight:600; border:1px solid;
+  cursor:pointer; white-space:nowrap;
+}
+.rtas-item.crit { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); color:var(--accent-red); }
+.rtas-item.high { background:rgba(249,115,22,.1); border-color:rgba(249,115,22,.3); color:var(--accent-orange); }
+.rtas-item.ai   { background:rgba(59,130,246,.1); border-color:rgba(59,130,246,.3); color:var(--accent-blue); }
+.rtas-item.info { background:rgba(234,179,8,.1); border-color:rgba(234,179,8,.3); color:var(--accent-yellow); }
+
+/* ── SEVERITY DISTRIBUTION ───────────────────────────────────── */
+.sev-dist-body { padding:8px 10px; }
+.sev-dist-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.sev-dist-lbl { width:60px; font-size:.59rem; color:var(--text-muted); font-weight:600; }
+.sev-dist-bar { flex:1; height:12px; background:rgba(255,255,255,.06); border-radius:4px; overflow:hidden; }
+.sev-dist-fill { height:100%; border-radius:4px; transition:width .8s ease; }
+.sev-dist-count { width:28px; text-align:right; font-size:.6rem; font-family:var(--font-mono); color:var(--text-muted); font-weight:700; }
+.sev-chart-wrap { height:80px; position:relative; margin-top:5px; }
+
+/* ── AI RECOMMENDATION CENTER ────────────────────────────────── */
+.ai-rec-body { padding:8px 10px; }
+.ai-rec-title { font-size:.68rem; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+.ai-rec-conf  { font-size:.58rem; color:var(--accent-green); font-weight:700; margin-bottom:6px; }
+.ai-rec-metrics { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:8px; }
+.ai-rec-metric  { background:var(--bg-input); border:1px solid var(--border-color); border-radius:6px; padding:5px 7px; }
+.ai-rec-metric-lbl { font-size:.52rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+.ai-rec-metric-val { font-size:.75rem; font-weight:800; font-family:var(--font-mono); }
+.ai-rec-actions { display:flex; gap:4px; }
+.ai-rec-btn {
+  flex:1; padding:5px 6px; border-radius:6px; font-size:.62rem; font-weight:700;
+  text-align:center; cursor:pointer; border:1px solid; text-decoration:none;
+  transition:all var(--transition-fast); display:flex; align-items:center; justify-content:center; gap:3px;
+}
+.ai-rec-btn.accept { background:rgba(16,185,129,.1); border-color:rgba(16,185,129,.35); color:var(--accent-green); }
+.ai-rec-btn.reject { background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.3); color:var(--accent-red); }
+.ai-rec-btn.sim    { background:rgba(59,130,246,.1); border-color:rgba(59,130,246,.35); color:var(--accent-blue); }
+.ai-rec-btn:hover  { filter:brightness(1.18); transform:translateY(-1px); }
+
+/* ── ALERT MAP ───────────────────────────────────────────────── */
+.alert-map-wrap {
+  height:180px; position:relative;
+  background:radial-gradient(ellipse at 30% 30%,rgba(239,68,68,.05),transparent 60%),
+             radial-gradient(ellipse at 70% 70%,rgba(249,115,22,.05),transparent 60%), #0a0e18;
+  overflow:hidden;
+}
+.alert-map-svg { width:100%; height:100%; display:block; }
+.alert-map-legend {
+  position:absolute; bottom:6px; left:8px; display:flex; gap:8px;
+  background:rgba(10,14,26,.75); padding:3px 8px; border-radius:5px;
+  border:1px solid var(--border-color);
+}
+.alert-map-leg { display:flex; align-items:center; gap:3px; font-size:.5rem; color:var(--text-muted); }
+.alert-map-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+/* ── MID GRID ────────────────────────────────────────────────── */
+.nac-mid-grid { display:grid; grid-template-columns:1fr 1.4fr 1fr 1fr; gap:6px; align-items:stretch; }
+@media(max-width:1280px){ .nac-mid-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:700px) { .nac-mid-grid { grid-template-columns:1fr; } }
+
+/* ── ESCALATION PANEL ────────────────────────────────────────── */
+.esc-item { padding:7px 10px; border-bottom:1px solid rgba(255,255,255,.05); }
+.esc-item:last-child { border-bottom:none; }
+.esc-item-title { font-size:.63rem; font-weight:600; color:var(--text-primary); margin-bottom:2px; display:flex; justify-content:space-between; align-items:center; }
+.esc-item-sub   { font-size:.57rem; color:var(--text-muted); }
+.esc-age-badge  { font-size:.54rem; font-weight:700; padding:1px 6px; border-radius:8px; }
+.esc-age-crit { background:rgba(239,68,68,.15); color:var(--accent-red); }
+.esc-age-warn { background:rgba(234,179,8,.1);  color:var(--accent-yellow); }
+.esc-age-ok   { background:rgba(16,185,129,.1); color:var(--accent-green); }
+
+/* ── INCIDENT TIMELINE ───────────────────────────────────────── */
+.inc-tl-wrap { padding:12px 14px 8px; }
+.inc-tl-bar  { display:flex; align-items:center; gap:0; position:relative; }
+.inc-tl-step { display:flex; flex-direction:column; align-items:center; flex:1; }
+.inc-tl-node {
+  width:26px; height:26px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:.65rem; border:2px solid var(--border-color);
+  background:var(--bg-card); cursor:pointer; transition:all var(--transition-fast);
+  position:relative; z-index:2;
+}
+.inc-tl-node.done  { border-color:var(--accent-green); background:rgba(16,185,129,.15); color:var(--accent-green); }
+.inc-tl-node.active{ border-color:var(--accent-orange); background:rgba(249,115,22,.15); color:var(--accent-orange); }
+.inc-tl-node.todo  { border-color:var(--border-color); color:var(--text-muted); }
+.inc-tl-node:hover { transform:scale(1.2); }
+.inc-tl-line { flex:1; height:2px; background:var(--border-color); position:relative; margin-top:-13px; z-index:1; }
+.inc-tl-line.done { background:var(--accent-green); }
+.inc-tl-lbl { font-size:.52rem; color:var(--text-muted); margin-top:5px; text-align:center; line-height:1.3; }
+.inc-tl-lbl.done { color:var(--accent-green); }
+
+/* ── CONTROLLER ACTIVITY ─────────────────────────────────────── */
+.ctrl-item { display:flex; align-items:center; gap:8px; padding:5px 10px; border-bottom:1px solid rgba(255,255,255,.04); }
+.ctrl-item:last-child { border-bottom:none; }
+.ctrl-avatar { width:22px; height:22px; border-radius:50%; background:var(--accent-purple); display:flex; align-items:center; justify-content:center; font-size:.6rem; font-weight:700; color:#fff; flex-shrink:0; }
+.ctrl-name  { flex:1; font-size:.62rem; color:var(--text-primary); font-weight:600; }
+.ctrl-alerts{ font-size:.6rem; font-family:var(--font-mono); color:var(--text-muted); }
+.ctrl-bar-wrap { width:50px; height:4px; background:rgba(255,255,255,.07); border-radius:2px; overflow:hidden; }
+.ctrl-bar-fill { height:100%; border-radius:2px; }
+
+/* ── SYSTEM HEALTH ───────────────────────────────────────────── */
+.health-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:8px; }
+.health-item { text-align:center; }
+.health-svg  { width:54px; height:54px; }
+.health-val  { font-size:.82rem; font-weight:800; font-family:var(--font-mono); margin-top:2px; }
+.health-lbl  { font-size:.53rem; color:var(--text-muted); margin-top:1px; }
+
+/* ── ALERT HEATMAP ───────────────────────────────────────────── */
+.ahm-grids { display:grid; grid-template-columns:1fr; gap:5px; padding:7px 9px; }
+.ahm-title { font-size:.56rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.ahm-cells { display:grid; gap:2px; }
+.ahm-cell { height:14px; border-radius:2px; cursor:pointer; transition:all var(--transition-fast); }
+.ahm-cell:hover { filter:brightness(1.4); transform:scale(1.08); }
+.ahm-scale { display:flex; justify-content:space-between; margin-top:3px; font-size:.49rem; color:var(--text-muted); }
+
+/* ── EXECUTIVE INSIGHTS ──────────────────────────────────────── */
+.exec-ins-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:7px; }
+.exec-ins-item { background:var(--bg-input); border:1px solid var(--border-color); border-radius:6px; padding:7px 8px; }
+.exec-ins-lbl  { font-size:.52rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-bottom:2px; }
+.exec-ins-val  { font-size:.9rem; font-weight:800; font-family:var(--font-mono); }
+.exec-ins-delta{ font-size:.54rem; font-weight:700; margin-top:1px; }
+
+/* ── BOTTOM GRID: Charts + Live Feed ─────────────────────────── */
+.nac-bottom-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr 200px; gap:6px; align-items:start; }
+@media(max-width:1400px){ .nac-bottom-grid { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:700px) { .nac-bottom-grid { grid-template-columns:1fr; } }
+.nac-trend-body { padding:5px 8px; height:76px; position:relative; cursor:pointer; }
+
+/* ── LIVE ACTIVITY FEED ──────────────────────────────────────── */
+.laf-item { display:flex; gap:6px; padding:5px 9px; border-bottom:1px solid rgba(255,255,255,.04); }
+.laf-item:last-child { border-bottom:none; }
+.laf-dot  { width:5px; height:5px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.laf-body { flex:1; }
+.laf-title{ font-size:.6rem; font-weight:600; color:var(--text-primary); line-height:1.3; }
+.laf-desc { font-size:.56rem; color:var(--text-muted); line-height:1.3; margin-top:1px; }
+.laf-time { font-size:.52rem; color:var(--text-muted); flex-shrink:0; font-family:var(--font-mono); white-space:nowrap; }
+
+/* ── LIGHT MODE ──────────────────────────────────────────────── */
+[data-theme="light"] .nac-header { background:linear-gradient(135deg,#fff8f8 0%,#fff0ef 60%,rgba(239,68,68,.04) 100%); }
+[data-theme="light"] .alert-map-wrap { background:#f0f4f8; }
+[data-theme="light"] .ai-rec-metric,.exec-ins-item { background:#f8fafc; }
+[data-theme="light"] .rtas-item.crit,.rtas-item.high,.rtas-item.ai,.rtas-item.info { opacity:.85; }
+[data-theme="light"] .nac-table th { background:#f8fafc; }
+[data-theme="light"] .sev-dist-bar,.ctrl-bar-wrap { background:rgba(0,0,0,.06); }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="nac-page">
 
-<div class="page-header">
-  <div class="page-header-left">
-    <div class="page-title"><i class="bi bi-bell"></i> Notification Centre</div>
-    <div class="page-subtitle">
-      <span id="unread-badge" class="badge badge-high" style="margin-right:6px;">{{ unread_count }} unread</span>
-      {{ stats.total }} total notifications
-    </div>
-  </div>
-  <div class="page-header-actions" style="gap:8px;display:flex;flex-wrap:wrap;">
-    <button onclick="markAllRead()" class="btn btn-secondary btn-sm">
-      <i class="bi bi-check2-all"></i> Mark All Read
-    </button>
-    <button onclick="deleteAllRead()" class="btn btn-ghost btn-sm" style="color:var(--accent-red);">
-      <i class="bi bi-trash3"></i> Delete Read
-    </button>
-  </div>
-</div>
-
-<!-- ── Stats Row ──────────────────────────────────────────────────────── -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
-  <div class="kpi-card" style="padding:14px 16px;">
-    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Total</div>
-    <div style="font-size:1.6rem;font-weight:700;color:var(--text-primary);">{{ stats.total }}</div>
-  </div>
-  <div class="kpi-card" style="padding:14px 16px;">
-    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Unread</div>
-    <div style="font-size:1.6rem;font-weight:700;color:var(--accent-blue);">{{ stats.unread }}</div>
-  </div>
-  <div class="kpi-card" style="padding:14px 16px;">
-    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Critical</div>
-    <div style="font-size:1.6rem;font-weight:700;color:var(--accent-red);">{{ stats.critical_unread }}</div>
-  </div>
-  <div class="kpi-card" style="padding:14px 16px;">
-    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Read</div>
-    <div style="font-size:1.6rem;font-weight:700;color:var(--accent-green);">{{ stats.read }}</div>
-  </div>
-</div>
-
-<!-- ── Filter Bar ─────────────────────────────────────────────────────── -->
-<div class="card" style="padding:14px 18px;margin-bottom:16px;">
-  <form method="get" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
-    <div style="flex:1;min-width:140px;">
-      <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Type</label>
-      <select name="type" class="form-select form-select-sm" style="min-width:130px;">
-        <option value="">All Types</option>
-        {% for val,label in type_choices %}
-          <option value="{{ val }}" {% if filter_type == val %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div style="flex:1;min-width:130px;">
-      <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Priority</label>
-      <select name="priority" class="form-select form-select-sm">
-        <option value="">All Priorities</option>
-        {% for val,label in priority_choices %}
-          <option value="{{ val }}" {% if filter_priority == val %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div style="flex:1;min-width:120px;">
-      <label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;">Status</label>
-      <select name="read" class="form-select form-select-sm">
-        <option value="">All</option>
-        <option value="unread" {% if filter_read == "unread" %}selected{% endif %}>Unread only</option>
-        <option value="read"   {% if filter_read == "read"   %}selected{% endif %}>Read only</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:6px;">
-      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel"></i> Filter</button>
-      <a href="{% url 'notifications:list' %}" class="btn btn-ghost btn-sm">Reset</a>
-    </div>
-  </form>
-</div>
-
-<!-- ── Notification List ──────────────────────────────────────────────── -->
-<div class="card" id="notif-list" style="padding:0 20px;">
-  {% for n in notifications %}
-  <div id="notif-row-{{ n.id }}"
-       style="padding:14px 0;border-bottom:1px solid var(--border-color);display:flex;gap:14px;align-items:flex-start;transition:opacity 0.3s ease;{% if not n.is_read %}background:rgba(59,130,246,0.03);{% endif %}">
-
-    <!-- Icon -->
-    <div style="font-size:1.5rem;flex-shrink:0;line-height:1;padding-top:2px;">{{ n.type_icon }}</div>
-
-    <!-- Body -->
-    <div style="flex:1;min-width:0;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
-        <div style="font-weight:{% if not n.is_read %}700{% else %}500{% endif %};color:var(--text-primary);font-size:0.88rem;">
-          {{ n.title }}
-          {% if not n.is_read %}
-            <span style="display:inline-block;width:7px;height:7px;background:var(--accent-blue);border-radius:50%;margin-left:6px;vertical-align:middle;animation:pulse 2s infinite;"></span>
-          {% endif %}
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-          <!-- Priority badge -->
-          {% if n.priority == 'CRITICAL' %}
-            <span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;font-size:0.68rem;">CRITICAL</span>
-          {% elif n.priority == 'HIGH' %}
-            <span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;font-size:0.68rem;">HIGH</span>
-          {% elif n.priority == 'NORMAL' %}
-            <span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.68rem;">NORMAL</span>
-          {% else %}
-            <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;font-size:0.68rem;">LOW</span>
-          {% endif %}
-          <span style="font-size:0.72rem;color:var(--text-muted);">{{ n.created_at|timesince }} ago</span>
-        </div>
+  <!-- ═══ HEADER ═════════════════════════════════════════════ -->
+  <div class="nac-header">
+    <div>
+      <div class="nac-hdr-eye">Railway Alert Intelligence</div>
+      <div class="nac-hdr-title">
+        <i class="bi bi-bell-fill" style="color:var(--accent-red);font-size:.9rem;"></i>
+        Notification &amp; Alert Command Center
+        <span style="color:var(--text-muted);font-weight:400;font-size:.7rem;">| Northern Zone</span>
       </div>
-
-      <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;line-height:1.5;">{{ n.message }}</div>
-
-      <!-- Actions -->
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-        {% if n.link %}
-          <a href="{{ n.link }}" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:3px 10px;">
-            <i class="bi bi-arrow-right-circle"></i> View
-          </a>
-        {% endif %}
-        {% if not n.is_read %}
-          <button onclick="markRead({{ n.id }})" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:3px 10px;color:var(--text-muted);">
-            <i class="bi bi-check2"></i> Mark Read
-          </button>
-        {% endif %}
-        <button onclick="deleteNotif({{ n.id }})" class="btn btn-ghost btn-sm" style="font-size:0.75rem;padding:3px 10px;color:var(--accent-red);">
-          <i class="bi bi-x"></i> Delete
-        </button>
+      <div class="nac-hdr-sub">{{ request.user.get_full_name|default:request.user.username }} &nbsp;·&nbsp; Real-time alert monitoring &amp; incident management</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="nac-live-badge"><span class="nac-live-dot"></span>LIVE</div>
+      <div class="nac-hdr-actions">
+        <a href="{% url 'conflicts:list' %}"             class="nac-btn"><i class="bi bi-exclamation-triangle"></i> Conflicts</a>
+        <a href="{% url 'ai_engine:dashboard' %}"        class="nac-btn"><i class="bi bi-robot"></i> AI Engine</a>
+        <a href="{% url 'simulation:index' %}"           class="nac-btn"><i class="bi bi-play-circle"></i> Simulate</a>
+        <a href="{% url 'reporting:index' %}"            class="nac-btn"><i class="bi bi-file-earmark-text"></i> Report</a>
+        <form method="post" action="{% url 'notifications:mark_all_read' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="nac-btn grn"><i class="bi bi-check-all"></i> Mark All Read</button>
+        </form>
+        <form method="post" action="{% url 'notifications:delete_all_read' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="nac-btn danger"><i class="bi bi-trash"></i> Clear Read</button>
+        </form>
       </div>
     </div>
   </div>
-  {% empty %}
-  <div id="empty-state" style="text-align:center;padding:72px 32px;color:var(--text-muted);">
-    <i class="bi bi-bell-slash" style="font-size:3.5rem;display:block;margin-bottom:16px;opacity:0.25;"></i>
-    <div style="font-size:1rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">All clear!</div>
-    <div style="font-size:0.85rem;">No notifications match the current filters.</div>
-  </div>
-  {% endfor %}
-</div>
 
+  <!-- ═══ KPI ROW ═══════════════════════════════════════════ -->
+  <div class="nac-kpi-row">
+    <div class="nac-kpi" style="--kc:var(--accent-red);">
+      <div class="nac-kpi-lbl"><i class="bi bi-bell" style="color:var(--accent-red);"></i> Total Alerts</div>
+      <div class="nac-kpi-val" style="color:var(--accent-red);">{{ stats.total|default:"0" }}<span class="nac-trend dn"><i class="bi bi-arrow-down-short"></i>-2%</span></div>
+      <div class="nac-kpi-sub">all notifications</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4444" stop-opacity=".4"/><stop offset="1" stop-color="#ef4444" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,10 13,8 26,9 39,5 52,7 65,4 80,3 80,13 0,13" fill="url(#ns1)"/>
+        <polyline points="0,10 13,8 26,9 39,5 52,7 65,4 80,3" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="nac-kpi" style="--kc:var(--accent-orange);">
+      <div class="nac-kpi-lbl"><i class="bi bi-exclamation-circle" style="color:var(--accent-orange);"></i> Active Alerts</div>
+      <div class="nac-kpi-val" style="color:var(--accent-orange);">{{ stats.unread|default:"0" }}<span class="nac-trend dn"><i class="bi bi-arrow-down-short"></i>-5%</span></div>
+      <div class="nac-kpi-sub">unread / active</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f97316" stop-opacity=".4"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,9 13,10 26,7 39,11 52,6 65,8 80,5 80,13 0,13" fill="url(#ns2)"/>
+        <polyline points="0,9 13,10 26,7 39,11 52,6 65,8 80,5" fill="none" stroke="#f97316" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="nac-kpi" style="--kc:var(--accent-red);">
+      <div class="nac-kpi-lbl"><i class="bi bi-fire" style="color:var(--accent-red);"></i> Critical</div>
+      <div class="nac-kpi-val" style="color:var(--accent-red);">{{ stats.critical_unread|default:"0" }}<span class="nac-trend dn"><i class="bi bi-arrow-down-short"></i>-10%</span></div>
+      <div class="nac-kpi-sub">critical unread</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4444" stop-opacity=".4"/><stop offset="1" stop-color="#ef4444" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,11 13,9 26,10 39,6 52,9 65,5 80,3 80,13 0,13" fill="url(#ns3)"/>
+        <polyline points="0,11 13,9 26,10 39,6 52,9 65,5 80,3" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="nac-kpi" style="--kc:var(--accent-blue);">
+      <div class="nac-kpi-lbl"><i class="bi bi-robot" style="color:var(--accent-blue);"></i> AI Recommendations</div>
+      {% with ai_count=stats.by_type %}
+      <div class="nac-kpi-val" style="color:var(--accent-blue);">{{ stats.total|default:"0" }}<span class="nac-trend dn"><i class="bi bi-arrow-down-short"></i>-8%</span></div>
+      {% endwith %}
+      <div class="nac-kpi-sub">AI alerts issued</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".4"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,8 13,10 26,7 39,9 52,5 65,7 80,4 80,13 0,13" fill="url(#ns4)"/>
+        <polyline points="0,8 13,10 26,7 39,9 52,5 65,7 80,4" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="nac-kpi" style="--kc:var(--accent-green);">
+      <div class="nac-kpi-lbl"><i class="bi bi-check-circle" style="color:var(--accent-green);"></i> Resolved</div>
+      <div class="nac-kpi-val" style="color:var(--accent-green);">{{ stats.read|default:"0" }}<span class="nac-trend up"><i class="bi bi-arrow-up-short"></i>+1%</span></div>
+      <div class="nac-kpi-sub">marked read/resolved</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".4"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,10 13,9 26,11 39,7 52,8 65,5 80,4 80,13 0,13" fill="url(#ns5)"/>
+        <polyline points="0,10 13,9 26,11 39,7 52,8 65,5 80,4" fill="none" stroke="#10b981" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="nac-kpi" style="--kc:var(--accent-cyan);">
+      <div class="nac-kpi-lbl"><i class="bi bi-stopwatch" style="color:var(--accent-cyan);"></i> Avg Response</div>
+      <div class="nac-kpi-val" style="color:var(--accent-cyan);">3.2<span style="font-size:.7rem;font-weight:400;color:var(--text-muted);"> min</span></div>
+      <div class="nac-kpi-sub">avg read latency</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity=".4"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,9 13,7 26,8 39,5 52,6 65,4 80,5 80,13 0,13" fill="url(#ns6)"/>
+        <polyline points="0,9 13,7 26,8 39,5 52,6 65,4 80,5" fill="none" stroke="#06b6d4" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="nac-kpi" style="--kc:var(--accent-purple);">
+      <div class="nac-kpi-lbl"><i class="bi bi-arrow-up-square" style="color:var(--accent-purple);"></i> Escalated</div>
+      <div class="nac-kpi-val" style="color:var(--accent-purple);">{{ stats.critical_unread|default:"0" }}</div>
+      <div class="nac-kpi-sub">pending escalations</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".4"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,11 13,9 26,10 39,8 52,9 65,6 80,7 80,13 0,13" fill="url(#ns7)"/>
+        <polyline points="0,11 13,9 26,10 39,8 52,9 65,6 80,7" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="nac-kpi" style="--kc:var(--accent-green);">
+      <div class="nac-kpi-lbl"><i class="bi bi-heart-pulse" style="color:var(--accent-green);"></i> System Health</div>
+      <div class="nac-kpi-val" style="color:var(--accent-green);">98%</div>
+      <div class="nac-kpi-sub">all systems nominal</div>
+      <svg class="nac-spark" viewBox="0 0 80 13" preserveAspectRatio="none">
+        <defs><linearGradient id="ns8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".35"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,10 13,9 26,11 39,8 52,9 65,6 80,4 80,13 0,13" fill="url(#ns8)"/>
+        <polyline points="0,10 13,9 26,11 39,8 52,9 65,6 80,4" fill="none" stroke="#10b981" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </div><!-- /.nac-kpi-row -->
+
+  <!-- ═══ MAIN GRID: Table + Right Panels ═══════════════════ -->
+  <div class="nac-main-grid">
+
+    <!-- LEFT: Alert Command Center -->
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-table" style="color:var(--accent-red);"></i> Main Alert Command Center</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <a href="{% url 'notifications:list' %}?read=unread" class="nac-btn" style="font-size:.57rem;padding:3px 8px;">Unread</a>
+            <a href="{% url 'notifications:list' %}?read=read"   class="nac-btn" style="font-size:.57rem;padding:3px 8px;">Read</a>
+            <a href="{% url 'notifications:list' %}"             class="nac-btn" style="font-size:.57rem;padding:3px 8px;">All</a>
+          </div>
+        </div>
+        <!-- Filters -->
+        <div class="nac-filter-bar">
+          <input type="text" class="nac-search" id="alertSearch" placeholder="&#xF52A; Search alerts…" oninput="filterTable()">
+          <select class="nac-fsel" id="fType" onchange="applyFilters()">
+            <option value="">All Types</option>
+            {% for val, lbl in type_choices %}<option value="{{ val }}" {% if filter_type == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+          <select class="nac-fsel" id="fPrio" onchange="applyFilters()">
+            <option value="">All Priorities</option>
+            {% for val, lbl in priority_choices %}<option value="{{ val }}" {% if filter_priority == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+          </select>
+          <select class="nac-fsel" id="fRead" onchange="applyFilters()">
+            <option value="" {% if not filter_read %}selected{% endif %}>All Status</option>
+            <option value="unread" {% if filter_read == 'unread' %}selected{% endif %}>Unread</option>
+            <option value="read"   {% if filter_read == 'read'   %}selected{% endif %}>Read</option>
+          </select>
+        </div>
+        <!-- Table -->
+        <div class="nac-table-wrap">
+          <table class="nac-table" id="alertTable">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)">Alert ID ↕</th>
+                <th onclick="sortTable(1)">Type</th>
+                <th onclick="sortTable(2)">Severity ↕</th>
+                <th onclick="sortTable(3)">Source</th>
+                <th onclick="sortTable(4)">Time ↕</th>
+                <th onclick="sortTable(5)">Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="alertTbody">
+              {% for n in notifications %}
+              <tr class="alert-row {% if n.priority == 'CRITICAL' %}critical-row{% endif %}"
+                  data-type="{{ n.notification_type }}"
+                  data-prio="{{ n.priority }}"
+                  data-read="{{ n.is_read|yesno:'read,unread' }}"
+                  data-text="{{ n.title|lower }} {{ n.message|lower|truncatechars:80 }}">
+                <td>
+                  <span class="nac-alert-id">#{{ n.id }}</span>
+                </td>
+                <td>
+                  <span class="nac-type-icon">{{ n.type_icon }}</span>
+                  <span style="font-size:.6rem;color:var(--text-secondary);">{{ n.get_notification_type_display }}</span>
+                </td>
+                <td>
+                  <span class="sev-badge sev-{{ n.priority }}">{{ n.priority }}</span>
+                </td>
+                <td style="font-size:.59rem;color:var(--text-muted);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                    title="{{ n.title }}">{{ n.title|truncatechars:24 }}</td>
+                <td style="font-size:.58rem;color:var(--text-muted);white-space:nowrap;font-family:var(--font-mono);">
+                  {{ n.created_at|timesince|truncatechars:12 }} ago
+                </td>
+                <td>
+                  {% if n.is_broadcast %}
+                    <span class="status-badge st-bc"><i class="bi bi-broadcast"></i> Broadcast</span>
+                  {% elif n.is_read %}
+                    <span class="status-badge st-read"><i class="bi bi-check2"></i> Read</span>
+                  {% else %}
+                    <span class="status-badge st-unread"><i class="bi bi-circle-fill" style="font-size:.4rem;"></i> Active</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="nac-action-btns">
+                    {% if n.link %}
+                    <a href="{{ n.link }}" class="nac-tbl-btn" title="Go to source"><i class="bi bi-arrow-up-right"></i></a>
+                    {% else %}
+                    <a href="{% url 'conflicts:list' %}" class="nac-tbl-btn" title="View"><i class="bi bi-eye"></i></a>
+                    {% endif %}
+                    {% if not n.is_read %}
+                    <form method="post" action="{% url 'notifications:mark_read' n.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="nac-tbl-btn" title="Mark read"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'notifications:delete' n.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="nac-tbl-btn del" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);font-size:.68rem;">
+                <i class="bi bi-check-circle" style="color:var(--accent-green);font-size:1.2rem;display:block;margin-bottom:5px;"></i>
+                No alerts matching current filters.
+              </td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Real-Time Alert Stream -->
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-activity" style="color:var(--accent-yellow);animation:nacGlow 1.5s ease-in-out infinite;"></i> Real-Time Alert Stream</div>
+        </div>
+        <div class="rtas-wrap" id="rtasWrap">
+          {% for n in notifications|slice:":8" %}
+          <div class="rtas-item {% if n.priority == 'CRITICAL' %}crit{% elif n.priority == 'HIGH' %}high{% elif n.notification_type == 'RECOMMENDATION' %}ai{% else %}info{% endif %}"
+               onclick="window.location='{% url 'notifications:list' %}?priority={{ n.priority }}'">
+            {{ n.type_icon }} {{ n.title|truncatechars:32 }} [{{ n.created_at|date:"H:i" }}]
+          </div>
+          {% empty %}
+          <div style="font-size:.62rem;color:var(--text-muted);padding:5px;">No recent alerts.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="nac-right-col">
+
+      <!-- Alert Severity Distribution -->
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-pie-chart" style="color:var(--accent-orange);"></i> Alert Severity Distribution</div>
+        </div>
+        <div class="sev-dist-body">
+          {% for row in stats.by_priority %}
+          <div class="sev-dist-row">
+            <div class="sev-dist-lbl">{{ row.priority }}</div>
+            <div class="sev-dist-bar">
+              <div class="sev-dist-fill" style="width:{% widthratio row.count stats.total 100 %}%;background:{% if row.priority == 'CRITICAL' %}var(--accent-red){% elif row.priority == 'HIGH' %}var(--accent-orange){% elif row.priority == 'NORMAL' %}var(--accent-yellow){% else %}var(--accent-green){% endif %};"></div>
+            </div>
+            <div class="sev-dist-count">{{ row.count }}</div>
+          </div>
+          {% empty %}
+          <div style="font-size:.62rem;color:var(--text-muted);text-align:center;padding:10px;">No data</div>
+          {% endfor %}
+          <div class="sev-chart-wrap"><canvas id="sevChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- AI Recommendation Center -->
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-robot" style="color:var(--accent-green);"></i> AI Recommendation Center</div>
+          <a href="{% url 'ai_engine:dashboard' %}" class="nac-card-link">AI Engine →</a>
+        </div>
+        <div class="ai-rec-body">
+          {% if not notifications %}
+          <div class="ai-rec-title">Reroute Train 12341 via B-Line</div>
+          <div class="ai-rec-conf"><i class="bi bi-shield-check"></i> Confidence: 96%</div>
+          <div class="ai-rec-metrics">
+            <div class="ai-rec-metric"><div class="ai-rec-metric-lbl">Delay Reduction</div><div class="ai-rec-metric-val" style="color:var(--accent-green);">-14 min</div></div>
+            <div class="ai-rec-metric"><div class="ai-rec-metric-lbl">Throughput Gain</div><div class="ai-rec-metric-val" style="color:var(--accent-blue);">+2%</div></div>
+            <div class="ai-rec-metric"><div class="ai-rec-metric-lbl">Passenger Impact</div><div class="ai-rec-metric-val" style="color:var(--accent-orange);">Low</div></div>
+            <div class="ai-rec-metric"><div class="ai-rec-metric-lbl">Revenue Impact</div><div class="ai-rec-metric-val" style="color:var(--accent-purple);">+₹0.4L</div></div>
+          </div>
+          {% endif %}
+          <div class="ai-rec-actions">
+            <a href="{% url 'ai_engine:dashboard' %}" class="ai-rec-btn accept"><i class="bi bi-check-lg"></i> Accept</a>
+            <button class="ai-rec-btn reject" onclick="this.closest('.ai-rec-body').style.opacity='.5'"><i class="bi bi-x-lg"></i> Reject</button>
+            <a href="{% url 'simulation:index' %}" class="ai-rec-btn sim"><i class="bi bi-play"></i> Simulate</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert Map -->
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-geo-alt" style="color:var(--accent-red);"></i> Alert Map</div>
+          <a href="{% url 'network:visualizer' %}" class="nac-card-link">Network →</a>
+        </div>
+        <div class="alert-map-wrap">
+          <svg class="alert-map-svg" id="alertMapSvg" viewBox="0 0 340 180" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="alert-map-legend">
+            <div class="alert-map-leg"><div class="alert-map-dot" style="background:#ef4444;"></div>Critical</div>
+            <div class="alert-map-leg"><div class="alert-map-dot" style="background:#f97316;"></div>Conflict Access</div>
+            <div class="alert-map-leg"><div class="alert-map-dot" style="background:#eab308;"></div>Congestion</div>
+            <div class="alert-map-leg"><div class="alert-map-dot" style="background:#9b59b6;"></div>Signal</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.nac-right-col -->
+  </div><!-- /.nac-main-grid -->
+
+  <!-- ═══ MID GRID: 4 panels ════════════════════════════════ -->
+  <div class="nac-mid-grid">
+
+    <!-- Escalation Management Panel -->
+    <div class="nac-card">
+      <div class="nac-card-hdr">
+        <div class="nac-card-title"><i class="bi bi-arrow-up-square" style="color:var(--accent-purple);"></i> Escalation Management</div>
+      </div>
+      {% for n in notifications %}
+      {% if n.priority == 'CRITICAL' and not n.is_read %}
+      <div class="esc-item">
+        <div class="esc-item-title">
+          {{ n.title|truncatechars:32 }}
+          <span class="esc-age-badge esc-age-crit">{{ n.created_at|timesince|truncatechars:10 }}</span>
+        </div>
+        <div class="esc-item-sub">{{ n.get_notification_type_display }} &nbsp;·&nbsp; SLA: <span style="color:var(--accent-red);">Critical</span></div>
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% if not notifications %}
+      <div class="esc-item">
+        <div class="esc-item-title">A-12345: Carrington T-3 <span class="esc-age-badge esc-age-crit">22 hours</span></div>
+        <div class="esc-item-sub">Conflict Alert · SLA: <span style="color:var(--accent-red);">Critical</span></div>
+      </div>
+      <div class="esc-item">
+        <div class="esc-item-title">R-987: Attingent Central <span class="esc-age-badge esc-age-warn">34 days</span></div>
+        <div class="esc-item-sub">Delay Alert · SLA: <span style="color:var(--accent-yellow);">Low</span></div>
+      </div>
+      <div class="esc-item">
+        <div class="esc-item-title">D-789: Delay at Station <span class="esc-age-badge esc-age-warn">64 hours</span></div>
+        <div class="esc-item-sub">Delay Alert · SLA: <span style="color:var(--accent-yellow);">Delay</span></div>
+      </div>
+      {% endif %}
+      <div style="padding:6px 10px;border-top:1px solid var(--border-color);">
+        <a href="{% url 'conflicts:list' %}" class="nac-btn" style="width:100%;justify-content:center;font-size:.6rem;">
+          <i class="bi bi-arrow-right"></i> View All Conflicts
+        </a>
+      </div>
+    </div>
+
+    <!-- Incident Timeline -->
+    <div class="nac-card">
+      <div class="nac-card-hdr">
+        <div class="nac-card-title"><i class="bi bi-clock-history" style="color:var(--accent-cyan);"></i> Incident Timeline</div>
+      </div>
+      <div class="inc-tl-wrap">
+        <div class="inc-tl-bar">
+          <div class="inc-tl-step">
+            <div class="inc-tl-node done" title="Alert Created" onclick="Toast.info('Alert Created — System detected anomaly')"><i class="bi bi-flag-fill"></i></div>
+            <div class="inc-tl-lbl done">Alert<br>Created</div>
+          </div>
+          <div class="inc-tl-line done"></div>
+          <div class="inc-tl-step">
+            <div class="inc-tl-node done" title="Assigned" onclick="Toast.info('Assigned — Controller notified')"><i class="bi bi-person-check"></i></div>
+            <div class="inc-tl-lbl done">Assigned</div>
+          </div>
+          <div class="inc-tl-line done"></div>
+          <div class="inc-tl-step">
+            <div class="inc-tl-node done" title="Investigated" onclick="Toast.info('Investigated — Root cause identified')"><i class="bi bi-search"></i></div>
+            <div class="inc-tl-lbl done">Investigated</div>
+          </div>
+          <div class="inc-tl-line"></div>
+          <div class="inc-tl-step">
+            <div class="inc-tl-node active" title="Action Taken" onclick="Toast.info('Action Taken — Recovery underway')"><i class="bi bi-tools"></i></div>
+            <div class="inc-tl-lbl">Action<br>Taken</div>
+          </div>
+          <div class="inc-tl-line"></div>
+          <div class="inc-tl-step">
+            <div class="inc-tl-node todo" title="Resolved"><i class="bi bi-check-circle"></i></div>
+            <div class="inc-tl-lbl">Resolved</div>
+          </div>
+          <div class="inc-tl-line"></div>
+          <div class="inc-tl-step">
+            <div class="inc-tl-node todo" title="Closed"><i class="bi bi-lock"></i></div>
+            <div class="inc-tl-lbl">Closed</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;height:70px;position:relative;"><canvas id="incChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Controller Activity Panel -->
+    <div class="nac-card">
+      <div class="nac-card-hdr">
+        <div class="nac-card-title"><i class="bi bi-person-badge" style="color:var(--accent-blue);"></i> Controller Activity</div>
+        <a href="{% url 'auth:user_list' %}" class="nac-card-link">Users →</a>
+      </div>
+      <div style="padding:5px 0;">
+        <div class="ctrl-item" style="border-bottom:1px solid var(--border-color);padding:4px 10px;">
+          <div style="font-size:.53rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);flex:1;">Controller</div>
+          <div style="font-size:.53rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);width:35px;">Alerts</div>
+          <div style="font-size:.53rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);width:35px;">Load</div>
+          <div style="font-size:.53rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);width:50px;">Workload</div>
+        </div>
+        <div class="ctrl-item">
+          <div class="ctrl-avatar">JD</div>
+          <div class="ctrl-name">Active Controller</div>
+          <div class="ctrl-alerts">299</div>
+          <div style="font-size:.6rem;color:var(--text-muted);width:35px;">69%</div>
+          <div class="ctrl-bar-wrap"><div class="ctrl-bar-fill" style="width:69%;background:var(--accent-orange);"></div></div>
+        </div>
+        <div class="ctrl-item">
+          <div class="ctrl-avatar" style="background:var(--accent-blue);">AC</div>
+          <div class="ctrl-name">Active Controller</div>
+          <div class="ctrl-alerts">173</div>
+          <div style="font-size:.6rem;color:var(--text-muted);width:35px;">36%</div>
+          <div class="ctrl-bar-wrap"><div class="ctrl-bar-fill" style="width:36%;background:var(--accent-green);"></div></div>
+        </div>
+        <div class="ctrl-item">
+          <div class="ctrl-avatar" style="background:var(--accent-green);">J</div>
+          <div class="ctrl-name">Jane Doe</div>
+          <div class="ctrl-alerts">473</div>
+          <div style="font-size:.6rem;color:var(--text-muted);width:35px;">14%</div>
+          <div class="ctrl-bar-wrap"><div class="ctrl-bar-fill" style="width:14%;background:var(--accent-green);"></div></div>
+        </div>
+        <div class="ctrl-item">
+          <div class="ctrl-avatar" style="background:var(--accent-red);">AC</div>
+          <div class="ctrl-name">Active Controller</div>
+          <div class="ctrl-alerts">89</div>
+          <div style="font-size:.6rem;color:var(--text-muted);width:35px;">89%</div>
+          <div class="ctrl-bar-wrap"><div class="ctrl-bar-fill" style="width:89%;background:var(--accent-red);"></div></div>
+        </div>
+        <div class="ctrl-item">
+          <div class="ctrl-avatar" style="background:var(--accent-cyan);">J2</div>
+          <div class="ctrl-name">Jane Doe 10</div>
+          <div class="ctrl-alerts">215</div>
+          <div style="font-size:.6rem;color:var(--text-muted);width:35px;">37%</div>
+          <div class="ctrl-bar-wrap"><div class="ctrl-bar-fill" style="width:37%;background:var(--accent-blue);"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Health Monitor + Alert Heatmap + Executive Insights (sub-grid) -->
+    <div style="display:flex;flex-direction:column;gap:6px;">
+
+      <!-- System Health Monitor -->
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-heart-pulse" style="color:var(--accent-green);"></i> System Health Monitor</div>
+          <a href="{% url 'network:visualizer' %}" class="nac-card-link">Network →</a>
+        </div>
+        <div class="health-grid">
+          {% for item in health_items %}
+          <div class="health-item">
+            <svg class="health-svg" viewBox="0 0 54 54">
+              <circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+              <circle cx="27" cy="27" r="20" fill="none" stroke="{{ item.color }}" stroke-width="5"
+                stroke-dasharray="{{ item.pct }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/>
+            </svg>
+            <div class="health-val" style="color:{{ item.color }};">{{ item.pct }}%</div>
+            <div class="health-lbl">{{ item.label }}</div>
+          </div>
+          {% empty %}
+          <div class="health-item">
+            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#10b981" stroke-width="5" stroke-dasharray="95 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+            <div class="health-val" style="color:#10b981;">95%</div><div class="health-lbl">Signal Health</div>
+          </div>
+          <div class="health-item">
+            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#3b82f6" stroke-width="5" stroke-dasharray="88 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+            <div class="health-val" style="color:#3b82f6;">88%</div><div class="health-lbl">Track Health</div>
+          </div>
+          <div class="health-item">
+            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#f97316" stroke-width="5" stroke-dasharray="76 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+            <div class="health-val" style="color:#f97316;">76%</div><div class="health-lbl">Platform Health</div>
+          </div>
+          <div class="health-item">
+            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#8b5cf6" stroke-width="5" stroke-dasharray="92 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+            <div class="health-val" style="color:#8b5cf6;">92%</div><div class="health-lbl">Network Health</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Alert Heatmap -->
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-grid-3x3" style="color:var(--accent-orange);"></i> Alert Heatmap</div>
+          <a href="{% url 'stations:list' %}" class="nac-card-link">Stations →</a>
+        </div>
+        <div class="ahm-grids">
+          <div>
+            <div class="ahm-title">Station Alert Density</div>
+            <div class="ahm-cells" id="stAlertHM"></div>
+            <div class="ahm-scale"><span>Low</span><span>High</span></div>
+          </div>
+          <div>
+            <div class="ahm-title">Route Alert Frequency</div>
+            <div class="ahm-cells" id="rtAlertHM"></div>
+            <div class="ahm-scale"><span>Low</span><span>High</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Executive Insights Panel -->
+      <div class="nac-card">
+        <div class="nac-card-hdr">
+          <div class="nac-card-title"><i class="bi bi-briefcase" style="color:var(--accent-blue);"></i> Executive Insights</div>
+          <a href="{% url 'reporting:index' %}" class="nac-card-link">Reports →</a>
+        </div>
+        <div class="exec-ins-grid">
+          <div class="exec-ins-item">
+            <div class="exec-ins-lbl">Passenger Impact</div>
+            <div class="exec-ins-val" style="color:var(--accent-orange);">5.35%</div>
+            <div class="exec-ins-delta" style="color:var(--accent-red);">▲ +1.35%</div>
+          </div>
+          <div class="exec-ins-item">
+            <div class="exec-ins-lbl">Revenue Impact</div>
+            <div class="exec-ins-val" style="color:var(--accent-green);">30%</div>
+            <div class="exec-ins-delta" style="color:var(--accent-green);">▲ +0.05%</div>
+          </div>
+          <div class="exec-ins-item">
+            <div class="exec-ins-lbl">Delay Impact</div>
+            <div class="exec-ins-val" style="color:var(--accent-yellow);">2.2%</div>
+            <div class="exec-ins-delta" style="color:var(--accent-red);">▲ -18%</div>
+          </div>
+          <div class="exec-ins-item">
+            <div class="exec-ins-lbl">Operational Risk</div>
+            <div class="exec-ins-val" style="color:var(--accent-red);">3.28%</div>
+            <div class="exec-ins-delta" style="color:var(--accent-red);">▲ +98%</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /.nac-mid-grid -->
+
+  <!-- ═══ BOTTOM: 5 Trend Charts + Live Activity Feed ═══════ -->
+  <div class="nac-bottom-grid">
+    <div class="nac-card">
+      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(239,68,68,.8);">Alert Trends</div></div>
+      <div class="nac-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="tr1"></canvas></div>
+    </div>
+    <div class="nac-card">
+      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(16,185,129,.8);">Resolution Trends</div></div>
+      <div class="nac-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="tr2"></canvas></div>
+    </div>
+    <div class="nac-card">
+      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(139,92,246,.8);">Escalation Trends</div></div>
+      <div class="nac-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="tr3"></canvas></div>
+    </div>
+    <div class="nac-card">
+      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(59,130,246,.8);">AI Recommendation Trends</div></div>
+      <div class="nac-trend-body" onclick="window.location='{% url 'ai_engine:dashboard' %}'"><canvas id="tr4"></canvas></div>
+    </div>
+    <div class="nac-card">
+      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(6,182,212,.8);">Incident Trends</div></div>
+      <div class="nac-trend-body" onclick="window.location='{% url 'conflicts:list' %}'"><canvas id="tr5"></canvas></div>
+    </div>
+    <!-- Live Activity Feed -->
+    <div class="nac-card">
+      <div class="nac-card-hdr">
+        <div class="nac-card-title"><i class="bi bi-broadcast" style="color:var(--accent-green);animation:nacGlow 1.5s ease-in-out infinite;"></i> Live Feed</div>
+      </div>
+      <div id="lafFeed" style="max-height:120px;overflow-y:auto;">
+        {% for n in notifications|slice:":5" %}
+        <div class="laf-item">
+          <div class="laf-dot" style="background:{% if n.priority == 'CRITICAL' %}var(--accent-red){% elif n.priority == 'HIGH' %}var(--accent-orange){% elif n.notification_type == 'RECOMMENDATION' %}var(--accent-blue){% else %}var(--accent-green){% endif %};"></div>
+          <div class="laf-body">
+            <div class="laf-title">{{ n.title|truncatechars:28 }}</div>
+            <div class="laf-desc">{{ n.get_notification_type_display }}</div>
+          </div>
+          <div class="laf-time">{{ n.created_at|timesince|truncatechars:8 }}</div>
+        </div>
+        {% empty %}
+        <div class="laf-item"><div class="laf-dot" style="background:var(--accent-green);"></div><div class="laf-body"><div class="laf-title">All Clear</div><div class="laf-desc">No recent alerts</div></div><div class="laf-time">now</div></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.nac-page -->
 {% endblock %}
 
 {% block extra_js %}
-<style>
-@keyframes pulse {
-  0%, 100% { opacity:1; transform:scale(1); }
-  50%       { opacity:0.5; transform:scale(1.4); }
-}
-</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-async function markRead(id) {
-  const res = await fetch(`/api/notifications/${id}/read/`, { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
-  if (res.ok) {
-    const row = document.getElementById(`notif-row-${id}`);
-    if (row) {
-      row.style.background = '';
-      const dot  = row.querySelector('[style*="animation:pulse"]');
-      if (dot) dot.remove();
-      const btn  = row.querySelector('button[onclick*="markRead"]');
-      if (btn) btn.remove();
-      const title = row.querySelector('div[style*="font-weight:700"]');
-      if (title) title.style.fontWeight = '500';
+'use strict';
+
+/* ── Filter & Search ─────────────────────────────────────── */
+function filterTable() {
+  const q = document.getElementById('alertSearch').value.toLowerCase();
+  document.querySelectorAll('#alertTbody .alert-row').forEach(row => {
+    row.style.display = row.dataset.text.includes(q) ? '' : 'none';
+  });
+}
+function applyFilters() {
+  const t = document.getElementById('fType').value;
+  const p = document.getElementById('fPrio').value;
+  const r = document.getElementById('fRead').value;
+  const url = new URL(window.location.href);
+  if(t) url.searchParams.set('type', t);     else url.searchParams.delete('type');
+  if(p) url.searchParams.set('priority', p); else url.searchParams.delete('priority');
+  if(r) url.searchParams.set('read', r);     else url.searchParams.delete('read');
+  window.location = url.toString();
+}
+
+/* ── Table sort ──────────────────────────────────────────── */
+let sortDir = 1;
+function sortTable(col) {
+  const tb = document.getElementById('alertTbody');
+  if (!tb) return;
+  const rows = Array.from(tb.querySelectorAll('tr.alert-row'));
+  sortDir *= -1;
+  rows.sort((a,b) => {
+    const av = a.cells[col]?.textContent.trim() || '';
+    const bv = b.cells[col]?.textContent.trim() || '';
+    return av.localeCompare(bv, undefined, {numeric:true}) * sortDir;
+  });
+  rows.forEach(r => tb.appendChild(r));
+}
+
+/* ── Chart helpers ───────────────────────────────────────── */
+const CI = {};
+const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+function gc() {
+  const d = isDark();
+  return {
+    responsive:false, maintainAspectRatio:false, animation:{duration:600},
+    plugins:{legend:{display:false}, tooltip:{
+      backgroundColor:d?'#1a2234':'#fff', titleColor:d?'#e8eaf0':'#1e293b',
+      bodyColor:d?'#8892a4':'#475569', borderColor:d?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)',
+      borderWidth:1, padding:6, cornerRadius:5,
+    }},
+    scales:{
+      x:{grid:{color:d?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)'},ticks:{color:d?'rgba(255,255,255,.3)':'#94a3b8',font:{size:6}},border:{display:false}},
+      y:{grid:{color:d?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)'},ticks:{color:d?'rgba(255,255,255,.3)':'#94a3b8',font:{size:6}},border:{display:false}},
     }
-    updateUnreadBadge(-1);
-    Toast.success('Marked as read.');
+  };
+}
+function mkChart(id, type, labels, data, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const wrap = el.parentElement;
+  if (CI[id]) CI[id].destroy();
+  el.width = wrap.clientWidth || 180;
+  el.height = wrap.clientHeight || 70;
+  const ctx = el.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,el.height);
+  grad.addColorStop(0, color.replace('1)','.25)'));
+  grad.addColorStop(1, color.replace('1)','0)'));
+  CI[id] = new Chart(ctx, {
+    type, data:{ labels, datasets:[{
+      data, borderColor:color,
+      backgroundColor: type==='line'?grad:color.replace('1)','.55)'),
+      fill:type==='line', borderWidth:1.8, tension:.45,
+      pointRadius:0, pointHoverRadius:3, borderRadius:3,
+    }]}, options:gc(),
+  });
+}
+
+/* ── Severity donut ──────────────────────────────────────── */
+function mkSevChart() {
+  const el = document.getElementById('sevChart');
+  if (!el) return;
+  const wrap = el.parentElement;
+  if (CI['sevChart']) CI['sevChart'].destroy();
+  el.width  = wrap.clientWidth || 200;
+  el.height = wrap.clientHeight || 80;
+  const d = isDark();
+  CI['sevChart'] = new Chart(el.getContext('2d'), {
+    type:'bar',
+    data:{ labels:['Critical','High','Normal','Low'],
+           datasets:[{data:[
+             {{ stats.critical_unread|default:0 }},
+             {{ stats.unread|default:0 }},
+             {{ stats.total|default:0 }},
+             {{ stats.read|default:0 }},
+           ], backgroundColor:['rgba(239,68,68,.7)','rgba(249,115,22,.7)','rgba(234,179,8,.7)','rgba(16,185,129,.7)'], borderRadius:4}]
+    },
+    options:{...gc(), plugins:{...gc().plugins, legend:{display:false}}},
+  });
+}
+
+/* ── Incident timeline mini chart ────────────────────────── */
+function mkIncChart() {
+  const el = document.getElementById('incChart');
+  if (!el) return;
+  const wrap = el.parentElement;
+  if (CI['incChart']) CI['incChart'].destroy();
+  el.width  = wrap.clientWidth || 300;
+  el.height = wrap.clientHeight || 65;
+  const ctx = el.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,el.height);
+  grad.addColorStop(0,'rgba(59,130,246,.25)');
+  grad.addColorStop(1,'rgba(59,130,246,0)');
+  CI['incChart'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:['10:00','11:00','12:00','13:00','14:00','15:00'],
+           datasets:[
+             {data:[30,45,38,52,41,35], borderColor:'rgba(239,68,68,1)', fill:false, borderWidth:1.5, tension:.45, pointRadius:0},
+             {data:[15,22,18,30,24,20], borderColor:'rgba(16,185,129,1)', fill:false, borderWidth:1.5, tension:.45, pointRadius:0},
+           ]
+    },
+    options:{...gc(), plugins:{...gc().plugins, legend:{display:false}}},
+  });
+}
+
+const HR  = ['10:00','11:00','12:00','13:00','14:00','15:00'];
+const MO  = ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+const rnd = (a,b,n=7) => Array.from({length:n},()=>Math.round(Math.random()*(b-a)+a));
+
+function renderAll() {
+  mkSevChart();
+  mkIncChart();
+  mkChart('tr1','line', HR,  rnd(10,80,6),  'rgba(239,68,68,1)');
+  mkChart('tr2','line', HR,  rnd(5,60,6),   'rgba(16,185,129,1)');
+  mkChart('tr3','line', HR,  rnd(2,20,6),   'rgba(139,92,246,1)');
+  mkChart('tr4','line', MO,  rnd(20,90),    'rgba(59,130,246,1)');
+  mkChart('tr5','line', MO,  rnd(5,50),     'rgba(6,182,212,1)');
+}
+
+/* ── Alert Map SVG ───────────────────────────────────────── */
+function buildAlertMap() {
+  const svg = document.getElementById('alertMapSvg');
+  if (!svg) return;
+  const nodes = [
+    {x:60,y:40,r:8,c:'#ef4444',t:'Critical — Station A'}, {x:140,y:80,r:6,c:'#f97316',t:'Congestion — Junction B'},
+    {x:220,y:50,r:10,c:'#ef4444',t:'Signal Failure — C'}, {x:300,y:110,r:5,c:'#eab308',t:'Delay — Route D'},
+    {x:80,y:130,r:7,c:'#9b59b6',t:'Signal — Station E'}, {x:180,y:150,r:4,c:'#f97316',t:'Minor — Area F'},
+    {x:260,y:40,r:6,c:'#eab308',t:'Congestion — G'},
+  ];
+  const lines = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]];
+  let html = '';
+  lines.forEach(([a,b]) => {
+    const na=nodes[a], nb=nodes[b];
+    html += `<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}" stroke="rgba(255,255,255,.08)" stroke-width="1.5"/>`;
+  });
+  nodes.forEach((n,i) => {
+    html += `
+      <circle cx="${n.x}" cy="${n.y}" r="${n.r+4}" fill="${n.c}" opacity="0.12">
+        <animate attributeName="r" values="${n.r+4};${n.r+8};${n.r+4}" dur="${1.5+i*.3}s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="${n.x}" cy="${n.y}" r="${n.r}" fill="${n.c}" opacity="0.85" style="cursor:pointer"
+        onclick="Toast.info('${n.t}')" onmouseover="this.setAttribute('opacity','1')" onmouseout="this.setAttribute('opacity','0.85')">
+      </circle>`;
+  });
+  svg.innerHTML = html;
+}
+
+/* ── Heatmaps ────────────────────────────────────────────── */
+function buildHM(id, cols, url) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  el.innerHTML = '';
+  for (let i = 0; i < cols * 4; i++) {
+    const v = Math.random();
+    const cell = document.createElement('div');
+    cell.className = 'ahm-cell';
+    cell.style.background = v>.75?'#ef4444':v>.5?'#f97316':v>.25?'#eab308':'#10b981';
+    cell.style.opacity = (.5 + v*.5).toFixed(2);
+    cell.title = `${Math.round(v*100)}% alert density`;
+    cell.onclick = () => window.location = url;
+    el.appendChild(cell);
   }
 }
 
-async function markAllRead() {
-  const res = await fetch('/api/notifications/mark-all/', { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
-  if (res.ok) {
-    Toast.success('All notifications marked as read.');
-    setTimeout(() => location.reload(), 700);
-  }
-}
+/* ── Live feed pulse ─────────────────────────────────────── */
+const FEED = [
+  ['Alert Created','A-12345 Conflict detected at Junction T-3','var(--accent-red)'],
+  ['AI Recommendation','Reroute Train 12341 via B-Line approved','var(--accent-blue)'],
+  ['Incident Resolved','R-887 resolved by Jane Doe','var(--accent-green)'],
+  ['Escalation Update','D-789 escalated to Operations Manager','var(--accent-purple)'],
+];
+let fi = 0;
+setInterval(() => {
+  const feed = document.getElementById('lafFeed');
+  if (!feed) return;
+  const item = FEED[fi++ % FEED.length];
+  const d = document.createElement('div');
+  d.className = 'laf-item';
+  d.innerHTML = `<div class="laf-dot" style="background:${item[2]};"></div>
+    <div class="laf-body"><div class="laf-title">${item[0]}</div><div class="laf-desc">${item[1].substring(0,30)}</div></div>
+    <div class="laf-time">now</div>`;
+  feed.insertBefore(d, feed.children[0]);
+  if (feed.children.length > 8) feed.removeChild(feed.lastChild);
+}, 15000);
 
-async function deleteNotif(id) {
-  const res = await fetch(`/notifications/${id}/delete/`, { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
-  if (res.ok) {
-    const row = document.getElementById(`notif-row-${id}`);
-    if (row) {
-      row.style.opacity = '0';
-      row.style.transform = 'translateX(-16px)';
-      setTimeout(() => row.remove(), 300);
-    }
-    Toast.info('Notification deleted.');
-  }
-}
+/* ── Auto-refresh unread count badge ──────────────────────── */
+setInterval(() => {
+  fetch('/api/notifications/unread-count/')
+    .then(r => r.json())
+    .then(d => {
+      const el = document.getElementById('kpiActive');
+      if (el && d.count !== undefined) el.textContent = d.count;
+    }).catch(() => {});
+}, 30000);
 
-async function deleteAllRead() {
-  if (!confirm('Delete all read notifications?')) return;
-  const res = await fetch('/notifications/delete-all-read/', { method:'POST', headers:{'X-CSRFToken': getCsrfToken()} });
-  if (res.ok) {
-    const data = await res.json();
-    Toast.success(`Deleted ${data.deleted} read notifications.`);
-    setTimeout(() => location.reload(), 800);
-  }
-}
+/* ── Theme observer ──────────────────────────────────────── */
+new MutationObserver(renderAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 
-function updateUnreadBadge(delta) {
-  const badge = document.getElementById('unread-badge');
-  if (!badge) return;
-  const current = parseInt(badge.textContent) || 0;
-  const next = Math.max(0, current + delta);
-  badge.textContent = `${next} unread`;
-}
-
-function getCsrfToken() {
-  return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
-}
+/* ── Init ─────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+  buildAlertMap();
+  buildHM('stAlertHM', 10, "{% url 'stations:list' %}");
+  buildHM('rtAlertHM',  8, "{% url 'stations:routes' %}");
+});
+window.addEventListener('resize', renderAll);
 </script>
 {% endblock %}
