@@ -75,12 +75,12 @@
 .nac-card-link:hover { opacity:.75; }
 
 /* ── MAIN GRID ───────────────────────────────────────────────── */
-.nac-main-grid { display:grid; grid-template-columns:1fr 340px; gap:6px; align-items:stretch; }
+.nac-main-grid { display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:6px; align-items:stretch; }
 @media(max-width:1280px){ .nac-main-grid { grid-template-columns:1fr; } }
 .nac-right-col { display:flex; flex-direction:column; gap:6px; }
-.nac-main-grid > div:first-child { display:flex; flex-direction:column; gap:6px; }
-.nac-main-grid > div:first-child .nac-card:first-child { flex:1; display:flex; flex-direction:column; }
-.nac-main-grid > div:first-child .nac-card:first-child .nac-table-wrap { flex:1; overflow-y:auto; max-height:380px; }
+.nac-main-grid > div:first-child { display:flex; flex-direction:column; height:100%; }
+.nac-main-grid > div:first-child .nac-card { flex:1; display:flex; flex-direction:column; }
+.nac-main-grid > div:first-child .nac-table-wrap { flex:1; overflow-y:auto; display:flex; flex-direction:column; justify-content:safe center; }
 
 /* ── FILTER BAR ──────────────────────────────────────────────── */
 .nac-filter-bar { display:flex; gap:5px; padding:7px 10px; border-bottom:1px solid var(--border-color); flex-wrap:wrap; align-items:center; }
@@ -99,21 +99,21 @@
 
 /* ── ALERT TABLE ─────────────────────────────────────────────── */
 .nac-table-wrap { overflow-x:auto; }
-.nac-table { width:100%; border-collapse:collapse; font-size:.62rem; }
+.nac-table { width:100%; border-collapse:collapse; font-size:.78rem; }
 .nac-table th {
-  font-size:.53rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);
-  padding:6px 8px; border-bottom:1px solid var(--border-color); text-align:left;
+  font-size:.66rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);
+  padding:11px 12px; border-bottom:1px solid var(--border-color); text-align:left;
   font-weight:700; cursor:pointer; white-space:nowrap; background:var(--bg-secondary);
 }
 .nac-table th:hover { color:var(--accent-red); }
-.nac-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text-secondary); vertical-align:middle; }
+.nac-table td { padding:13px 12px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text-secondary); vertical-align:middle; }
 .nac-table tr:hover td { background:rgba(255,255,255,.025); color:var(--text-primary); }
-.nac-table tr.critical-row { border-left:2px solid var(--accent-red); }
-.nac-table tr.critical-row td:first-child { padding-left:6px; }
-.nac-alert-id { font-family:var(--font-mono); font-size:.6rem; color:var(--text-muted); }
+.nac-table tr.critical-row { border-left:3px solid var(--accent-red); }
+.nac-table tr.critical-row td:first-child { padding-left:9px; }
+.nac-alert-id { font-family:var(--font-mono); font-size:.76rem; color:var(--text-muted); }
 .sev-badge {
-  display:inline-flex; align-items:center; gap:3px; padding:2px 6px; border-radius:10px;
-  font-size:.54rem; font-weight:700; white-space:nowrap;
+  display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:12px;
+  font-size:.68rem; font-weight:700; white-space:nowrap;
 }
 .sev-CRITICAL { background:rgba(239,68,68,.15);  color:#ef4444; border:1px solid rgba(239,68,68,.3); }
 .sev-HIGH     { background:rgba(249,115,22,.12); color:#f97316; border:1px solid rgba(249,115,22,.3); }
@@ -121,34 +121,24 @@
 .sev-LOW      { background:rgba(16,185,129,.1);  color:#10b981; border:1px solid rgba(16,185,129,.3); }
 .sev-INFO     { background:rgba(59,130,246,.1);  color:#3b82f6; border:1px solid rgba(59,130,246,.3); }
 .status-badge {
-  display:inline-flex; align-items:center; gap:3px; padding:2px 6px; border-radius:10px;
-  font-size:.54rem; font-weight:700;
+  display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:12px;
+  font-size:.68rem; font-weight:700;
 }
 .st-unread  { background:rgba(239,68,68,.1);  color:var(--accent-red);    border:1px solid rgba(239,68,68,.25); }
 .st-read    { background:rgba(16,185,129,.1); color:var(--accent-green);  border:1px solid rgba(16,185,129,.25); }
 .st-bc      { background:rgba(139,92,246,.1); color:var(--accent-purple); border:1px solid rgba(139,92,246,.25); }
-.nac-type-icon { font-size:.8rem; }
-.nac-action-btns { display:flex; gap:3px; }
+.nac-type-icon { font-size:.95rem; }
+.nac-action-btns { display:flex; gap:5px; }
 .nac-tbl-btn {
-  display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px;
-  border-radius:5px; border:1px solid var(--border-color); background:transparent;
-  color:var(--text-muted); cursor:pointer; font-size:.68rem; transition:all var(--transition-fast);
+  display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px;
+  border-radius:6px; border:1px solid var(--border-color); background:transparent;
+  color:var(--text-muted); cursor:pointer; font-size:.82rem; transition:all var(--transition-fast);
   text-decoration:none;
 }
 .nac-tbl-btn:hover { background:rgba(59,130,246,.12); border-color:var(--accent-blue); color:var(--accent-blue); }
 .nac-tbl-btn.del:hover { background:rgba(239,68,68,.12); border-color:var(--accent-red); color:var(--accent-red); }
 
-/* ── REAL-TIME ALERT STREAM ──────────────────────────────────── */
-.rtas-wrap { padding:6px 10px; display:flex; gap:8px; overflow-x:auto; }
-.rtas-item {
-  flex-shrink:0; display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
-  border-radius:20px; font-size:.58rem; font-weight:600; border:1px solid;
-  cursor:pointer; white-space:nowrap;
-}
-.rtas-item.crit { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); color:var(--accent-red); }
-.rtas-item.high { background:rgba(249,115,22,.1); border-color:rgba(249,115,22,.3); color:var(--accent-orange); }
-.rtas-item.ai   { background:rgba(59,130,246,.1); border-color:rgba(59,130,246,.3); color:var(--accent-blue); }
-.rtas-item.info { background:rgba(234,179,8,.1); border-color:rgba(234,179,8,.3); color:var(--accent-yellow); }
+
 
 /* ── SEVERITY DISTRIBUTION ───────────────────────────────────── */
 .sev-dist-body { padding:8px 10px; }
@@ -196,8 +186,14 @@
 
 /* ── MID GRID ────────────────────────────────────────────────── */
 .nac-mid-grid { display:grid; grid-template-columns:1fr 1.4fr 1fr 1fr; gap:6px; align-items:stretch; }
+.nac-mid-grid .nac-card { display:flex; flex-direction:column; height:100%; min-height:0; }
 @media(max-width:1280px){ .nac-mid-grid { grid-template-columns:1fr 1fr; } }
 @media(max-width:700px) { .nac-mid-grid { grid-template-columns:1fr; } }
+
+/* ── BOTTOM ROW: Heatmap + Executive Insights (full width, no gaps) ── */
+.nac-bottom-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:stretch; }
+.nac-bottom-row .nac-card { display:flex; flex-direction:column; height:100%; }
+@media(max-width:900px) { .nac-bottom-row { grid-template-columns:1fr; } }
 
 /* ── ESCALATION PANEL ────────────────────────────────────────── */
 .esc-item { padding:7px 10px; border-bottom:1px solid rgba(255,255,255,.05); }
@@ -210,7 +206,7 @@
 .esc-age-ok   { background:rgba(16,185,129,.1); color:var(--accent-green); }
 
 /* ── INCIDENT TIMELINE ───────────────────────────────────────── */
-.inc-tl-wrap { padding:12px 14px 8px; }
+.inc-tl-wrap { padding:12px 14px 8px; flex:1; display:flex; flex-direction:column; justify-content:center; }
 .inc-tl-bar  { display:flex; align-items:center; gap:0; position:relative; }
 .inc-tl-step { display:flex; flex-direction:column; align-items:center; flex:1; }
 .inc-tl-node {
@@ -236,16 +232,17 @@
 .ctrl-alerts{ font-size:.6rem; font-family:var(--font-mono); color:var(--text-muted); }
 .ctrl-bar-wrap { width:50px; height:4px; background:rgba(255,255,255,.07); border-radius:2px; overflow:hidden; }
 .ctrl-bar-fill { height:100%; border-radius:2px; }
+.ctrl-body { flex:1; overflow-y:auto; padding:5px 0; }
 
 /* ── SYSTEM HEALTH ───────────────────────────────────────────── */
-.health-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:8px; }
+.health-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:8px; flex:1; align-content:center; }
 .health-item { text-align:center; }
 .health-svg  { width:54px; height:54px; }
 .health-val  { font-size:.82rem; font-weight:800; font-family:var(--font-mono); margin-top:2px; }
 .health-lbl  { font-size:.53rem; color:var(--text-muted); margin-top:1px; }
 
 /* ── ALERT HEATMAP ───────────────────────────────────────────── */
-.ahm-grids { display:grid; grid-template-columns:1fr; gap:5px; padding:7px 9px; }
+.ahm-grids { display:grid; grid-template-columns:1fr; gap:5px; padding:7px 9px; flex:1; align-content:center; }
 .ahm-title { font-size:.56rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
 .ahm-cells { display:grid; gap:2px; }
 .ahm-cell { height:14px; border-radius:2px; cursor:pointer; transition:all var(--transition-fast); }
@@ -253,7 +250,7 @@
 .ahm-scale { display:flex; justify-content:space-between; margin-top:3px; font-size:.49rem; color:var(--text-muted); }
 
 /* ── EXECUTIVE INSIGHTS ──────────────────────────────────────── */
-.exec-ins-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:7px; }
+.exec-ins-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:7px; flex:1; align-content:center; }
 .exec-ins-item { background:var(--bg-input); border:1px solid var(--border-color); border-radius:6px; padding:7px 8px; }
 .exec-ins-lbl  { font-size:.52rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-bottom:2px; }
 .exec-ins-val  { font-size:.9rem; font-weight:800; font-family:var(--font-mono); }
@@ -278,7 +275,6 @@
 [data-theme="light"] .nac-header { background:linear-gradient(135deg,#fff8f8 0%,#fff0ef 60%,rgba(239,68,68,.04) 100%); }
 [data-theme="light"] .alert-map-wrap { background:#f0f4f8; }
 [data-theme="light"] .ai-rec-metric,.exec-ins-item { background:#f8fafc; }
-[data-theme="light"] .rtas-item.crit,.rtas-item.high,.rtas-item.ai,.rtas-item.info { opacity:.85; }
 [data-theme="light"] .nac-table th { background:#f8fafc; }
 [data-theme="light"] .sev-dist-bar,.ctrl-bar-wrap { background:rgba(0,0,0,.06); }
 </style>
@@ -510,22 +506,6 @@
         </div>
       </div>
 
-      <!-- Real-Time Alert Stream -->
-      <div class="nac-card">
-        <div class="nac-card-hdr">
-          <div class="nac-card-title"><i class="bi bi-activity" style="color:var(--accent-yellow);animation:nacGlow 1.5s ease-in-out infinite;"></i> Real-Time Alert Stream</div>
-        </div>
-        <div class="rtas-wrap" id="rtasWrap">
-          {% for n in notifications|slice:":8" %}
-          <div class="rtas-item {% if n.priority == 'CRITICAL' %}crit{% elif n.priority == 'HIGH' %}high{% elif n.notification_type == 'RECOMMENDATION' %}ai{% else %}info{% endif %}"
-               onclick="window.location='{% url 'notifications:list' %}?priority={{ n.priority }}'">
-            {{ n.type_icon }} {{ n.title|truncatechars:32 }} [{{ n.created_at|date:"H:i" }}]
-          </div>
-          {% empty %}
-          <div style="font-size:.62rem;color:var(--text-muted);padding:5px;">No recent alerts.</div>
-          {% endfor %}
-        </div>
-      </div>
     </div>
 
     <!-- RIGHT COLUMN -->
@@ -600,40 +580,31 @@
   <!-- ═══ MID GRID: 4 panels ════════════════════════════════ -->
   <div class="nac-mid-grid">
 
-    <!-- Escalation Management Panel -->
+    <!-- Live Activity Feed -->
     <div class="nac-card">
       <div class="nac-card-hdr">
-        <div class="nac-card-title"><i class="bi bi-arrow-up-square" style="color:var(--accent-purple);"></i> Escalation Management</div>
-      </div>
-      {% for n in notifications %}
-      {% if n.priority == 'CRITICAL' and not n.is_read %}
-      <div class="esc-item">
-        <div class="esc-item-title">
-          {{ n.title|truncatechars:32 }}
-          <span class="esc-age-badge esc-age-crit">{{ n.created_at|timesince|truncatechars:10 }}</span>
+        <div class="nac-card-title">
+          <i class="bi bi-broadcast" style="color:var(--accent-green);animation:nacGlow 1.5s ease-in-out infinite;"></i>
+          Live Activity Feed
         </div>
-        <div class="esc-item-sub">{{ n.get_notification_type_display }} &nbsp;·&nbsp; SLA: <span style="color:var(--accent-red);">Critical</span></div>
       </div>
-      {% endif %}
-      {% endfor %}
-      {% if not notifications %}
-      <div class="esc-item">
-        <div class="esc-item-title">A-12345: Carrington T-3 <span class="esc-age-badge esc-age-crit">22 hours</span></div>
-        <div class="esc-item-sub">Conflict Alert · SLA: <span style="color:var(--accent-red);">Critical</span></div>
-      </div>
-      <div class="esc-item">
-        <div class="esc-item-title">R-987: Attingent Central <span class="esc-age-badge esc-age-warn">34 days</span></div>
-        <div class="esc-item-sub">Delay Alert · SLA: <span style="color:var(--accent-yellow);">Low</span></div>
-      </div>
-      <div class="esc-item">
-        <div class="esc-item-title">D-789: Delay at Station <span class="esc-age-badge esc-age-warn">64 hours</span></div>
-        <div class="esc-item-sub">Delay Alert · SLA: <span style="color:var(--accent-yellow);">Delay</span></div>
-      </div>
-      {% endif %}
-      <div style="padding:6px 10px;border-top:1px solid var(--border-color);">
-        <a href="{% url 'conflicts:list' %}" class="nac-btn" style="width:100%;justify-content:center;font-size:.6rem;">
-          <i class="bi bi-arrow-right"></i> View All Conflicts
-        </a>
+      <div id="lafFeed" style="flex:1;overflow-y:auto;min-height:0;max-height:225px;">
+        {% for n in notifications|slice:":20" %}
+        <div class="laf-item">
+          <div class="laf-dot" style="background:{% if n.priority == 'CRITICAL' %}var(--accent-red){% elif n.priority == 'HIGH' %}var(--accent-orange){% elif n.notification_type == 'RECOMMENDATION' %}var(--accent-blue){% else %}var(--accent-green){% endif %};"></div>
+          <div class="laf-body">
+            <div class="laf-title">{{ n.title|truncatechars:28 }}</div>
+            <div class="laf-desc">{{ n.get_notification_type_display }}</div>
+          </div>
+          <div class="laf-time">{{ n.created_at|timesince|truncatechars:8 }}</div>
+        </div>
+        {% empty %}
+        <div class="laf-item">
+          <div class="laf-dot" style="background:var(--accent-green);"></div>
+          <div class="laf-body"><div class="laf-title">All Clear</div><div class="laf-desc">No recent alerts</div></div>
+          <div class="laf-time">now</div>
+        </div>
+        {% endfor %}
       </div>
     </div>
 
@@ -684,7 +655,7 @@
         <div class="nac-card-title"><i class="bi bi-person-badge" style="color:var(--accent-blue);"></i> Controller Activity</div>
         <a href="{% url 'auth:user_list' %}" class="nac-card-link">Users →</a>
       </div>
-      <div style="padding:5px 0;">
+      <div class="ctrl-body">
         <div class="ctrl-item" style="border-bottom:1px solid var(--border-color);padding:4px 10px;">
           <div style="font-size:.53rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);flex:1;">Controller</div>
           <div style="font-size:.53rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);width:35px;">Alerts</div>
@@ -707,7 +678,7 @@
         </div>
         <div class="ctrl-item">
           <div class="ctrl-avatar" style="background:var(--accent-green);">J</div>
-          <div class="ctrl-name">Jane Doe</div>
+          <div class="ctrl-name">Priya Mehta</div>
           <div class="ctrl-alerts">473</div>
           <div style="font-size:.6rem;color:var(--text-muted);width:35px;">14%</div>
           <div class="ctrl-bar-wrap"><div class="ctrl-bar-fill" style="width:14%;background:var(--accent-green);"></div></div>
@@ -721,7 +692,7 @@
         </div>
         <div class="ctrl-item">
           <div class="ctrl-avatar" style="background:var(--accent-cyan);">J2</div>
-          <div class="ctrl-name">Jane Doe 10</div>
+          <div class="ctrl-name">Amit Verma</div>
           <div class="ctrl-alerts">215</div>
           <div style="font-size:.6rem;color:var(--text-muted);width:35px;">37%</div>
           <div class="ctrl-bar-wrap"><div class="ctrl-bar-fill" style="width:37%;background:var(--accent-blue);"></div></div>
@@ -729,143 +700,100 @@
       </div>
     </div>
 
-    <!-- System Health Monitor + Alert Heatmap + Executive Insights (sub-grid) -->
-    <div style="display:flex;flex-direction:column;gap:6px;">
-
-      <!-- System Health Monitor -->
-      <div class="nac-card">
-        <div class="nac-card-hdr">
-          <div class="nac-card-title"><i class="bi bi-heart-pulse" style="color:var(--accent-green);"></i> System Health Monitor</div>
-          <a href="{% url 'network:visualizer' %}" class="nac-card-link">Network →</a>
-        </div>
-        <div class="health-grid">
-          {% for item in health_items %}
-          <div class="health-item">
-            <svg class="health-svg" viewBox="0 0 54 54">
-              <circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
-              <circle cx="27" cy="27" r="20" fill="none" stroke="{{ item.color }}" stroke-width="5"
-                stroke-dasharray="{{ item.pct }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/>
-            </svg>
-            <div class="health-val" style="color:{{ item.color }};">{{ item.pct }}%</div>
-            <div class="health-lbl">{{ item.label }}</div>
-          </div>
-          {% empty %}
-          <div class="health-item">
-            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#10b981" stroke-width="5" stroke-dasharray="95 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
-            <div class="health-val" style="color:#10b981;">95%</div><div class="health-lbl">Signal Health</div>
-          </div>
-          <div class="health-item">
-            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#3b82f6" stroke-width="5" stroke-dasharray="88 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
-            <div class="health-val" style="color:#3b82f6;">88%</div><div class="health-lbl">Track Health</div>
-          </div>
-          <div class="health-item">
-            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#f97316" stroke-width="5" stroke-dasharray="76 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
-            <div class="health-val" style="color:#f97316;">76%</div><div class="health-lbl">Platform Health</div>
-          </div>
-          <div class="health-item">
-            <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#8b5cf6" stroke-width="5" stroke-dasharray="92 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
-            <div class="health-val" style="color:#8b5cf6;">92%</div><div class="health-lbl">Network Health</div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- Alert Heatmap -->
-      <div class="nac-card">
-        <div class="nac-card-hdr">
-          <div class="nac-card-title"><i class="bi bi-grid-3x3" style="color:var(--accent-orange);"></i> Alert Heatmap</div>
-          <a href="{% url 'stations:list' %}" class="nac-card-link">Stations →</a>
-        </div>
-        <div class="ahm-grids">
-          <div>
-            <div class="ahm-title">Station Alert Density</div>
-            <div class="ahm-cells" id="stAlertHM"></div>
-            <div class="ahm-scale"><span>Low</span><span>High</span></div>
-          </div>
-          <div>
-            <div class="ahm-title">Route Alert Frequency</div>
-            <div class="ahm-cells" id="rtAlertHM"></div>
-            <div class="ahm-scale"><span>Low</span><span>High</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Executive Insights Panel -->
-      <div class="nac-card">
-        <div class="nac-card-hdr">
-          <div class="nac-card-title"><i class="bi bi-briefcase" style="color:var(--accent-blue);"></i> Executive Insights</div>
-          <a href="{% url 'reporting:index' %}" class="nac-card-link">Reports →</a>
-        </div>
-        <div class="exec-ins-grid">
-          <div class="exec-ins-item">
-            <div class="exec-ins-lbl">Passenger Impact</div>
-            <div class="exec-ins-val" style="color:var(--accent-orange);">5.35%</div>
-            <div class="exec-ins-delta" style="color:var(--accent-red);">▲ +1.35%</div>
-          </div>
-          <div class="exec-ins-item">
-            <div class="exec-ins-lbl">Revenue Impact</div>
-            <div class="exec-ins-val" style="color:var(--accent-green);">30%</div>
-            <div class="exec-ins-delta" style="color:var(--accent-green);">▲ +0.05%</div>
-          </div>
-          <div class="exec-ins-item">
-            <div class="exec-ins-lbl">Delay Impact</div>
-            <div class="exec-ins-val" style="color:var(--accent-yellow);">2.2%</div>
-            <div class="exec-ins-delta" style="color:var(--accent-red);">▲ -18%</div>
-          </div>
-          <div class="exec-ins-item">
-            <div class="exec-ins-lbl">Operational Risk</div>
-            <div class="exec-ins-val" style="color:var(--accent-red);">3.28%</div>
-            <div class="exec-ins-delta" style="color:var(--accent-red);">▲ +98%</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div><!-- /.nac-mid-grid -->
-
-  <!-- ═══ BOTTOM: 5 Trend Charts + Live Activity Feed ═══════ -->
-  <div class="nac-bottom-grid">
-    <div class="nac-card">
-      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(239,68,68,.8);">Alert Trends</div></div>
-      <div class="nac-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="tr1"></canvas></div>
-    </div>
-    <div class="nac-card">
-      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(16,185,129,.8);">Resolution Trends</div></div>
-      <div class="nac-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="tr2"></canvas></div>
-    </div>
-    <div class="nac-card">
-      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(139,92,246,.8);">Escalation Trends</div></div>
-      <div class="nac-trend-body" onclick="window.location='{% url 'dashboard:analytics' %}'"><canvas id="tr3"></canvas></div>
-    </div>
-    <div class="nac-card">
-      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(59,130,246,.8);">AI Recommendation Trends</div></div>
-      <div class="nac-trend-body" onclick="window.location='{% url 'ai_engine:dashboard' %}'"><canvas id="tr4"></canvas></div>
-    </div>
-    <div class="nac-card">
-      <div class="nac-card-hdr"><div class="nac-card-title" style="color:rgba(6,182,212,.8);">Incident Trends</div></div>
-      <div class="nac-trend-body" onclick="window.location='{% url 'conflicts:list' %}'"><canvas id="tr5"></canvas></div>
-    </div>
-    <!-- Live Activity Feed -->
+    <!-- System Health Monitor -->
     <div class="nac-card">
       <div class="nac-card-hdr">
-        <div class="nac-card-title"><i class="bi bi-broadcast" style="color:var(--accent-green);animation:nacGlow 1.5s ease-in-out infinite;"></i> Live Feed</div>
+        <div class="nac-card-title"><i class="bi bi-heart-pulse" style="color:var(--accent-green);"></i> System Health Monitor</div>
+        <a href="{% url 'network:visualizer' %}" class="nac-card-link">Network →</a>
       </div>
-      <div id="lafFeed" style="max-height:120px;overflow-y:auto;">
-        {% for n in notifications|slice:":5" %}
-        <div class="laf-item">
-          <div class="laf-dot" style="background:{% if n.priority == 'CRITICAL' %}var(--accent-red){% elif n.priority == 'HIGH' %}var(--accent-orange){% elif n.notification_type == 'RECOMMENDATION' %}var(--accent-blue){% else %}var(--accent-green){% endif %};"></div>
-          <div class="laf-body">
-            <div class="laf-title">{{ n.title|truncatechars:28 }}</div>
-            <div class="laf-desc">{{ n.get_notification_type_display }}</div>
-          </div>
-          <div class="laf-time">{{ n.created_at|timesince|truncatechars:8 }}</div>
+      <div class="health-grid">
+        {% for item in health_items %}
+        <div class="health-item">
+          <svg class="health-svg" viewBox="0 0 54 54">
+            <circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+            <circle cx="27" cy="27" r="20" fill="none" stroke="{{ item.color }}" stroke-width="5"
+              stroke-dasharray="{{ item.pct }} 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/>
+          </svg>
+          <div class="health-val" style="color:{{ item.color }};">{{ item.pct }}%</div>
+          <div class="health-lbl">{{ item.label }}</div>
         </div>
         {% empty %}
-        <div class="laf-item"><div class="laf-dot" style="background:var(--accent-green);"></div><div class="laf-body"><div class="laf-title">All Clear</div><div class="laf-desc">No recent alerts</div></div><div class="laf-time">now</div></div>
+        <div class="health-item">
+          <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#10b981" stroke-width="5" stroke-dasharray="95 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+          <div class="health-val" style="color:#10b981;">95%</div><div class="health-lbl">Signal Health</div>
+        </div>
+        <div class="health-item">
+          <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#3b82f6" stroke-width="5" stroke-dasharray="88 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+          <div class="health-val" style="color:#3b82f6;">88%</div><div class="health-lbl">Track Health</div>
+        </div>
+        <div class="health-item">
+          <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#f97316" stroke-width="5" stroke-dasharray="76 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+          <div class="health-val" style="color:#f97316;">76%</div><div class="health-lbl">Platform Health</div>
+        </div>
+        <div class="health-item">
+          <svg class="health-svg" viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="27" cy="27" r="20" fill="none" stroke="#8b5cf6" stroke-width="5" stroke-dasharray="92 100" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90,27,27)"/></svg>
+          <div class="health-val" style="color:#8b5cf6;">92%</div><div class="health-lbl">Network Health</div>
+        </div>
         {% endfor %}
       </div>
     </div>
-  </div>
+
+  </div><!-- /.nac-mid-grid -->
+
+  <!-- ═══ BOTTOM ROW: Alert Heatmap + Executive Insights ═══ -->
+  <div class="nac-bottom-row">
+
+    <!-- Alert Heatmap -->
+    <div class="nac-card">
+      <div class="nac-card-hdr">
+        <div class="nac-card-title"><i class="bi bi-grid-3x3" style="color:var(--accent-orange);"></i> Alert Heatmap</div>
+        <a href="{% url 'stations:list' %}" class="nac-card-link">Stations →</a>
+      </div>
+      <div class="ahm-grids">
+        <div>
+          <div class="ahm-title">Station Alert Density</div>
+          <div class="ahm-cells" id="stAlertHM"></div>
+          <div class="ahm-scale"><span>Low</span><span>High</span></div>
+        </div>
+        <div>
+          <div class="ahm-title">Route Alert Frequency</div>
+          <div class="ahm-cells" id="rtAlertHM"></div>
+          <div class="ahm-scale"><span>Low</span><span>High</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Executive Insights Panel -->
+    <div class="nac-card">
+      <div class="nac-card-hdr">
+        <div class="nac-card-title"><i class="bi bi-briefcase" style="color:var(--accent-blue);"></i> Executive Insights</div>
+        <a href="{% url 'reporting:index' %}" class="nac-card-link">Reports →</a>
+      </div>
+      <div class="exec-ins-grid">
+        <div class="exec-ins-item">
+          <div class="exec-ins-lbl">Passenger Impact</div>
+          <div class="exec-ins-val" style="color:var(--accent-orange);">5.35%</div>
+          <div class="exec-ins-delta" style="color:var(--accent-red);">▲ +1.35%</div>
+        </div>
+        <div class="exec-ins-item">
+          <div class="exec-ins-lbl">Revenue Impact</div>
+          <div class="exec-ins-val" style="color:var(--accent-green);">30%</div>
+          <div class="exec-ins-delta" style="color:var(--accent-green);">▲ +0.05%</div>
+        </div>
+        <div class="exec-ins-item">
+          <div class="exec-ins-lbl">Delay Impact</div>
+          <div class="exec-ins-val" style="color:var(--accent-yellow);">2.2%</div>
+          <div class="exec-ins-delta" style="color:var(--accent-red);">▲ -18%</div>
+        </div>
+        <div class="exec-ins-item">
+          <div class="exec-ins-lbl">Operational Risk</div>
+          <div class="exec-ins-val" style="color:var(--accent-red);">3.28%</div>
+          <div class="exec-ins-delta" style="color:var(--accent-red);">▲ +98%</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.nac-bottom-row -->
 
 </div><!-- /.nac-page -->
 {% endblock %}
@@ -1001,11 +929,6 @@ const rnd = (a,b,n=7) => Array.from({length:n},()=>Math.round(Math.random()*(b-a
 function renderAll() {
   mkSevChart();
   mkIncChart();
-  mkChart('tr1','line', HR,  rnd(10,80,6),  'rgba(239,68,68,1)');
-  mkChart('tr2','line', HR,  rnd(5,60,6),   'rgba(16,185,129,1)');
-  mkChart('tr3','line', HR,  rnd(2,20,6),   'rgba(139,92,246,1)');
-  mkChart('tr4','line', MO,  rnd(20,90),    'rgba(59,130,246,1)');
-  mkChart('tr5','line', MO,  rnd(5,50),     'rgba(6,182,212,1)');
 }
 
 /* ── Alert Map SVG ───────────────────────────────────────── */
@@ -1058,7 +981,7 @@ function buildHM(id, cols, url) {
 const FEED = [
   ['Alert Created','A-12345 Conflict detected at Junction T-3','var(--accent-red)'],
   ['AI Recommendation','Reroute Train 12341 via B-Line approved','var(--accent-blue)'],
-  ['Incident Resolved','R-887 resolved by Jane Doe','var(--accent-green)'],
+  ['Incident Resolved','R-887 resolved by Ravi Shankar','var(--accent-green)'],
   ['Escalation Update','D-789 escalated to Operations Manager','var(--accent-purple)'],
 ];
 let fi = 0;
